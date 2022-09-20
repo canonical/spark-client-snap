@@ -9,13 +9,6 @@ description: |
 grade: stable
 confinement: strict
 
-plugs:
-  procsys-read:
-    interface: system-files
-    read:
-      - /proc/cgroups
-      - /proc/self/coredump_filter
-
 apps:
   spark-client:
     command: bin/spark-submit
@@ -26,9 +19,7 @@ apps:
         - network
         - network-bind
         - network-control
-        - microstack-support
         - home
-        - procsys-read
   spark-shell:
     command: bin/spark-shell
     environment:
@@ -38,9 +29,7 @@ apps:
         - network
         - network-bind
         - network-control
-        - microstack-support
         - home
-        - procsys-read
   pyspark:
     command: bin/pyspark
     environment:
@@ -51,9 +40,7 @@ apps:
         - network
         - network-bind
         - network-control
-        - microstack-support
         - home
-        - procsys-read
 
 parts:
   spark:
