@@ -81,7 +81,8 @@ parts:
         cp -r bin/* $SNAPCRAFT_PRIME/bin/
         mkdir -p $SNAPCRAFT_PRIME/jars
         cp -r jars/* $SNAPCRAFT_PRIME/jars/
+        mkdir -p $SNAPCRAFT_PRIME/python
+        cp -r python/* $SNAPCRAFT_PRIME/python/
     override-prime: |
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
-        inject_error
