@@ -6,7 +6,7 @@ description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
 grade: stable
-confinement: strict
+confinement: classic
 
 plugs:
   enable-scala-history:
@@ -15,6 +15,13 @@ plugs:
     - $HOME/.scala_history
 
 apps:
+  setup-spark-k8s:
+    command: ops/setup_wrapper.sh
+    environment:
+      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
+      PATH: $JAVA_HOME/bin:$PATH
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      OPS_ROOT: ${SNAP}/ops
   spark-submit:
     command: bin/spark-submit
     environment:
@@ -59,6 +66,8 @@ parts:
         - wget
     stage-packages:
         - openjdk-11-jre-headless
+    stage-snaps:
+        - kubectl
     override-build: |
         SPARK_VERSION='3.3.0'
         SPARK_HADOOP_VERSION='3'
@@ -79,3 +88,18 @@ parts:
     override-prime: |
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
+
+  helper-scripts:
+    plugin: nil
+    source: helpers
+    source-type: local
+    stage-snaps:
+        - kubectl
+    override-build: |
+      target_dir="${SNAPCRAFT_PRIME}/ops"
+      
+      rm -rf "${target_dir}"
+      mkdir -p "${target_dir}"
+      cp setup.py "${target_dir}"/
+      cp setup_wrapper.sh "${target_dir}"/
+      chmod +x "${target_dir}"/setup_wrapper.sh
