@@ -8,6 +8,12 @@ description: |
 grade: stable
 confinement: strict
 
+plugs:
+  enable-scala-history:
+    interface: personal-files
+    write:
+    - $HOME/.scala_history
+
 apps:
   spark-submit:
     command: bin/spark-submit
@@ -29,6 +35,7 @@ apps:
         - network-bind
         - network-control
         - home
+        - enable-scala-history
   pyspark:
     command: bin/pyspark
     environment:
