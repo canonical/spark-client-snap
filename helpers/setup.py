@@ -2,7 +2,7 @@ import sys
 import os
 import yaml
 
-kubectl_cmd='microk8s.kubectl'
+kubectl_cmd='kubectl'
 
 def extract_ca_crt_from_kube_config(kubeconfig: str, cluster_name: str = None) -> None:
     with open(kubeconfig) as f:
@@ -62,15 +62,15 @@ if __name__ == "__main__":
 
     if sys.argv[1] == 'service-account':
         if len(sys.argv) == 2 or sys.argv[2] == '-h' or sys.argv[2] == '--help':
-            print("Usage: setup service-account account-name [namespace]", file=sys.stderr)
+            print("Usage: setup-spark-k8s service-account account-name [namespace]", file=sys.stderr)
             sys.exit(-1)
         
         setup_user(username=sys.argv[2], namespace=sys.argv[3] if len(sys.argv) >= 4 else 'default')
 
     elif sys.argv[1] == 'get-ca-cert':
         if len(sys.argv) == 3 and (sys.argv[2] == '-h' or sys.argv[2] == '--help'):
-            print("Usage: setup get-ca-cert --kubeconfig kubeconfig-file-name --cluster cluster-name > ca.crt", file=sys.stderr)
-            print("Usage: setup get-ca-cert [kubeconfig]", file=sys.stderr)
+            print("Usage: setup-spark-k8s get-ca-cert --kubeconfig kubeconfig-file-name --cluster cluster-name > ca.crt", file=sys.stderr)
+            print("Usage: setup-spark-k8s get-ca-cert [kubeconfig]", file=sys.stderr)
             sys.exit(-1)
 
         if len(sys.argv) == 6:
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     elif sys.argv[1] == 'get-token':
         if len(sys.argv) == 2 or sys.argv[2] == '-h' or sys.argv[2] == '--help':
-            print("Usage: setup get-token secretname\nsecretname is one of the output names of [kubectl get secrets]", file=sys.stderr)
+            print("Usage: setup-spark-k8s get-token secretname\nsecretname is one of the output names of [kubectl get secrets]", file=sys.stderr)
             sys.exit(-1)
 
         dump_token(secretname=sys.argv[2])

@@ -11,7 +11,7 @@ sudo snap install spark-client
 Setup kubernetes service account for use with Spark client. Default namespace where user is created is ```default```.
 
 ```bash
-spark-client.setup-spark-k8s user username [namespace]
+spark-client.setup-spark-k8s service-account account-name [namespace]
 ```
 
 Enable access for default kubeconfig file ($HOME/.kube/config)
@@ -20,11 +20,18 @@ Enable access for default kubeconfig file ($HOME/.kube/config)
 snap connect spark-client:enable-kubeconfig-access
 ```
 
-Dump out the CA certificate on screen for use with Spark client. Default kubeconfig file is $HOME/.kube/config
+Dump out the CA certificate on screen for use with Spark client. 
 
 
 ```bash
-spark-client.setup-spark-k8s cert [kubeconfig]
+spark-client.setup-spark-k8s get-ca-cert --kubeconfig kubeconfig-file-name --cluster cluster-name > ca.crt
+```
+
+Or navigate the set of clusters in the kubeconfig interactively to select the certificate of interest. 
+Default kubeconfig file is $HOME/.kube/config
+
+```bash
+spark-client.setup-spark-k8s get-ca-cert [kubeconfig]
 ```
 
 Save the CA certificate output in a file to be used with Spark client's spark-submit command.
