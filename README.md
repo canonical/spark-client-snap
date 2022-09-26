@@ -1,7 +1,7 @@
 # Description
 The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
-# Setup
+# Installation and setup for Spark on Kubernetes
 Install the spark client snap.
 
 ```bash
