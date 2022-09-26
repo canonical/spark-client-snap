@@ -6,13 +6,17 @@ description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
 grade: stable
-confinement: classic
+confinement: strict
 
 plugs:
   enable-scala-history:
     interface: personal-files
     write:
     - $HOME/.scala_history
+  enable-kubeconfig-access:
+    interface: personal-files
+    read:
+    - $HOME/.kube/config
 
 apps:
   setup-spark-k8s:
@@ -22,6 +26,9 @@ apps:
       PATH: $JAVA_HOME/bin:$PATH
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
       OPS_ROOT: ${SNAP}/ops
+    plugs:
+        - home
+        - enable-kubeconfig-access
   spark-submit:
     command: bin/spark-submit
     environment:
@@ -90,7 +97,9 @@ parts:
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
 
   helper-scripts:
-    plugin: nil
+    plugin: python
+    python-packages:
+        - pyyaml
     source: helpers
     source-type: local
     stage-snaps:
