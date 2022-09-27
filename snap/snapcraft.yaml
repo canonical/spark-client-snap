@@ -27,6 +27,7 @@ apps:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
       OPS_ROOT: ${SNAP}/ops
     plugs:
+        - network
         - home
         - enable-kubeconfig-access
   spark-submit:
@@ -73,8 +74,6 @@ parts:
         - wget
     stage-packages:
         - openjdk-11-jre-headless
-    stage-snaps:
-        - kubectl
     override-build: |
         SPARK_VERSION='3.3.0'
         SPARK_HADOOP_VERSION='3'
@@ -100,10 +99,10 @@ parts:
     plugin: python
     python-packages:
         - pyyaml
+    build-packages:
+        - curl
     source: helpers
     source-type: local
-    stage-snaps:
-        - kubectl
     override-build: |
       target_dir="${SNAPCRAFT_PRIME}/ops"
       
@@ -112,3 +111,9 @@ parts:
       cp setup.py "${target_dir}"/
       cp setup_wrapper.sh "${target_dir}"/
       chmod +x "${target_dir}"/setup_wrapper.sh
+      
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      chmod +x kubectl
+      cp kubectl ${SNAPCRAFT_PRIME}/
+      
+      
