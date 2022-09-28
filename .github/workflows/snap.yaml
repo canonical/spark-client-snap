@@ -19,7 +19,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: edge
 
       - id: build-snap
         name: Build snap
@@ -30,8 +30,8 @@ jobs:
       - name: Upload built snap job artifact
         uses: actions/upload-artifact@v3
         with:
-          name: spark_client_snap_amd64
-          path: spark_client_${{env.VERSION}}_amd64.snap
+          name: spark-client_snap_amd64
+          path: spark-client_${{env.VERSION}}_amd64.snap
 
   test:
     name: Test Snap
@@ -42,12 +42,12 @@ jobs:
       - name: Download snap file
         uses: actions/download-artifact@v3
         with:
-          name: spark_client_snap_amd64
+          name: spark-client_snap_amd64
           path: .
 
       - name: Install snap file
         run: |
-          sudo snap install spark_client_${{env.VERSION}}_amd64.snap --dangerous
+          sudo snap install spark-client_${{env.VERSION}}_amd64.snap --dangerous
 
       - name: Setup Spark client
         run: |
@@ -133,7 +133,7 @@ jobs:
 #      - name: Download snap file
 #        uses: actions/download-artifact@v3
 #        with:
-#          name: spark_client_snap_amd64
+#          name: spark-client_snap_amd64
 #          path: .
 #
 #      - name: Publish snap to Store
@@ -141,5 +141,5 @@ jobs:
 #        env:
 #          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
 #        with:
-#          snap: spark_client_${{env.VERSION}}_amd64.snap
+#          snap: spark-client_${{env.VERSION}}_amd64.snap
 #          release: ${{env.RELEASE}}
