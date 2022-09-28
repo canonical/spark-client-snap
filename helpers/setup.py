@@ -41,7 +41,7 @@ def extract_ca_crt_from_kube_config(kubeconfig: str, cluster_name: str = None) -
 
 def setup_user(username: str, namespace: str, kubeconfig: str, cluster_name: str) -> None:
     clusterrolebindingname = username + '-role'
-    clusterroleaccess='view'
+    clusterroleaccess='edit'
     os.system("{} create serviceaccount --kubeconfig={} --cluster={} {} --namespace={}".format(kubectl_cmd, kubeconfig, cluster_name, username, namespace))
     os.system("{} create clusterrolebinding --kubeconfig={} --cluster={} {} --clusterrole={}  --serviceaccount={}:{} --namespace={}".format(kubectl_cmd, kubeconfig, cluster_name, clusterrolebindingname, clusterroleaccess, namespace, username, namespace))
 	
