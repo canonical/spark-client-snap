@@ -62,14 +62,15 @@ jobs:
           sudo usermod -a -G microk8s runner
           mkdir -p /home/runner/.kube
           newgrp microk8s
-          sudo microk8s config > /home/runner/.kube/config
+          sudo microk8s config > /home/runner/kubeconfig
           sudo chown -f -R runner /home/runner/.kube
+          sudo chown -f runner /home/runner/kubeconfig
           
           sudo snap connect spark-client:enable-kubeconfig-access
           # create the service account
           sudo snap run spark-client.setup-spark-k8s \
           service-account \
-          --kubeconfig /home/runner/.kube/config \
+          --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster    \
           canonical-spark  \
           default
@@ -77,7 +78,7 @@ jobs:
           # create the ca certificate
           sudo snap run spark-client.setup-spark-k8s \
           get-ca-cert \
-          --kubeconfig /home/runner/.kube/config \
+          --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster > /home/runner/ca.crt
           
           SECRET_NAME=$(kubectl get secrets | grep canonical-spark-token | cut -d' ' -f1)
@@ -85,7 +86,7 @@ jobs:
           # create the oauth token
           sudo snap run spark-client.setup-spark-k8s \
           get-token \
-          --kubeconfig /home/runner/.kube/config \ 
+          --kubeconfig /home/runner/kubeconfig \ 
           --cluster microk8s-cluster \ 
           $SECRET_NAME \
           > /home/runner/token
