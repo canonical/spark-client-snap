@@ -110,7 +110,7 @@ jobs:
           --deploy-mode cluster \
           --name spark-pi \
           --conf spark.kubernetes.authenticate.submission.caCertFile=$CA_CRT_FILE \
-          --conf spark.kubernetes.authenticate.submission.oauthTokenFile=$OAUTH_TOKEN_FILE \ 
+          --conf spark.kubernetes.authenticate.submission.oauthTokenFile=$OAUTH_TOKEN_FILE \
           --conf spark.executor.instances=2 \
           --conf spark.kubernetes.container.image=$SPARK_CONTAINER_IMAGE \
           --conf spark.kubernetes.container.image.pullPolicy=Always \
