@@ -81,17 +81,16 @@ jobs:
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster > /home/runner/ca.crt
           
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig create token canonical-spark --namespace default
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A
-          SECRETS=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A | grep canonical-spark)
-          SECRET_NAME=$(echo $SECRETS | cut -d' ' -f2)
+          sudo kubectl --kubeconfig=/home/runner/kubeconfig create token canonical-spark --namespace default > /home/runner/token
+          # SECRETS=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A | grep canonical-spark)
+          # SECRET_NAME=$(echo $SECRETS | cut -d' ' -f2)
           
-          # create the oauth token
-          spark-client.setup-spark-k8s \
-          get-token \
-          --kubeconfig /home/runner/kubeconfig \ 
-          --cluster microk8s-cluster \ 
-          $SECRET_NAME > /home/runner/token
+          # # create the oauth token
+          # spark-client.setup-spark-k8s \
+          # get-token \
+          # --kubeconfig /home/runner/kubeconfig \ 
+          # --cluster microk8s-cluster \ 
+          # $SECRET_NAME > /home/runner/token
           
 
       - name: Run example job
