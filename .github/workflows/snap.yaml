@@ -67,8 +67,11 @@ jobs:
           sudo chown -f runner /home/runner/kubeconfig
           
           sudo snap connect spark-client:enable-kubeconfig-access
+          
+          ls -l /home/runner/kubeconfig
+          
           # create the service account
-          sudo snap run spark-client.setup-spark-k8s \
+          spark-client.setup-spark-k8s \
           service-account \
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster    \
@@ -76,7 +79,7 @@ jobs:
           default
           
           # create the ca certificate
-          sudo snap run spark-client.setup-spark-k8s \
+          spark-client.setup-spark-k8s \
           get-ca-cert \
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster > /home/runner/ca.crt
@@ -84,7 +87,7 @@ jobs:
           SECRET_NAME=$(kubectl get secrets | grep canonical-spark-token | cut -d' ' -f1)
           
           # create the oauth token
-          sudo snap run spark-client.setup-spark-k8s \
+          spark-client.setup-spark-k8s \
           get-token \
           --kubeconfig /home/runner/kubeconfig \ 
           --cluster microk8s-cluster \ 
@@ -104,7 +107,7 @@ jobs:
           SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
           
           # run the sample pi job using spark-submit
-          sudo snap run spark-client.spark-submit \
+          spark-client.spark-submit \
           --master $K8S_MASTER_URL \
           --deploy-mode cluster \
           --name spark-pi \
