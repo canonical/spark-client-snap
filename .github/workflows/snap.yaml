@@ -84,7 +84,7 @@ jobs:
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster > /home/runner/ca.crt
           
-          SECRET_NAME=$(sudo kubectl get secrets | grep canonical-spark-token | cut -d' ' -f1)
+          SECRET_NAME=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets | grep canonical-spark-token | cut -d' ' -f1)
           
           # create the oauth token
           spark-client.setup-spark-k8s \
@@ -99,7 +99,7 @@ jobs:
         run: |
           sudo apt install -y docker.io
           
-          K8S_MASTER_URL=$(sudo kubectl config view -o jsonpath="{.clusters[0]['cluster.server']}")
+          K8S_MASTER_URL=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
           SPARK_CONTAINER_IMAGE='averma32/sparkpy6'
@@ -122,7 +122,7 @@ jobs:
           local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10000
           
           # Check job output
-          pi=$(sudo kubectl logs $(sudo kubectl get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+          pi=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig logs $(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
           echo -e "Spark Pi Job Output: \n ${pi}"
           if [ "${pi}" != "3.14" ]; then
               exit 1
