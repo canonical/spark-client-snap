@@ -11,7 +11,7 @@ sudo snap install spark-client
 Setup kubernetes service account for use with Spark client. Default namespace where user is created is ```default```.
 
 ```bash
-spark-client.setup-spark-k8s service-account  --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace]
+spark-client.setup-spark-k8s service-account --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace]
 ```
 
 Enable access for default kubeconfig file ($HOME/.kube/config)
@@ -35,6 +35,18 @@ spark-client.setup-spark-k8s get-ca-cert
 ```
 
 Save the CA certificate output in a file to be used with Spark client's spark-submit command.
+
+Next, dump out the Outh Token on screen for use with Spark client. 
+
+```bash
+spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig secretname > token
+```
+where secretname is one of the name entries in the output of 
+
+```bash
+kubectl get secrets
+```
+
 
 # Usage
 
@@ -63,6 +75,7 @@ The job submission would require
 K8S_MASTER_URL=<your K8s API server URL>
 APP_NAME=my_spark_app
 CA_CRT_FILE_PATH=</path/to/your/K8s API/CA Cert>
+OAUTH_TOKEN_FILE_PATH=</path/to/your/K8s API/Oauth Token>
 NUM_INSTANCES=5
 SPARK_K8S_CONTAINER_IMAGE_TAG=<your spark container image>
 PULL_POLICY=Always
@@ -78,6 +91,7 @@ S3_PATH_FOR_CODE_PY_FILE=</path/to/your/python_script.py>
 spark-client.spark-submit --master $K8S_MASTER_URL \
  --deploy-mode cluster --name $APP_NAME \
  --conf spark.kubernetes.authenticate.submission.caCertFile=$CA_CRT_FILE_PATH \
+ --conf spark.kubernetes.authenticate.submission.oauthTokenFile=$OAUTH_TOKEN_FILE_PATH \
  --conf spark.executor.instances=$NUM_INSTANCES \
  --conf spark.kubernetes.container.image=$SPARK_K8S_CONTAINER_IMAGE_TAG \
  --conf spark.kubernetes.container.image.pullPolicy=$PULL_POLICY \

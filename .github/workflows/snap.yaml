@@ -1,0 +1,139 @@
+name: Build Spark client snap and run tests
+
+env:
+  VERSION: 0.1
+  RELEASE: edge
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    name: Build Snap
+    runs-on: ubuntu-latest
+    outputs:
+      snap-file: ${{ steps.build-snap.outputs.snap }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: dev
+
+      - id: build-snap
+        name: Build snap
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/candidate
+
+      - name: Upload built snap job artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark_client_snap_amd64
+          path: spark_client_${{env.VERSION}}_amd64.snap
+
+  test:
+    name: Test Snap
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Download snap file
+        uses: actions/download-artifact@v3
+        with:
+          name: spark_client_snap_amd64
+          path: .
+
+      - name: Install snap file
+        run: |
+          sudo snap install spark_client_${{env.VERSION}}_amd64.snap --dangerous
+
+      - name: Setup Spark client
+        run: |
+          # connect interfaces
+          sudo snap connect spark-client:enable-kubeconfig-access
+          sudo snap connect spark-client:enable-scala-history
+          
+          # setup pre requisites
+          sudo snap install microk8s --classic
+          sudo usermod -a -G microk8s $USER
+          mkdir -p ~/.kube
+          microk8s config > ~/.kube/config
+          sudo chown -f -R $USER ~/.kube
+          microk8s status --wait-ready
+          sudo snap alias microk8s.kubectl kubectl
+          
+          # create the service account
+          sudo snap run spark-client.setup-spark-k8s \
+          service-account \
+          --kubeconfig ~/.kube/config \
+          --cluster microk8s-cluster    \
+          canonical-spark  \
+          default
+          
+          # create the ca certificate
+          sudo snap run spark-client.setup-spark-k8s \
+          get-ca-cert \
+          --kubeconfig ~/.kube/config \
+          --cluster microk8s-cluster > ~/ca.crt
+          
+          # create the oauth token
+          sudo snap run spark-client.setup-spark-k8s \
+          get-token \
+          --kubeconfig ~/.kube/config \ 
+          --cluster microk8s-cluster \ 
+          `kubectl get secrets | grep canonical-spark-token | cut -d' ' -f1` \
+          > ~/token
+          
+
+      - name: Run example job
+        run: |
+          export K8S_MASTER_URL=`kubectl config view -o jsonpath="{.clusters[0]['cluster.server']}"`
+          export CA_CRT_FILE='~/ca.crt'
+          export OAUTH_TOKEN_FILE='~/token'
+          export SPARK_CONTAINER_IMAGE='averma32/sparkpy6'
+          export SERVICE_ACCOUNT_NAME='canonical-spark'
+          export SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+          
+          # run the sample pi job using spark-submit
+          sudo snap run spark-client.spark-submit \
+          --master $K8S_MASTER_URL \
+          --deploy-mode cluster \
+          --name spark-pi \
+          --conf spark.kubernetes.authenticate.submission.caCertFile=$CA_CRT_FILE \
+          --conf spark.kubernetes.authenticate.submission.oauthTokenFile=$OAUTH_TOKEN_FILE \ 
+          --conf spark.executor.instances=2 \
+          --conf spark.kubernetes.container.image=$SPARK_CONTAINER_IMAGE \
+          --conf spark.kubernetes.container.image.pullPolicy=Always \
+          --conf spark.kubernetes.authenticate.driver.serviceAccountName=$SERVICE_ACCOUNT_NAME \
+          --conf spark.eventLog.enabled=false \
+          --class org.apache.spark.examples.SparkPi \
+          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10000
+          
+          # Check job output
+          pi=$(kubectl logs $(kubectl get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+          echo -e "Spark Pi Job Output: \n ${pi}"
+          if [ "${pi}" != "3.14" ]; then
+              exit 1
+          fi
+
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+      - name: Download snap file
+        uses: actions/download-artifact@v3
+        with:
+          name: spark_client_snap_amd64
+          path: .
+
+      - name: Publish snap to Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+        with:
+          snap: spark_client_${{env.VERSION}}_amd64.snap
+          release: ${{env.RELEASE}}
