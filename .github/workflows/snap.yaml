@@ -95,7 +95,7 @@ jobs:
 
       - name: Run example job
         run: |
-          sudo apt install -y docker.io
+          # sudo apt install -y docker.io
           
           K8S_MASTER_URL=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
