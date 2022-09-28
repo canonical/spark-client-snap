@@ -100,7 +100,7 @@ jobs:
           K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
-          SPARK_CONTAINER_IMAGE='averma32/sparkpy6'
+          SPARK_CONTAINER_IMAGE='docker.io/averma32/sparkpy6:latest'
           SERVICE_ACCOUNT_NAME='canonical-spark'
           SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
           
