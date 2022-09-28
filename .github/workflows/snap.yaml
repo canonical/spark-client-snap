@@ -68,15 +68,12 @@ jobs:
           
           sudo snap connect spark-client:enable-kubeconfig-access
           
-          ls -l /home/runner/kubeconfig
-          
           # create the service account
           spark-client.setup-spark-k8s \
           service-account \
           --kubeconfig /home/runner/kubeconfig \
-          --cluster microk8s-cluster    \
-          canonical-spark  \
-          default
+          --cluster microk8s-cluster \
+          canonical-spark
           
           # create the ca certificate
           spark-client.setup-spark-k8s \
@@ -91,8 +88,7 @@ jobs:
           get-token \
           --kubeconfig /home/runner/kubeconfig \ 
           --cluster microk8s-cluster \ 
-          $SECRET_NAME \
-          > /home/runner/token
+          $SECRET_NAME > /home/runner/token
           
 
       - name: Run example job
