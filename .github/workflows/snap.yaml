@@ -65,6 +65,7 @@ jobs:
           sudo microk8s config > ~/.kube/config
           sudo chown -f -R $USER ~/.kube
           
+          sudo snap connect spark-client:enable-kubeconfig-access
           # create the service account
           sudo snap run spark-client.setup-spark-k8s \
           service-account \
@@ -89,12 +90,8 @@ jobs:
           
 
       - name: Run example job
-        env:
-          DOCKER_USERNAME: ${{ secrets.DockerUserName }}
-          DOCKER_PASSWORD: ${{ secrets.DockerPassword }}
         run: |
           sudo apt install -y docker.io
-          docker login --username=${DOCKER_USERNAME} --password=${DOCKER_PASSWORD}
           
           export K8S_MASTER_URL=`kubectl config view -o jsonpath="{.clusters[0]['cluster.server']}"`
           export CA_CRT_FILE='~/ca.crt'
