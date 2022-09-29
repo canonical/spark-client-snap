@@ -62,42 +62,29 @@ jobs:
           sudo usermod -a -G microk8s runner
           mkdir -p /home/runner/.kube
           newgrp microk8s
-          sudo microk8s config > /home/runner/kubeconfig
+          sudo microk8s config > /home/runner/.kube/config
           sudo chown -f -R runner /home/runner/.kube
-          sudo chown -f runner /home/runner/kubeconfig
-          
-          sudo snap connect spark-client:enable-kubeconfig-access
+          sudo microk8s.enable dns
           
           # create the service account
           spark-client.setup-spark-k8s \
           service-account \
-          --kubeconfig /home/runner/kubeconfig \
+          --kubeconfig /home/runner/.kube/config \
           --cluster microk8s-cluster \
           spark
           
           # create the ca certificate
           spark-client.setup-spark-k8s \
           get-ca-cert \
-          --kubeconfig /home/runner/kubeconfig \
+          --kubeconfig /home/runner/.kube/config \
           --cluster microk8s-cluster > /home/runner/ca.crt
-          
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig create token spark --duration 24h > /home/runner/token
-          # SECRETS=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A | grep spark)
-          # SECRET_NAME=$(echo $SECRETS | cut -d' ' -f2)
-          
-          # # create the oauth token
-          # spark-client.setup-spark-k8s \
-          # get-token \
-          # --kubeconfig /home/runner/kubeconfig \ 
-          # --cluster microk8s-cluster \ 
-          # $SECRET_NAME > /home/runner/token
-          
+                    
+          # create the oauth token
+          sudo kubectl create token spark --duration 24h > /home/runner/token
 
       - name: Run example job
         run: |
-          sudo microk8s.enable dns
-          
-          K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
+          K8S_MASTER_URL=k8s://$(sudo kubectl config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
           SPARK_CONTAINER_IMAGE='docker.io/averma32/sparkpy6:latest'
@@ -119,21 +106,19 @@ jobs:
           --conf spark.kubernetes.driver.request.cores=100m \
           --conf spark.kubernetes.executor.request.cores=100m \
           --class org.apache.spark.examples.SparkPi \
-          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10 > /home/runner/job_output &
+          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10
           
-          sleep 600
-          
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods
-          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | grep driver | tail -n 1 | cut -d' ' -f1)
+          sudo kubectl get pods
+          DRIVER_JOB=$(sudo kubectl get pods | grep driver | tail -n 1 | cut -d' ' -f1)
           echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig logs ${DRIVER_JOB}
+          sudo kubectl logs ${DRIVER_JOB}
           
-          EXECUTOR_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | grep exec | tail -n 1 | cut -d' ' -f1)
+          EXECUTOR_JOB=$(sudo kubectl get pods | grep exec | tail -n 1 | cut -d' ' -f1)
           echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig describe pod ${EXECUTOR_JOB}
+          sudo kubectl describe pod ${EXECUTOR_JOB}
           
           # Check job output
-          pi=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig logs $(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+          pi=$(sudo kubectl logs $(sudo kubectl get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
           echo -e "Spark Pi Job Output: \n ${pi}"
           if [ "${pi}" != "3.14" ]; then
               exit 1
