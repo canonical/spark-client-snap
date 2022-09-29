@@ -121,7 +121,7 @@ jobs:
           --class org.apache.spark.examples.SparkPi \
           local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10000 > /home/runner/job_output &
           
-          sleep 60
+          sleep 600
           
           sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods
           DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)
