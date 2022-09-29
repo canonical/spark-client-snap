@@ -119,7 +119,7 @@ jobs:
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=$SERVICE_ACCOUNT_NAME \
           --conf spark.eventLog.enabled=false \
           --class org.apache.spark.examples.SparkPi \
-          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10000 > /home/runner/job_output &
+          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10 > /home/runner/job_output &
           
           sleep 600
           
