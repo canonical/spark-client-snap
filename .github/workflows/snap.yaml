@@ -96,6 +96,8 @@ jobs:
       - name: Run example job
         run: |
           # sudo apt install -y docker.io
+          sudo microk8s.disable dns
+          sudo microk8s.enable dns
           
           K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
