@@ -73,7 +73,7 @@ jobs:
           service-account \
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster \
-          canonical-spark
+          spark
           
           # create the ca certificate
           spark-client.setup-spark-k8s \
@@ -81,8 +81,8 @@ jobs:
           --kubeconfig /home/runner/kubeconfig \
           --cluster microk8s-cluster > /home/runner/ca.crt
           
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig create token canonical-spark --namespace default > /home/runner/token
-          # SECRETS=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A | grep canonical-spark)
+          sudo kubectl --kubeconfig=/home/runner/kubeconfig create token spark --duration 24h > /home/runner/token
+          # SECRETS=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get secrets -A | grep spark)
           # SECRET_NAME=$(echo $SECRETS | cut -d' ' -f2)
           
           # # create the oauth token
@@ -95,15 +95,13 @@ jobs:
 
       - name: Run example job
         run: |
-          # sudo apt install -y docker.io
-          sudo microk8s.disable dns
           sudo microk8s.enable dns
           
           K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/kubeconfig config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
           SPARK_CONTAINER_IMAGE='docker.io/averma32/sparkpy6:latest'
-          SERVICE_ACCOUNT_NAME='canonical-spark'
+          SERVICE_ACCOUNT_NAME='spark'
           SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
           
           # run the sample pi job using spark-submit
@@ -113,7 +111,7 @@ jobs:
           --name spark-pi \
           --conf spark.kubernetes.authenticate.submission.caCertFile=$CA_CRT_FILE \
           --conf spark.kubernetes.authenticate.submission.oauthTokenFile=$OAUTH_TOKEN_FILE \
-          --conf spark.executor.instances=2 \
+          --conf spark.executor.instances=1 \
           --conf spark.kubernetes.container.image=$SPARK_CONTAINER_IMAGE \
           --conf spark.kubernetes.container.image.pullPolicy=Always \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=$SERVICE_ACCOUNT_NAME \
