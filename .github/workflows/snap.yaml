@@ -126,6 +126,10 @@ jobs:
           echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
           sudo kubectl --kubeconfig=/home/runner/kubeconfig logs ${DRIVER_JOB}
           
+          EXECUTOR_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | grep exec | tail -n 1 | cut -d' ' -f1)
+          echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
+          sudo kubectl --kubeconfig=/home/runner/kubeconfig describe pod ${EXECUTOR_JOB}
+          
           # Check job output
           pi=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig logs $(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
           echo -e "Spark Pi Job Output: \n ${pi}"
