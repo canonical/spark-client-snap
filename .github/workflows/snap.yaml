@@ -124,7 +124,7 @@ jobs:
           sleep 600
           
           sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods
-          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)
+          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | grep driver | tail -n 1 | cut -d' ' -f1)
           echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
           sudo kubectl --kubeconfig=/home/runner/kubeconfig logs ${DRIVER_JOB}
           
