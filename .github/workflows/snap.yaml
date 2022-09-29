@@ -121,9 +121,12 @@ jobs:
           --class org.apache.spark.examples.SparkPi \
           local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10000 > /home/runner/job_output &
           
-          sleep 15
+          sleep 60
           
-          sudo kubectl --kubeconfig=/home/runner/kubeconfig logs $(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)
+          sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods
+          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)
+          echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
+          sudo kubectl --kubeconfig=/home/runner/kubeconfig logs ${DRIVER_JOB}
           
           # Check job output
           pi=$(sudo kubectl --kubeconfig=/home/runner/kubeconfig logs $(sudo kubectl --kubeconfig=/home/runner/kubeconfig get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
