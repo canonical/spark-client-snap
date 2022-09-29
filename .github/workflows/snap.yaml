@@ -80,11 +80,11 @@ jobs:
           --cluster microk8s-cluster > /home/runner/ca.crt
                     
           # create the oauth token
-          sudo kubectl create token spark --duration 24h > /home/runner/token
+          sudo kubectl --kubeconfig=/home/runner/.kube/config create token spark --duration 24h > /home/runner/token
 
       - name: Run example job
         run: |
-          K8S_MASTER_URL=k8s://$(sudo kubectl config view -o jsonpath="{.clusters[0]['cluster.server']}")
+          K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/.kube/config config view -o jsonpath="{.clusters[0]['cluster.server']}")
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
           SPARK_CONTAINER_IMAGE='docker.io/averma32/sparkpy6:latest'
@@ -108,38 +108,18 @@ jobs:
           --class org.apache.spark.examples.SparkPi \
           local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10
           
-          sudo kubectl get pods
-          DRIVER_JOB=$(sudo kubectl get pods | grep driver | tail -n 1 | cut -d' ' -f1)
+          sudo kubectl --kubeconfig=/home/runner/.kube/config get pods
+          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep driver | tail -n 1 | cut -d' ' -f1)
           echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
-          sudo kubectl logs ${DRIVER_JOB}
+          sudo kubectl --kubeconfig=/home/runner/.kube/config logs ${DRIVER_JOB}
           
-          EXECUTOR_JOB=$(sudo kubectl get pods | grep exec | tail -n 1 | cut -d' ' -f1)
+          EXECUTOR_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep exec | tail -n 1 | cut -d' ' -f1)
           echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
-          sudo kubectl describe pod ${EXECUTOR_JOB}
+          sudo kubectl --kubeconfig=/home/runner/.kube/config describe pod ${EXECUTOR_JOB}
           
           # Check job output
-          pi=$(sudo kubectl logs $(sudo kubectl get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+          pi=$(sudo kubectl --kubeconfig=/home/runner/.kube/config logs $(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
           echo -e "Spark Pi Job Output: \n ${pi}"
           if [ "${pi}" != "3.14" ]; then
               exit 1
           fi
-
-#  publish:
-#    name: publish
-#    runs-on: ubuntu-latest
-#    needs:
-#      - test
-#    steps:
-#      - name: Download snap file
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: spark-client_snap_amd64
-#          path: .
-#
-#      - name: Publish snap to Store
-#        uses: snapcore/action-publish@v1
-#        env:
-#          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
-#        with:
-#          snap: spark-client_${{env.VERSION}}_amd64.snap
-#          release: ${{env.RELEASE}}
