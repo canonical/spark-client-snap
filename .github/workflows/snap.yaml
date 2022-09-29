@@ -116,6 +116,8 @@ jobs:
           --conf spark.kubernetes.container.image.pullPolicy=Always \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=$SERVICE_ACCOUNT_NAME \
           --conf spark.eventLog.enabled=false \
+          --conf spark.kubernetes.driver.request.cores=100m \
+          --conf spark.kubernetes.executor.request.cores=100m \
           --class org.apache.spark.examples.SparkPi \
           local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10 > /home/runner/job_output &
           
