@@ -18,7 +18,7 @@ sudo snap install spark-client
 Setup kubernetes service account for use with Spark client. Default namespace where user is created is ```default```.
 
 ```bash
-spark-client.setup-spark-k8s service-account --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace]
+spark-client.setup-spark-k8s [--kubeconfig kubeconfig-file-name] [--cluster cluster-name-in-kubeconfig] service-account account-name [--namespace name-space]
 ```
 
 Enable access for default kubeconfig file ($HOME/.kube/config)
@@ -31,7 +31,7 @@ To write the CA certificate to a file for use with the Spark client, run the fol
 
 
 ```bash
-spark-client.setup-spark-k8s get-ca-cert --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig > ca.crt
+spark-client.setup-spark-k8s [--kubeconfig kubeconfig-file-name] [--cluster cluster-name-in-kubeconfig] get-ca-cert > ca.crt
 ```
 
 Or navigate the set of clusters in the default kubeconfig interactively to select the certificate of interest. 
@@ -44,7 +44,7 @@ spark-client.setup-spark-k8s get-ca-cert
 Save the CA certificate output in a file to be used with Spark client's spark-submit command. Next, save the Oauth Token for the service account to a file for use with Spark client. 
 
 ```bash
-spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace] > token
+spark-client.setup-spark-k8s [--kubeconfig kubeconfig-file-name] [--cluster cluster-name-in-kubeconfig] get-token account-name [--namespace name-space] > token
 ```
 
 # Usage
@@ -71,6 +71,7 @@ OAUTH_TOKEN_FILE_PATH=</path/to/your/K8s API/Oauth Token>
 NUM_INSTANCES=5
 SPARK_K8S_CONTAINER_IMAGE_TAG=<your spark container image>
 PULL_POLICY=Always
+NAMESPACE=<namespace for your spark K8s service account>
 K8S_SERVICE_ACCOUNT_FOR_SPARK=<your spark K8s service account>
 S3_ACCESS_KEY=<your s3 access key>
 S3_SECRET_KEY=<your s3 secret key>
@@ -87,6 +88,7 @@ spark-client.spark-submit --master $K8S_MASTER_URL \
  --conf spark.executor.instances=$NUM_INSTANCES \
  --conf spark.kubernetes.container.image=$SPARK_K8S_CONTAINER_IMAGE_TAG \
  --conf spark.kubernetes.container.image.pullPolicy=$PULL_POLICY \
+ --conf spark.kubernetes.namespace=$NAMESPACE \
  --conf spark.kubernetes.authenticate.driver.serviceAccountName=$K8S_SERVICE_ACCOUNT_FOR_SPARK \
  --conf spark.hadoop.fs.s3a.access.key=$S3_ACCESS_KEY \
  --conf spark.hadoop.fs.s3a.secret.key=$S3_SECRET_KEY \

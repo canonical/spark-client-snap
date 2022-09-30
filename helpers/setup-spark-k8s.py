@@ -85,7 +85,7 @@ def generate_token(serviceaccountname: str, namespace: str, kubeconfig: str, clu
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--kubeconfig", default='/home/{}/.kube/config'.format(os.getlogin()), help='Kubernetes configuration file')
+    parser.add_argument("--kubeconfig", default='no-kubeconfig-provided', help='Kubernetes configuration file')
     parser.add_argument("--cluster", default='no-cluster-provided', help='Cluster name to use within the provided kubernetes configuration file')
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
@@ -105,7 +105,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    kubeconfig = args.kubeconfig
+    if args.kubconfig != 'no-kubeconfig-provided':
+        kubeconfig = args.kubeconfig
+    else:
+        kubeconfig = '/home/{}/.kube/config'.format(os.getlogin())
+
     if args.cluster != 'no-cluster-provided':
         cluster_name = args.cluster
     else:
