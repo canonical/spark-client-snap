@@ -112,7 +112,7 @@ jobs:
           --conf spark.kubernetes.driver.request.cores=100m \
           --conf spark.kubernetes.executor.request.cores=100m \
           --class org.apache.spark.examples.SparkPi \
-          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 10
+          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
           
           sudo kubectl --kubeconfig=/home/runner/.kube/config get pods
           DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep driver | tail -n 1 | cut -d' ' -f1)
