@@ -55,6 +55,7 @@ To submit a Spark job to your Kubernetes cluster, you would require:
 - The ```K8S Service Account``` created during the installation phase or use if you already have one.
   - Make sure you do provide the correct ```K8S namespace``` for the service account as well
 - The ```CA certificate``` extracted during the installation phase. You will need the file name with CA cert contents.
+- The ```Outh Token``` generateed during the installation phase. Provide it as a file to the spark-submit command.
 - The ```S3 credentials and Endpoint``` need to be provided in case the data (and/or code) is placed in S3. 
 
 
@@ -160,4 +161,6 @@ Welcome to
 - In case executor pods fail to schedule due to insufficient CPU resources, make [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests
 - Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
 - Make sure the namespace provided to spark-submit is valid and the service account provided belongs to that namespace
+- The token used to submit spark job is valid for 1 hour after generation. You will need to regenerate a token for use on expiry.
 - This a strictly confined snap, so avoid having the certificate and the token files in special locations like /tmp etc. Home directory would be best to keep such files.
+- Please provide kubeconfig file explicitly and cluster name with setup command in snap. These are not optional parameters.
