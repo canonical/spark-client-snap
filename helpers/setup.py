@@ -41,7 +41,7 @@ def extract_ca_crt_from_kube_config(kubeconfig: str, cluster_name: str = None) -
 
 def setup_user(username: str, namespace: str, kubeconfig: str, cluster_name: str) -> None:
     clusterrolebindingname = username + '-role'
-    clusterroleaccess='edit'
+    clusterroleaccess='view'
     os.system("{} create serviceaccount --kubeconfig={} --cluster={} {} --namespace={}".format(kubectl_cmd, kubeconfig, cluster_name, username, namespace))
     os.system("{} create clusterrolebinding --kubeconfig={} --cluster={} {} --clusterrole={}  --serviceaccount={}:{} --namespace={}".format(kubectl_cmd, kubeconfig, cluster_name, clusterrolebindingname, clusterroleaccess, namespace, username, namespace))
 	
@@ -50,8 +50,9 @@ def dump_ca_crt(secretname: str, kubeconfig: str, cluster_name: str) -> None:
     os.system('{} get secret --kubeconfig={} --cluster={} {} -o jsonpath="{{.data.ca\.crt}}" | base64 --decode'.format(kubectl_cmd,  kubeconfig, cluster_name, secretname))
 
 
-def dump_token(secretname: str, kubeconfig: str, cluster_name: str) -> None:
-    os.system('{} get secret --kubeconfig={} --cluster={} {} -o jsonpath="{{.data.token}}" | base64 --decode'.format(kubectl_cmd,  kubeconfig, cluster_name, secretname))
+def dump_token(serviceaccountname: str, namespace: str, kubeconfig: str, cluster_name: str) -> None:
+    token_expiry_duration='24h' # NOTE: The server may return a token with a longer or shorter lifetime.
+    os.system('{} create token {} --namespace {} --duration {} --kubeconfig={} --cluster={}'.format(kubectl_cmd, serviceaccountname, namespace, token_expiry_duration, kubeconfig, cluster_name))
 
 if __name__ == "__main__":
 
@@ -117,10 +118,10 @@ if __name__ == "__main__":
 
     elif sys.argv[1] == 'get-token':
         if len(sys.argv) == 2 or sys.argv[2] == '-h' or sys.argv[2] == '--help':
-            print("Usage: setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig secretname > token\nsecretname is one of the output names of [kubectl get secrets]", file=sys.stderr)
+            print("Usage: setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace] > token", file=sys.stderr)
             sys.exit(-1)
 
-        if len(sys.argv) == 7:
+        if len(sys.argv) >= 7:
             if sys.argv[2] == '--kubeconfig' and sys.argv[4] == '--cluster':
                 kubeconfig = sys.argv[3]
                 cluster_name = sys.argv[5]
@@ -131,11 +132,12 @@ if __name__ == "__main__":
                 print("ERROR: Invalid Arguments.", file=sys.stderr)
                 sys.exit(-2)
 
-            secretname = sys.argv[6]
+            serviceaccountname = sys.argv[6]
+            namespace = sys.argv[7] if len(sys.argv) >= 8 else 'default'
         else:
             print("ERROR: Invalid Arguments.", file=sys.stderr)
             sys.exit(-2)
-        dump_token(secretname, kubeconfig, cluster_name)
+        dump_token(serviceaccountname, namespace, kubeconfig, cluster_name)
 
     else:
         print("ERROR: Invalid Arguments.", file=sys.stderr)

@@ -80,7 +80,11 @@ jobs:
           --cluster microk8s-cluster > /home/runner/ca.crt
                     
           # create the oauth token
-          sudo kubectl --kubeconfig=/home/runner/.kube/config create token spark --duration 24h > /home/runner/token
+          spark-client.setup-spark-k8s \
+          get-token \
+          --kubeconfig /home/runner/.kube/config \
+          --cluster microk8s-cluster \
+          spark > /home/runner/token
 
       - name: Run example job
         run: |
@@ -88,6 +92,7 @@ jobs:
           CA_CRT_FILE='/home/runner/ca.crt'
           OAUTH_TOKEN_FILE='/home/runner/token'
           SPARK_CONTAINER_IMAGE='docker.io/averma32/sparkpy6:latest'
+          NAMESPACE='default'
           SERVICE_ACCOUNT_NAME='spark'
           SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
           
@@ -101,6 +106,7 @@ jobs:
           --conf spark.executor.instances=1 \
           --conf spark.kubernetes.container.image=$SPARK_CONTAINER_IMAGE \
           --conf spark.kubernetes.container.image.pullPolicy=Always \
+          --conf spark.kubernetes.namespace=$NAMESPACE \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=$SERVICE_ACCOUNT_NAME \
           --conf spark.eventLog.enabled=false \
           --conf spark.kubernetes.driver.request.cores=100m \

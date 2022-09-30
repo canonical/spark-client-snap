@@ -39,7 +39,7 @@ Save the CA certificate output in a file to be used with Spark client's spark-su
 Next, dump out the Outh Token on screen for use with Spark client. 
 
 ```bash
-spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig secretname > token
+spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace] > token
 ```
 where secretname is one of the name entries in the output of 
 

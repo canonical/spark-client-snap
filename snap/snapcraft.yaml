@@ -18,12 +18,14 @@ plugs:
     read:
     - $HOME/.kube/config
 
+environment:
+  JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
+  PATH: $JAVA_HOME/bin:$PATH
+
 apps:
   setup-spark-k8s:
     command: ops/setup_wrapper.sh
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
       OPS_ROOT: ${SNAP}/ops
     plugs:
@@ -32,35 +34,23 @@ apps:
         - enable-kubeconfig-access
   spark-submit:
     command: bin/spark-submit
-    environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
     plugs:
         - network
-        - network-bind
-        - network-control
         - home
   spark-shell:
     command: bin/spark-shell
-    environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
     plugs:
         - network
         - network-bind
-        - network-control
         - home
         - enable-scala-history
   pyspark:
     command: bin/pyspark
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
     plugs:
         - network
         - network-bind
-        - network-control
         - home
 
 parts:
