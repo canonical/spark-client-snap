@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.kubconfig != 'no-kubeconfig-provided':
+    if args.kubeconfig != 'no-kubeconfig-provided':
         kubeconfig = args.kubeconfig
     else:
         kubeconfig = '/home/{}/.kube/config'.format(os.getlogin())
