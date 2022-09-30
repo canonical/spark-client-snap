@@ -1,5 +1,6 @@
 # Description
-The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
+This repository hosts the source for ```spark-client``` snap. 
+The ```spark-client``` snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing ```Apache Spark``` jobs for ```Kubernetes```.
 
 # Installation and setup for Spark on Kubernetes
 Install the spark client snap.
@@ -34,19 +35,11 @@ Default kubeconfig file is $HOME/.kube/config
 spark-client.setup-spark-k8s get-ca-cert
 ```
 
-Save the CA certificate output in a file to be used with Spark client's spark-submit command.
-
-Next, dump out the Outh Token on screen for use with Spark client. 
+Save the CA certificate output in a file to be used with Spark client's spark-submit command. Next, save the Outh Token for the service account to a file for use with Spark client. 
 
 ```bash
 spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace] > token
 ```
-where secretname is one of the name entries in the output of 
-
-```bash
-kubectl get secrets
-```
-
 
 # Usage
 
@@ -56,20 +49,16 @@ You can get started right away with [Microk8s](https://microk8s.io) - the mighti
 You can install MicroK8s on your Ubuntu laptop, workstation, or nodes in your workgroup or server cluster with 
 just one command - `snap install microk8s --classic`. Learn more at [microk8s.io](https://microk8s.io)
 
-To submit a Spark job to your Kubernetes cluster, run the following commands:
-
-First figure out the K8s API server URL
-```bash
-kubectl cluster-info
-```
-
-The job submission would require 
-- [```TBD```] The ```Spark Container Image``` to be used for job execution. 
-  - Canonical provided default image will be used if option is skipped. 
+To submit a Spark job to your Kubernetes cluster, you would require:
+- The ```Kubernetes Master or Control Plane URL```. Please use ```kubectl cluster-info``` to figure that out
+- The ```Spark Container Image``` to be used for job execution. 
 - The ```K8S Service Account``` created during the installation phase or use if you already have one.
+  - Make sure you do provide the correct ```K8S namespace``` for the service account as well
 - The ```CA certificate``` extracted during the installation phase. You will need the file name with CA cert contents.
 - The ```S3 credentials and Endpoint``` need to be provided in case the data (and/or code) is placed in S3. 
 
+
+Please execute the following commands to submit your Spark job in cluster mode to Kubernetes.
 
 ```bash
 K8S_MASTER_URL=<your K8s API server URL>
@@ -107,7 +96,7 @@ spark-client.spark-submit --master $K8S_MASTER_URL \
 ```
 
 ## Interactive Spark Shell 
-If you intend to spark-shell, please enable the scala history file write access.
+If you intend to use spark-shell, please enable the scala history file write access.
 
 ```bash
 snap connect spark-client:enable-scala-history
@@ -163,3 +152,12 @@ Welcome to
 >>> count = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
 >>> print("Pi is roughly %f" % (4.0 * count / n))
 ```
+
+# Common Gotchas!
+- For spark-submit to work correctly, make sure DNS is enabled.
+  - For example, if you are working with ```microk8s```, please run ```microk8s enable dns``` before submitting the spark job
+- Double-check the K8S Master url, it has a prefix something like k8s://https://
+- In case executor pods fail to schedule due to insufficient CPU resources, make [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests
+- Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
+- Make sure the namespace provided to spark-submit is valid and the service account provided belongs to that namespace
+- This a strictly confined snap, so avoid having the certificate and the token files in special locations like /tmp etc. Home directory would be best to keep such files.
