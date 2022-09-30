@@ -68,22 +68,22 @@ jobs:
           
           # create the service account
           spark-client.setup-spark-k8s \
-          service-account \
           --kubeconfig /home/runner/.kube/config \
           --cluster microk8s-cluster \
+          service-account \
           spark
           
           # create the ca certificate
           spark-client.setup-spark-k8s \
-          get-ca-cert \
           --kubeconfig /home/runner/.kube/config \
-          --cluster microk8s-cluster > /home/runner/ca.crt
+          --cluster microk8s-cluster \
+          get-ca-cert > /home/runner/ca.crt
                     
           # create the oauth token
           spark-client.setup-spark-k8s \
-          get-token \
           --kubeconfig /home/runner/.kube/config \
           --cluster microk8s-cluster \
+          get-token \
           spark > /home/runner/token
 
       - name: Run example job

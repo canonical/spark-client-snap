@@ -98,7 +98,7 @@ parts:
       
       rm -rf "${target_dir}"
       mkdir -p "${target_dir}"
-      cp setup.py "${target_dir}"/
+      cp setup-spark-k8s.py "${target_dir}"/
       cp setup_wrapper.sh "${target_dir}"/
       chmod +x "${target_dir}"/setup_wrapper.sh
       

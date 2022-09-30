@@ -1,6 +1,12 @@
 # Description
-This repository hosts the source for ```spark-client``` snap. 
-The ```spark-client``` snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing ```Apache Spark``` jobs for ```Kubernetes```.
+
+Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster. 
+You can get started right away with [Microk8s](https://microk8s.io) - the mightiest tiny Kubernetes distro around! 
+You can install MicroK8s on your Ubuntu laptop, workstation, or nodes in your workgroup or server cluster with 
+just one command - `snap install microk8s --classic`. Learn more at [microk8s.io](https://microk8s.io)
+
+This repository hosts the source for ***spark-client*** snap. 
+The ***spark-client*** snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing **Apache Spark** jobs for ***Kubernetes***.
 
 # Installation and setup for Spark on Kubernetes
 Install the spark client snap.
@@ -21,7 +27,7 @@ Enable access for default kubeconfig file ($HOME/.kube/config)
 snap connect spark-client:enable-kubeconfig-access
 ```
 
-Dump out the CA certificate on screen for use with Spark client. 
+To write the CA certificate to a file for use with the Spark client, run the following command:
 
 
 ```bash
@@ -35,7 +41,7 @@ Default kubeconfig file is $HOME/.kube/config
 spark-client.setup-spark-k8s get-ca-cert
 ```
 
-Save the CA certificate output in a file to be used with Spark client's spark-submit command. Next, save the Outh Token for the service account to a file for use with Spark client. 
+Save the CA certificate output in a file to be used with Spark client's spark-submit command. Next, save the Oauth Token for the service account to a file for use with Spark client. 
 
 ```bash
 spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --cluster cluster-name-in-kubeconfig account-name [namespace] > token
@@ -44,19 +50,15 @@ spark-client.setup-spark-k8s get-token --kubeconfig kubeconfig-file-name --clust
 # Usage
 
 ## Submit Spark Job
-Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster. 
-You can get started right away with [Microk8s](https://microk8s.io) - the mightiest tiny Kubernetes distro around! 
-You can install MicroK8s on your Ubuntu laptop, workstation, or nodes in your workgroup or server cluster with 
-just one command - `snap install microk8s --classic`. Learn more at [microk8s.io](https://microk8s.io)
 
 To submit a Spark job to your Kubernetes cluster, you would require:
-- The ```Kubernetes Master or Control Plane URL```. Please use ```kubectl cluster-info``` to figure that out
-- The ```Spark Container Image``` to be used for job execution. 
-- The ```K8S Service Account``` created during the installation phase or use if you already have one.
-  - Make sure you do provide the correct ```K8S namespace``` for the service account as well
-- The ```CA certificate``` extracted during the installation phase. You will need the file name with CA cert contents.
-- The ```Outh Token``` generateed during the installation phase. Provide it as a file to the spark-submit command.
-- The ```S3 credentials and Endpoint``` need to be provided in case the data (and/or code) is placed in S3. 
+- The *Kubernetes Master or Control Plane URL*. Please use ```kubectl cluster-info``` to figure that out
+- The *Spark Container Image* to be used for job execution. 
+- The *K8S Service Account* created during the installation phase or use if you already have one.
+  - Make sure you do provide the correct *K8S namespace* for the service account as well
+- The *CA certificate* extracted during the installation phase. You will need the file name with CA cert contents.
+- The *OAuth Token* generateed during the installation phase. Provide it as a file to the spark-submit command.
+- The *S3 credentials and Endpoint* need to be provided in case the data (and/or code) is placed in S3. 
 
 
 Please execute the following commands to submit your Spark job in cluster mode to Kubernetes.
@@ -156,11 +158,9 @@ Welcome to
 
 # Common Gotchas!
 - For spark-submit to work correctly, make sure DNS is enabled.
-  - For example, if you are working with ```microk8s```, please run ```microk8s enable dns``` before submitting the spark job
+  - For example, if you are working with *microk8s*, please run ```microk8s enable dns``` before submitting the spark job
 - Double-check the K8S Master url, it has a prefix something like k8s://https://
 - In case executor pods fail to schedule due to insufficient CPU resources, make [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests
 - Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
-- Make sure the namespace provided to spark-submit is valid and the service account provided belongs to that namespace
+- Make sure the namespace provided to spark-submit is valid and the service account provided belongs to that namespace. To keep it simple, use the setup-spark-k8s script to create the account.
 - The token used to submit spark job is valid for 1 hour after generation. You will need to regenerate a token for use on expiry.
-- This a strictly confined snap, so avoid having the certificate and the token files in special locations like /tmp etc. Home directory would be best to keep such files.
-- Please provide kubeconfig file explicitly and cluster name with setup command in snap. These are not optional parameters.

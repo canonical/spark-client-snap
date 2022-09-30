@@ -114,16 +114,16 @@ if __name__ == "__main__":
     if args.action == 'service-account':
         username=args.username
         namespace = args.namespace
-        print ('kubeconfig={} cluster={} username={}, namespace={}'.format(kubeconfig, cluster_name, username, namespace))
-        # setup_user(username, namespace, kubeconfig, cluster_name)
+        # print ('kubeconfig={} cluster={} username={}, namespace={}'.format(kubeconfig, cluster_name, username, namespace))
+        setup_user(username, namespace, kubeconfig, cluster_name)
     elif args.action == 'get-ca-cert':
-        print ('kubeconfig={} cluster={}'.format(kubeconfig, cluster_name))
-        # try:
-        #     extract_ca_crt_from_kube_config(kubeconfig, cluster_name)
-        # except IOError as e:
-        #     print_help_for_missing_or_inaccessible_kubeconfig_file()
+        # print ('kubeconfig={} cluster={}'.format(kubeconfig, cluster_name))
+        try:
+            extract_ca_crt_from_kube_config(kubeconfig, cluster_name)
+        except IOError as e:
+            print_help_for_missing_or_inaccessible_kubeconfig_file()
     elif args.action == 'get-token':
         serviceaccountname=args.serviceaccount
         namespace = args.namespace
-        print ('kubeconfig={} cluster={} serviceaccount={}, namespace={}'.format(kubeconfig, cluster_name, serviceaccountname, namespace))
-        # generate_token(serviceaccountname, namespace, kubeconfig, cluster_name)
+        # print ('kubeconfig={} cluster={} serviceaccount={}, namespace={}'.format(kubeconfig, cluster_name, serviceaccountname, namespace))
+        generate_token(serviceaccountname, namespace, kubeconfig, cluster_name)
