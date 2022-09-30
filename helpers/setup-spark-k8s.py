@@ -7,7 +7,7 @@ kubectl_cmd='{}/kubectl'.format(os.environ['SNAP'])
 
 def print_help_for_missing_or_inaccessible_kubeconfig_file():
     print('\nERROR: Bad kubeconfig file. Or default kubeconfig file /home/{}/.kube/config not found.'.format(os.getlogin()))
-    print('\n\n')
+    print('\n')
     print('Looks like either kubernetes is not setup properly or default kubeconfig file is not accessible!')
     print('Please take the following remedial actions.')
     print('	1. Please setup kubernetes and make sure kubeconfig file is available, accessible and correct.')
@@ -30,6 +30,7 @@ def try_extract_default_cluster_from_kubeconfig(kubeconfig: str) -> str:
         cluster_name = extract_default_cluster_from_kubeconfig(kubeconfig)
     except IOError as e:
         print_help_for_missing_or_inaccessible_kubeconfig_file()
+        sys.exit(-300)
     return cluster_name
 
 def extract_ca_crt_from_kube_config(kubeconfig: str, cluster_name: str = None) -> None:
@@ -126,6 +127,7 @@ if __name__ == "__main__":
             extract_ca_crt_from_kube_config(kubeconfig, cluster_name)
         except IOError as e:
             print_help_for_missing_or_inaccessible_kubeconfig_file()
+            sys.exit(-400)
     elif args.action == 'get-token':
         serviceaccountname=args.serviceaccount
         namespace = args.namespace
