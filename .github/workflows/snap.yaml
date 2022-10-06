@@ -30,7 +30,7 @@ jobs:
         name: Read last published stable version
         uses: juliangruber/read-file-action@v1
         with:
-          path: ../../VERSION
+          path: ./VERSION
       - id: latest-version
         name: Check latest stable version available for download
         run: |
@@ -197,7 +197,7 @@ jobs:
       - name: Record the published version
         uses: DamianReeves/write-file-action@master
         with:
-          path: ../../VERSION
+          path: ./VERSION
           write-mode: overwrite
           contents: |
             ${{ env.LATEST_STABLE_SPARK_VERSION }}
