@@ -21,6 +21,11 @@ jobs:
     outputs:
       decision: ${{ steps.latest-version.outputs.decision }}
     steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: dev
       - id: published-version
         name: Read last published stable version
         uses: juliangruber/read-file-action@v1
