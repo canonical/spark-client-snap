@@ -26,7 +26,7 @@ optional arguments:
   --cluster CLUSTER     Cluster name to use within the provided kubernetes configuration file
 ```
 
-As you would have noticeed, all of these commands can take following optional parameters.
+As you would have noticed, all of these commands can take following optional parameters.
 * ***kubeconfig*** - Kubernetes configuration file. If not provided, ```$HOME/.kube/config``` is used by default
 * ***cluster*** - For multi cluster Kubernetes deployments, Kubernetes configuration file will have multiple cluster entries. This parameter specifies which cluster name to pick from the configuration.
 
