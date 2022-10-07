@@ -33,10 +33,14 @@ apps:
         - home
         - enable-kubeconfig-access
   spark-submit:
-    command: bin/spark-submit
+    command: ops/submit_wrapper.sh
+    environment:
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
         - home
+        - enable-kubeconfig-access
   spark-shell:
     command: bin/spark-shell
     plugs:
@@ -101,6 +105,9 @@ parts:
       cp setup-spark-k8s.py "${target_dir}"/
       cp setup_wrapper.sh "${target_dir}"/
       chmod +x "${target_dir}"/setup_wrapper.sh
+      cp spark-submit.py "${target_dir}"/
+      cp submit_wrapper.sh "${target_dir}"/
+      chmod +x "${target_dir}"/submit_wrapper.sh
       
       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
