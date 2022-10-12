@@ -8,7 +8,7 @@ import subprocess
 if __name__ == "__main__":
     os.environ["HOME"] = pwd.getpwuid(os.getuid())[5]
 
-    if not os.environ['SPARK_HOME']:
+    if os.environ.get('SPARK_HOME') is None:
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
     submit_args = sys.argv[1:]
