@@ -24,7 +24,7 @@ environment:
 
 apps:
   setup-spark-k8s:
-    command: ops/setup_wrapper.sh
+    command: ops/setup-spark-k8s.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
       OPS_ROOT: ${SNAP}/ops
@@ -33,7 +33,7 @@ apps:
         - home
         - enable-kubeconfig-access
   spark-submit:
-    command: ops/submit_wrapper.sh
+    command: ops/spark-submit.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
       OPS_ROOT: ${SNAP}/ops
@@ -114,11 +114,12 @@ parts:
       rm -rf "${target_dir}"
       mkdir -p "${target_dir}"
       cp setup-spark-k8s.py "${target_dir}"/
-      cp setup_wrapper.sh "${target_dir}"/
-      chmod +x "${target_dir}"/setup_wrapper.sh
+      chmod 755 "${target_dir}"/setup-spark-k8s.py
       cp spark-submit.py "${target_dir}"/
-      cp submit_wrapper.sh "${target_dir}"/
-      chmod +x "${target_dir}"/submit_wrapper.sh
+      chmod 755 "${target_dir}"/spark-submit.py
+      
+      mkdir -p "$SNAPCRAFT_PRIME/conf"
+      cp spark-defaults.conf "$SNAPCRAFT_PRIME/conf/"
       
       curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
