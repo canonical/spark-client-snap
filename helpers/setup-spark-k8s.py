@@ -31,22 +31,34 @@ def try_extract_default_context_from_kubeconfig(kubeconfig: str) -> str:
 
 
 def extract_default_namespace_from_kube_config(kubeconfig: str) -> None:
+    default_namespace = 'default'
     with open(kubeconfig) as f:
         kube_cfg = yaml.safe_load(f)
         context_names = [n['name'] for n in kube_cfg['contexts']]
-        namespaces = [n['context']['namespace'] for n in kube_cfg['contexts']]
+        try:
+            namespaces = [n['context']['namespace'] for n in kube_cfg['contexts']]
+        except KeyError:
+            return default_namespace
 
         if len(context_names) > 1:
             try:
                 context_id = context_names.index(kube_cfg['current-context'])
             except ValueError:
-                return 'default'
+                return default_namespace
         elif len(context_names) == 1:
             context_id = 0
         else:
-            return 'default'
+            return default_namespace
 
         return namespaces[int(context_id)]
+
+def try_extract_default_namespace_from_kube_config(kubeconfig: str) -> str:
+    try:
+        namespace = extract_default_namespace_from_kube_config(kubeconfig)
+    except IOError as e:
+        return 'default'
+
+    return namespace
 
 def extract_ca_crt_from_kube_config(kubeconfig: str, context_name: str = None) -> None:
     with open(kubeconfig) as f:
@@ -99,7 +111,7 @@ def generate_token(serviceaccountname: str, namespace: str, kubeconfig: str, con
 if __name__ == "__main__":
 
     default_kubeconfig = '{}/.kube/config'.format(pwd.getpwuid(os.getuid())[5])
-    default_namespace = extract_default_namespace_from_kube_config(default_kubeconfig)
+    default_namespace = try_extract_default_namespace_from_kube_config(default_kubeconfig)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--kubeconfig", default=None, help='Kubernetes configuration file')
