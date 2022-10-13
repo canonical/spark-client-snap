@@ -29,6 +29,25 @@ def try_extract_default_context_from_kubeconfig(kubeconfig: str) -> str:
         sys.exit(-300)
     return context_name
 
+
+def extract_default_namespace_from_kube_config(kubeconfig: str) -> None:
+    with open(kubeconfig) as f:
+        kube_cfg = yaml.safe_load(f)
+        context_names = [n['name'] for n in kube_cfg['contexts']]
+        namespaces = [n['context']['namespace'] for n in kube_cfg['contexts']]
+
+        if len(context_names) > 1:
+            try:
+                context_id = context_names.index(kube_cfg['current-context'])
+            except ValueError:
+                return 'default'
+        elif len(context_names) == 1:
+            context_id = 0
+        else:
+            return 'default'
+
+        return namespaces[int(context_id)]
+
 def extract_ca_crt_from_kube_config(kubeconfig: str, context_name: str = None) -> None:
     with open(kubeconfig) as f:
         kube_cfg = yaml.safe_load(f)
@@ -79,6 +98,9 @@ def generate_token(serviceaccountname: str, namespace: str, kubeconfig: str, con
 
 if __name__ == "__main__":
 
+    default_kubeconfig = '{}/.kube/config'.format(pwd.getpwuid(os.getuid())[5])
+    default_namespace = extract_default_namespace_from_kube_config(default_kubeconfig)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--kubeconfig", default=None, help='Kubernetes configuration file')
     parser.add_argument("--context", default=None, help='Context name to use within the provided kubernetes configuration file')
@@ -88,7 +110,7 @@ if __name__ == "__main__":
     #  subparser for service-account
     parser_account = subparsers.add_parser('service-account')
     parser_account.add_argument('--username', default='spark', help='Service account username to be created in kubernetes. Default is spark')
-    parser_account.add_argument('--namespace', default='default', help='Namespace for the service account to be created in kubernetes. Default is default namespace')
+    parser_account.add_argument('--namespace', default=default_namespace, help='Namespace for the service account to be created in kubernetes. Default is default namespace')
 
     #  subparser for CA certificate
     parser_certificate = subparsers.add_parser('get-ca-cert')
@@ -96,14 +118,14 @@ if __name__ == "__main__":
     #  subparser for OAuth token
     parser_token = subparsers.add_parser('get-token')
     parser_token.add_argument('--serviceaccount', default='spark', help='Service account name for which the Oauth token is to be fetched. Default is spark account.')
-    parser_token.add_argument('--namespace', default='default', help='Namespace for the service account for which the Oauth token is to be fetched. Default is default namespace')
+    parser_token.add_argument('--namespace', default=default_namespace, help='Namespace for the service account for which the Oauth token is to be fetched. Default is default namespace')
 
     args = parser.parse_args()
 
     if args.kubeconfig is not None:
         kubeconfig = args.kubeconfig
     else:
-        kubeconfig = '{}/.kube/config'.format(pwd.getpwuid(os.getuid())[5])
+        kubeconfig = default_kubeconfig
 
     if args.context is not None:
         context_name = args.context
