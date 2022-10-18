@@ -16,7 +16,7 @@ def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str):
     print('Looks like either kubernetes is not set up properly or default kubeconfig file is not accessible!')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:enable-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
 
 def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print('\nERROR: Invalid or incomplete kubeconfig file {}. One or more of the following entries might be missing or invalid.\n'.format(kubeconfig))
@@ -29,7 +29,7 @@ def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print(' - cluster.certificate-authority-data')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:enable-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
 
 def select_context_id(kube_cfg: Dict) -> int:
     NO_CONTEXT = -1
@@ -101,16 +101,6 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
     os.system(f"{KUBECTL_CMD} create serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} create rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} --role={roleaccess}  --serviceaccount={namespace}:{username} --namespace={namespace}")
 
-def print_cert(defaults: Dict) -> None:
-    cert_encoded = defaults['cert']
-    os.system(f'\n\necho {cert_encoded} | base64 --decode')
-
-def generate_token(serviceaccountname: str, name_space: str, defaults: Dict) -> None:
-    namespace = name_space or defaults['namespace']
-    kubeconfig = defaults['config']
-    context_name = defaults['context']
-    os.system(f'{KUBECTL_CMD} create token {serviceaccountname} --namespace {namespace} --kubeconfig={kubeconfig} --context={context_name}')
-
 if __name__ == "__main__":
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
     DEFAULT_KUBECONFIG = f'{USER_HOME_DIR}/.kube/config'
@@ -126,26 +116,11 @@ if __name__ == "__main__":
     parser_account.add_argument('--username', default='spark', help='Service account username to be created in kubernetes. Default is spark')
     parser_account.add_argument('--namespace', default=None, help='Namespace for the service account to be created in kubernetes. Default is default namespace')
 
-    #  subparser for CA certificate
-    parser_certificate = subparsers.add_parser('get-ca-cert')
-
-    #  subparser for OAuth token
-    parser_token = subparsers.add_parser('get-token')
-    parser_token.add_argument('--username', default='spark', help='Service account name for which the Oauth token is to be fetched. Default is spark account.')
-    parser_token.add_argument('--namespace', default=None, help='Namespace for the service account for which the Oauth token is to be fetched. Default is default namespace')
-
     args = parser.parse_args()
 
     defaults = get_defaults_from_kubeconfig(args.kubeconfig or DEFAULT_KUBECONFIG, args.context)
-    print(defaults)
-
+    
     if args.action == 'service-account':
         username = args.username
         namespace = args.namespace or defaults['namespace']
         set_up_user(username, namespace, defaults)
-    elif args.action == 'get-ca-cert':
-        print_cert(defaults)
-    elif args.action == 'get-token':
-        username = args.username
-        namespace = args.namespace or defaults['namespace']
-        generate_token(username, namespace, defaults)

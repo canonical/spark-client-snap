@@ -9,11 +9,11 @@ grade: stable
 confinement: strict
 
 plugs:
-  enable-scala-history:
+  dot-scala-history:
     interface: personal-files
     write:
     - $HOME/.scala_history
-  enable-kubeconfig-access:
+  dot-kubeconfig-access:
     interface: personal-files
     read:
     - $HOME/.kube/config
@@ -31,7 +31,7 @@ apps:
     plugs:
         - network
         - home
-        - enable-kubeconfig-access
+        - dot-kubeconfig-access
   spark-submit:
     command: ops/spark-submit.py
     environment:
@@ -40,14 +40,14 @@ apps:
     plugs:
         - network
         - home
-        - enable-kubeconfig-access
+        - dot-kubeconfig-access
   spark-shell:
     command: bin/spark-shell
     plugs:
         - network
         - network-bind
         - home
-        - enable-scala-history
+        - dot-scala-history
   pyspark:
     command: bin/pyspark
     environment:
