@@ -98,8 +98,11 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
 
     rolebindingname = username + '-role'
     roleaccess='view'
+    label = 'app.kubernetes.io/managed-by=spark-client'
     os.system(f"{KUBECTL_CMD} create serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} create rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} --role={roleaccess}  --serviceaccount={namespace}:{username} --namespace={namespace}")
+    os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} --namespace={namespace}")
+    os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
 
 if __name__ == "__main__":
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]

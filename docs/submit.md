@@ -60,24 +60,24 @@ These configuration parameters and others can be provided via a ```spark-default
 For example, with a ```spark-defaults.conf``` similar to provided below for reference, we can make the submit command much simpler.
 
 ```
-spark.master=k8s://https://192.168.1.33:16443
-spark.kubernetes.context=myk8scontext
-spark.app.name=my-pyspark-app
-spark.executor.instances=5
-spark.kubernetes.container.image=docker.io/dummy/hellospark:latest
-spark.kubernetes.container.image.pullPolicy=Never
-spark.kubernetes.namespace=default
-spark.kubernetes.authenticate.driver.serviceAccountName=spark
+spark.master=k8s://https://<MY_K8S_CONTROL_PLANE_HOST_IP>:<MY_K8S_CONTROL_PLANE_PORT>
+spark.kubernetes.context=<PREFERRED_K8S_CONTEXT>
+spark.app.name=<SPARK_APP_NAME>
+spark.executor.instances=<NUM_INSTANCES>
+spark.kubernetes.container.image=<CONTAINER_IMAGE_PUBLIC_REF>
+spark.kubernetes.container.image.pullPolicy=<PULL_POLICY>
+spark.kubernetes.namespace=<NAMESPACE_OF_PREFERRED_SERVICEACCOUNT>
+spark.kubernetes.authenticate.driver.serviceAccountName=<PREFERRED_SERVICEACCOUNT>
 spark.eventLog.enabled=false
-spark.hadoop.fs.s3a.access.key=zCnZHpNlQkYeL19B
-spark.hadoop.fs.s3a.secret.key=sUscTO0TpvzQHJtiTHPdRqIXlT0fhRzy
+spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY>
+spark.hadoop.fs.s3a.secret.key=s<S3_SECRET_KEY>
 spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
-spark.hadoop.fs.s3a.endpoint=http://192.168.1.35:9000
+spark.hadoop.fs.s3a.endpoint=<S3_ENDPOINT_URI>
 spark.hadoop.fs.s3a.connection.ssl.enabled=false
 spark.hadoop.fs.s3a.path.style.access=true
 ```
 
-With the above configuration file placed appropriately, the submit command becomes quite simple.
+With a valid configuration file placed appropriately, the submit command becomes quite simple.
 
 ```bash
 spark-client.spark-submit --deploy-mode cluster $S3_PATH_FOR_CODE_PY_FILE

@@ -39,11 +39,6 @@ jobs:
           LATEST_STABLE_SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
           CURRENT_PUBLISHED_VERSION=${{ steps.published-version.outputs.content }}
           STATUSCODE=$(curl --silent --head https://downloads.apache.org/spark/${LATEST_STABLE_SPARK_VERSION}/${LATEST_STABLE_SPARK_VERSION}-bin-hadoop3.tgz | head -n 1 | cut -d' ' -f2)
-          echo "====================================="
-          echo ~${LATEST_STABLE_SPARK_VERSION}~
-          echo ~${CURRENT_PUBLISHED_VERSION}~
-          echo ~${STATUSCODE}~
-          echo "====================================="
           if  [[ ${LATEST_STABLE_SPARK_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
             then 
               echo "::set-output name=decision::1"
