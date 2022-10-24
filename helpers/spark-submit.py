@@ -35,7 +35,9 @@ if __name__ == "__main__":
         for c in args.conf:
             try:
                 kv = c.split('=')
-                conf[kv[0]] = os.environ.get(kv[1], kv[1])
+                k = kv[0]
+                v = '='.join(kv[1:])
+                conf[k] = os.environ.get(v, v)
             except IndexError as e:
                 logging.error('Configuration related arguments parsing error. Please check input arguments and try again.')
                 sys.exit(EXIT_CODE_BAD_CONF_ARG)
