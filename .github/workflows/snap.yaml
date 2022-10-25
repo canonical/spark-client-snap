@@ -1,0 +1,172 @@
+name: Build Spark client snap and run tests
+
+env:
+  RELEASE: edge
+  BRANCH: dev
+  VERSION: '3.3.0'
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+  schedule:
+    - cron: '30 10 * * *'
+
+jobs:
+  build-condition:
+    name: Check build condition for Snap
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.latest-version.outputs.decision }}
+      version: ${{ steps.latest-version.outputs.version }}
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: dev
+      - id: published-version
+        name: Read last published stable version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./VERSION
+      - id: latest-version
+        name: Check latest stable version available for download
+        run: |
+          LATEST_STABLE_SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
+          CURRENT_PUBLISHED_VERSION=${{ steps.published-version.outputs.content }}
+          STATUSCODE=$(curl --silent --head https://downloads.apache.org/spark/${LATEST_STABLE_SPARK_VERSION}/${LATEST_STABLE_SPARK_VERSION}-bin-hadoop3.tgz | head -n 1 | cut -d' ' -f2)
+          if  [[ ${LATEST_STABLE_SPARK_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
+            then 
+              echo "::set-output name=decision::1"
+              echo "Allowed to publish....."
+            else
+              echo "::set-output name=decision::0"
+              echo "Do NOT publish!"
+          fi
+          echo "::set-output name=version::${LATEST_STABLE_SPARK_VERSION}"
+  build:
+    name: Build Snap
+    if: needs.build-condition.outputs.decision  ==  '1' || github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs:
+      - build-condition
+    outputs:
+      snap-file: ${{ steps.build-snap.outputs.snap }}
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: dev
+      - id: build-snap
+        name: Build snap
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/candidate
+      - id: upload
+        name: Upload built snap job artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark-client_snap_amd64
+          path: spark-client_${{ env.VERSION }}_amd64.snap
+
+  test:
+    name: Test Snap
+    if: needs.build-condition.outputs.decision  ==  '1' || github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs:
+      - build-condition
+      - build
+    steps:
+      - name: Download snap file
+        uses: actions/download-artifact@v3
+        with:
+          name: spark-client_snap_amd64
+          path: .
+
+      - name: Install snap file
+        run: |
+          sudo snap install spark-client_${{ env.VERSION }}_amd64.snap --dangerous
+
+      - name: Setup Spark client
+        run: |
+          # connect interfaces
+          sudo snap connect spark-client:dot-kubeconfig-access
+          sudo snap connect spark-client:dot-scala-history
+          
+          # setup pre requisites
+          sudo snap install microk8s --classic
+          sudo microk8s status --wait-ready
+          sudo snap alias microk8s.kubectl kubectl
+          sudo usermod -a -G microk8s runner
+          mkdir -p /home/runner/.kube
+          newgrp microk8s
+          sudo microk8s config > /home/runner/.kube/config
+          sudo chown -f -R runner /home/runner/.kube
+          sudo microk8s.enable dns
+          
+          # create the service account
+          spark-client.setup-spark-k8s service-account
+
+      - name: Run example job
+        run: |
+          K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/.kube/config config view -o jsonpath="{.clusters[0]['cluster.server']}")
+          SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+          
+          # run the sample pi job using spark-submit
+          spark-client.spark-submit \
+          --master $K8S_MASTER_URL \
+          --deploy-mode cluster \
+          --conf spark.kubernetes.driver.request.cores=100m \
+          --conf spark.kubernetes.executor.request.cores=100m \
+          --class org.apache.spark.examples.SparkPi \
+          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
+          
+          sudo kubectl --kubeconfig=/home/runner/.kube/config get pods
+          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep driver | tail -n 1 | cut -d' ' -f1)
+          echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
+          sudo kubectl --kubeconfig=/home/runner/.kube/config logs ${DRIVER_JOB}
+          
+          EXECUTOR_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep exec | tail -n 1 | cut -d' ' -f1)
+          echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
+          sudo kubectl --kubeconfig=/home/runner/.kube/config describe pod ${EXECUTOR_JOB}
+          
+          # Check job output
+          pi=$(sudo kubectl --kubeconfig=/home/runner/.kube/config logs $(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+          echo -e "Spark Pi Job Output: \n ${pi}"
+          if [ "${pi}" != "3.14" ]; then
+              exit 1
+          fi
+
+  publish:
+    name: Publish Snap
+    if: needs.build-condition.outputs.decision  ==  '1'
+    runs-on: ubuntu-latest
+    needs:
+      - build-condition
+      - build
+      - test
+    steps:
+      - name: Download snap file
+        uses: actions/download-artifact@v3
+        with:
+          name: spark-client_snap_amd64
+          path: .
+      - name: Publish snap to Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
+        with:
+          snap: spark-client_${{ env.VERSION }}_amd64.snap
+          release: ${{ env.RELEASE }}
+      - name: Record the published version
+        uses: DamianReeves/write-file-action@master
+        with:
+          path: ./VERSION
+          write-mode: overwrite
+          contents: |
+            ${{ needs.build-condition.outputs.version }}

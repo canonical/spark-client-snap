@@ -1,52 +1,145 @@
-name: spark-k8s # you probably want to 'snapcraft register <name>'
+name: spark-client
 base: core20
-version: '0.1'
-summary: Client side snap to submit spark jobs to kubernetes.
+version: '3.3.0'
+summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
-  Spark is now available on Kubernetes and needs a client to submit and 
-  interact with jobs. This snap packages the client binaries for the same.
+  The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
-grade: devel
+grade: stable
 confinement: strict
 
+plugs:
+  dot-scala-history:
+    interface: personal-files
+    write:
+    - $HOME/.scala_history
+  dot-kubeconfig-access:
+    interface: personal-files
+    read:
+    - $HOME/.kube/config
+
+environment:
+  JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
+  PATH: $JAVA_HOME/bin:$PATH
+
 apps:
-  spark-submit:
-    command: bin/spark-submit
+  setup-spark-k8s:
+    command: ops/setup-spark-k8s.py
     environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      OPS_ROOT: ${SNAP}/ops
+    plugs:
+        - network
+        - home
+        - dot-kubeconfig-access
+  spark-submit:
+    command: ops/spark-submit.py
+    environment:
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      OPS_ROOT: ${SNAP}/ops
+    plugs:
+        - network
+        - home
+        - dot-kubeconfig-access
   spark-shell:
     command: bin/spark-shell
-    environment:
-      JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-      PATH: $JAVA_HOME/bin:$PATH
+    plugs:
+        - network
+        - network-bind
+        - home
+        - dot-scala-history
   pyspark:
     command: bin/pyspark
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+    plugs:
+        - network
+        - network-bind
+        - home
 
 parts:
   spark:
-    source: https://github.com/apache/spark.git
     plugin: nil
-    build-packages: 
-        - git
-        - openjdk-11-jdk
-        - maven
+    build-packages:
+        - ca-certificates
+        - ca-certificates-java
+        - openjdk-11-jre-headless
         - python3
-        - python3-pip
         - wget
     stage-packages:
-        - openjdk-11-jre
+        - openjdk-11-jre-headless
     override-build: |
-        dev/make-distribution.sh -Pkubernetes
-        cd dist/jars
-        wget https://repo1.maven.org/maven2/net/java/dev/jets3t/jets3t/0.9.4/jets3t-0.9.4.jar
-        wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.874/aws-java-sdk-bundle-1.11.874.jar
-        wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.2/hadoop-aws-3.2.2.jar
-        cd ../..
+        SPARK_HADOOP_VERSION='3'
+        AWS_JAVA_SDK_BUNDLE_VERSION='1.11.874'
+        HADOOP_AWS_VERSION='3.2.2'
+        SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
+        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
+        if  [[ ${STATUSCODE} -ne 200 ]]
+          then
+            echo "ERROR: Latest available Spark version ${SPARK_VERSION} does not have a downloadable binary! Exiting...."
+            exit 1
+        fi
+        echo "Downloading latest available Spark version ${SPARK_VERSION}."
+        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        sha512sum --check "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        if  [[ $? -ne 0 ]]
+          then
+            echo "DOWNLOAD ERROR: Latest available Spark version ${SPARK_VERSION} could not be downloaded properly! Exiting...."
+            exit 1
+        fi
+        tar -zxf "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        cd "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
+        wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
+        wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
+        echo "`cat aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1`  aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar" | sha1sum --check
+        if  [[ $? -ne 0 ]]
+          then
+            echo "DOWNLOAD ERROR: aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar could not be downloaded properly! Exiting...."
+            exit 1
+        fi
+        wget "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_AWS_VERSION}/hadoop-aws-${HADOOP_AWS_VERSION}.jar"
+        wget "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_AWS_VERSION}/hadoop-aws-${HADOOP_AWS_VERSION}.jar.sha1"
+        echo "`cat hadoop-aws-${HADOOP_AWS_VERSION}.jar.sha1`  hadoop-aws-${HADOOP_AWS_VERSION}.jar" | sha1sum --check
+        if  [[ $? -ne 0 ]]
+          then
+            echo "DOWNLOAD ERROR: hadoop-aws-${HADOOP_AWS_VERSION}.jar could not be downloaded properly! Exiting...."
+            exit 1
+        fi
+        cd ..
         mkdir -p $SNAPCRAFT_PRIME/bin
-        cp -r dist/bin/* $SNAPCRAFT_PRIME/bin/
+        cp -r bin/* $SNAPCRAFT_PRIME/bin/
         mkdir -p $SNAPCRAFT_PRIME/jars
-        cp -r dist/jars/* $SNAPCRAFT_PRIME/jars/
+        cp -r jars/* $SNAPCRAFT_PRIME/jars/
+        mkdir -p $SNAPCRAFT_PRIME/python
+        cp -r python/* $SNAPCRAFT_PRIME/python/
+    override-prime: |
+        snapcraftctl prime
+        rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
 
+  helper-scripts:
+    plugin: python
+    python-packages:
+        - pyyaml
+    build-packages:
+        - curl
+    source: helpers
+    source-type: local
+    override-build: |
+      target_dir="${SNAPCRAFT_PRIME}/ops"
+      
+      rm -rf "${target_dir}"
+      mkdir -p "${target_dir}"
+      cp setup-spark-k8s.py "${target_dir}/"
+      chmod 755 "${target_dir}/setup-spark-k8s.py"
+      cp spark-submit.py "${target_dir}/"
+      chmod 755 "${target_dir}/spark-submit.py"
+      
+      mkdir -p "$SNAPCRAFT_PRIME/conf"
+      cp spark-defaults.conf "$SNAPCRAFT_PRIME/conf/"
+      
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      chmod +x kubectl
+      cp kubectl ${SNAPCRAFT_PRIME}/
+      
+      
