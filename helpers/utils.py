@@ -54,15 +54,15 @@ def get_spark_defaults_conf_file() -> None:
     return SPARK_CONF_DEFAULTS_FILE
 
 # TBD:
-# This needs to be discussed. Expressions like properties-file and deploy-mode and class cannot
-# be easily referenced from within arg
+# This needs to be discussed. Expressions like class cannot
+# be directly referenced from within arg
 
 def reconstruct_submit_args(args: argparse.Namespace, conf: Dict) -> str:
     submit_args = ''
     submit_args += " --master {}".format(args.master or conf.get('spark.master'))
-    submit_args += " --properties-file {}".format(args.propertiesfilearg or get_spark_defaults_conf_file())
+    submit_args += " --properties-file {}".format(args.properties_file or get_spark_defaults_conf_file())
     submit_args += " --name {}".format(args.name or conf.get("spark.app.name"))
-    submit_args += " --deploy-mode {}".format(args.deploymodearg or conf.get("spark.deploy.mode"))
+    submit_args += " --deploy-mode {}".format(args.deploy_mode or conf.get("spark.deploy.mode"))
     submit_args += " --class {}".format(args.classarg)
     submit_args += " --conf {}".format(' --conf '.join(conf.values()))
     submit_args += ' ' + " ".join(args.extra_args)
