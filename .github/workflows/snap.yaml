@@ -2,7 +2,7 @@ name: Build Spark client snap and run tests
 
 env:
   RELEASE: edge
-  BRANCH: ${{ github.ref_name }}
+  BRANCH: ${{ github.head_ref || github.ref_name }}
   VERSION: '3.3.0'
 
 on:
