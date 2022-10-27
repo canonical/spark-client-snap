@@ -8,10 +8,10 @@ env:
 on:
   push:
     branches:
-      - env.BRANCH
+      - ${{ env.BRANCH }}
   pull_request:
     branches:
-      - env.BRANCH
+      - ${{ env.BRANCH }}
   schedule:
     - cron: '30 10 * * *'
 
@@ -27,7 +27,7 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: env.BRANCH
+          ref: ${{ env.BRANCH }}
       - id: published-version
         name: Read last published stable version
         uses: juliangruber/read-file-action@v1
@@ -61,7 +61,7 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: env.BRANCH
+          ref: ${{ env.BRANCH }}
       - id: build-snap
         name: Build snap
         uses: snapcore/action-build@v1
