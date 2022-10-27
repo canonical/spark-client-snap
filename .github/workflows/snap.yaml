@@ -17,6 +17,12 @@ jobs:
   build-condition:
     name: Check build condition for Snap
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version:
+          - '3.9'
+          - '3.10'
     outputs:
       decision: ${{ steps.latest-version.outputs.decision }}
       version: ${{ steps.latest-version.outputs.version }}
@@ -26,6 +32,16 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ env.BRANCH }}
+      - id: setup-python
+        name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{matrix.python-version}}
+          architecture: x64
+      - id: code-checks
+        name: Make sure the code follows conventions and tests correctly
+        run: |
+          make checks
       - id: published-version
         name: Read last published stable Spark version
         uses: juliangruber/read-file-action@v1
@@ -91,58 +107,14 @@ jobs:
         run: |
           sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
 
-      - name: Connect client interfaces
-        run: |
-          # connect interfaces
-          sudo snap connect spark-client:dot-kube-config
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
 
-      - name: Setup prerequisites
+      - name: Run Integration Tests
         run: |
-          # setup pre requisites
-          sudo snap install microk8s --classic
-          sudo microk8s status --wait-ready
-          sudo snap alias microk8s.kubectl kubectl
-          sudo usermod -a -G microk8s runner
-          mkdir -p /home/runner/.kube
-          newgrp microk8s
-          sudo microk8s config > /home/runner/.kube/config
-          sudo chown -f -R runner /home/runner/.kube
-          sudo microk8s.enable dns
-
-      - name: Setup client
-        run: |
-          # create the service account
-          spark-client.setup-spark-k8s service-account
-
-      - name: Run example job
-        run: |
-          K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/.kube/config config view -o jsonpath="{.clusters[0]['cluster.server']}")
-          SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
-          
-          # run the sample pi job using spark-submit
-          spark-client.spark-submit \
-          --master $K8S_MASTER_URL \
-          --deploy-mode cluster \
-          --conf spark.kubernetes.driver.request.cores=100m \
-          --conf spark.kubernetes.executor.request.cores=100m \
-          --class org.apache.spark.examples.SparkPi \
-          local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
-          
-          sudo kubectl --kubeconfig=/home/runner/.kube/config get pods
-          DRIVER_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep driver | tail -n 1 | cut -d' ' -f1)
-          echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
-          sudo kubectl --kubeconfig=/home/runner/.kube/config logs ${DRIVER_JOB}
-          
-          EXECUTOR_JOB=$(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | grep exec | tail -n 1 | cut -d' ' -f1)
-          echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
-          sudo kubectl --kubeconfig=/home/runner/.kube/config describe pod ${EXECUTOR_JOB}
-          
-          # Check job output
-          pi=$(sudo kubectl --kubeconfig=/home/runner/.kube/config logs $(sudo kubectl --kubeconfig=/home/runner/.kube/config get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
-          echo -e "Spark Pi Job Output: \n ${pi}"
-          if [ "${pi}" != "3.14" ]; then
-              exit 1
-          fi
+          make integration-tests
 
   publish:
     name: Publish Snap
