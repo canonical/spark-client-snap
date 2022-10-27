@@ -2,16 +2,16 @@ name: Build Spark client snap and run tests
 
 env:
   RELEASE: edge
-  BRANCH: dev
+  BRANCH: ${{ github.ref_name }}
   VERSION: '3.3.0'
 
 on:
   push:
     branches:
-      - dev
+      - env.BRANCH
   pull_request:
     branches:
-      - dev
+      - env.BRANCH
   schedule:
     - cron: '30 10 * * *'
 
@@ -27,7 +27,7 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: env.BRANCH
       - id: published-version
         name: Read last published stable version
         uses: juliangruber/read-file-action@v1
@@ -61,7 +61,7 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: env.BRANCH
       - id: build-snap
         name: Build snap
         uses: snapcore/action-build@v1
