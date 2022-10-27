@@ -6,6 +6,7 @@ import pwd
 import subprocess
 import logging
 import argparse
+import utils
 
 USER_HOME_DIR_ENT_IDX = 5
 EXIT_CODE_BAD_KUBECONFIG = -100
@@ -29,18 +30,25 @@ if __name__ == "__main__":
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
     submit_args = sys.argv[1:]
-    conf = dict()
 
+    SPARK_CONF_DEFAULTS_FILE = utils.get_spark_defaults_conf_file()
+    conf_defaults = utils.read_spark_defaults_file(SPARK_CONF_DEFAULTS_FILE)
+    conf_overrides = dict()
     if args.conf:
         for c in args.conf:
             try:
                 kv = c.split('=')
                 k = kv[0]
                 v = '='.join(kv[1:])
-                conf[k] = os.environ.get(v, v)
+                conf_overrides[k] = os.environ.get(v, v)
             except IndexError as e:
                 logging.error('Configuration related arguments parsing error. Please check input arguments and try again.')
                 sys.exit(EXIT_CODE_BAD_CONF_ARG)
+
+    conf = utils.override_conf_defaults(conf_defaults, conf_overrides)
+
+    # TBD: Needs discussion
+    # submit_args = utils.reconstruct_submit_args(args, conf)
 
     if not args.master:
         USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
