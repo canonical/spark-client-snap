@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     submit_args = sys.argv[1:]
 
-    SPARK_CONF_DEFAULTS_FILE = utils.get_spark_defaults_conf_file()
+    SPARK_CONF_DEFAULTS_FILE = args.properties_file or utils.get_spark_defaults_conf_file()
     conf_defaults = utils.read_spark_defaults_file(SPARK_CONF_DEFAULTS_FILE)
     conf_overrides = dict()
     if args.conf:
@@ -44,6 +44,12 @@ if __name__ == "__main__":
             except IndexError as e:
                 logging.error('Configuration related arguments parsing error. Please check input arguments and try again.')
                 sys.exit(EXIT_CODE_BAD_CONF_ARG)
+
+    if args.name:
+        conf_overrides['spark.app.name'] = args.name
+
+    if args.deploy_mode:
+        conf_overrides['spark.submit.deployMode'] = args.deploy_mode
 
     conf = utils.override_conf_defaults(conf_defaults, conf_overrides)
 

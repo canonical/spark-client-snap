@@ -40,11 +40,7 @@ def write_spark_defaults_file(spark_defaults_target_file_name: str, defaults: Di
             f.write(f"{k}={defaults[k]}\n")
 
 def override_conf_defaults(defaults: Dict, overrides: Dict) -> Dict:
-    result = dict()
-    for k in defaults.keys():
-        result[k] = defaults[k]
-    for k in overrides.keys():
-        result[k] = overrides[k]
+    result = defaults | overrides
     return result
 
 def get_spark_defaults_conf_file() -> None:
