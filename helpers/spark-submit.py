@@ -39,6 +39,7 @@ if __name__ == "__main__":
     logging.debug(submit_cmd)
 
     with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
+        logging.info(f'Spark conf available for reference at /tmp/snap.spark-client{t.name}\n')
         for k in conf.keys():
             v = conf[k]
             t.write(f"{k}={v.strip()}\n")
