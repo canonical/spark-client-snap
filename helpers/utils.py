@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 from typing import List, Dict
 import re
 import pwd
-import argparse
+import subprocess
+import logging
+
 
 USER_HOME_DIR_ENT_IDX = 5
+EXIT_CODE_BAD_KUBECONFIG = -100
+EXIT_CODE_BAD_CONF_ARG = -200
 
 def generate_spark_default_conf() -> Dict:
     defaults = dict()
@@ -40,8 +45,10 @@ def write_spark_defaults_file(spark_defaults_target_file_name: str, defaults: Di
             f.write(f"{k}={defaults[k]}\n")
 
 def override_conf_defaults(defaults: Dict, overrides: Dict) -> Dict:
-    result = defaults | overrides
-    return result
+    #result = defaults | overrides
+    #return result
+    defaults.update(overrides)
+    return defaults
 
 def get_spark_defaults_conf_file() -> None:
     SPARK_HOME = os.environ.get('SPARK_HOME', os.environ.get('SNAP'))
@@ -49,22 +56,45 @@ def get_spark_defaults_conf_file() -> None:
     SPARK_CONF_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
     return SPARK_CONF_DEFAULTS_FILE
 
-# TBD:
-# This needs to be discussed
-def reconstruct_submit_args(args: argparse.Namespace, conf: Dict) -> str:
-    submit_args = ''
-    submit_args += " --master {}".format(args.master or conf.get('spark.master'))
-    submit_args += " --properties-file {}".format(args.properties_file or get_spark_defaults_conf_file())
-    submit_args += " --deploy-mode {}".format(args.deploy_mode or conf.get("spark.deploy.mode"))
 
-    if args.name or conf.get("spark.app.name"):
-        submit_args += " --name {}".format(args.name or conf.get("spark.app.name"))
+def parse_conf_overrides(conf_args: List) -> Dict:
+    conf_overrides = dict()
+    if conf_args:
+        for c in conf_args:
+            try:
+                kv = c.split('=')
+                k = kv[0]
+                v = '='.join(kv[1:])
+                conf_overrides[k] = os.environ.get(v, v)
+            except IndexError as e:
+                logging.error('Configuration related arguments parsing error. Please check input arguments and try again.')
+                sys.exit(EXIT_CODE_BAD_CONF_ARG)
+    return conf_overrides
 
-    if args.__getattribute__('class'):
-        submit_args += " --class {}".format(args.__getattribute__('class'))
-
-    if len(conf.values()) > 0:
-        submit_args += " --conf {}".format(' --conf '.join(conf.values()))
-
-    submit_args += ' ' + " ".join(args.extra_args)
+def reconstruct_submit_args_with_conf_overrides(args: List, conf: Dict) -> List:
+    submit_args = args
+    conf_arg = ''
+    for k in conf.keys():
+        conf_arg += f' --conf {k}={conf[k].strip()}'
+    submit_args = [conf_arg] + submit_args
     return submit_args
+
+def autodetect_kubernetes_master(conf: Dict) -> str:
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    DEFAULT_KUBECONFIG = f'{USER_HOME_DIR}/.kube/config'
+    kubeconfig = os.environ.get('KUBECONFIG') or DEFAULT_KUBECONFIG
+    kubectl_cmd = '{}/kubectl'.format(os.environ['SNAP'])
+    context = conf.get('spark.kubernetes.context')
+    if context:
+        master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
+    else:
+        master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
+    try:
+       default_master = subprocess.check_output(master_kubectl_cmd, shell=True)
+       k8s_master_uri = 'k8s://' + default_master.decode("utf-8")
+    except subprocess.CalledProcessError as e:
+       logging.error(f'Cannot determine default kubernetes control plane url. Probably bad or missing kubeconfig file {kubeconfig}')
+       logging.warning(f'Please set the KUBECONFIG environment variable to point to the kubeconfig. Or fix the default kubeconfig {kubeconfig}')
+       logging.error(e.output)
+       sys.exit(EXIT_CODE_BAD_KUBECONFIG)
+    return k8s_master_uri
