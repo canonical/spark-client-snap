@@ -25,21 +25,37 @@ if __name__ == "__main__":
     if os.environ.get('SPARK_HOME') is None or os.environ.get('SPARK_HOME') == '':
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
-    SPARK_CONF_DEFAULTS_FILE = args.properties_file or utils.get_user_defaults_conf_file()
-    conf_defaults = utils.read_property_file(SPARK_CONF_DEFAULTS_FILE)
-    conf_overrides = utils.parse_conf_overrides(args.conf)
-    conf = utils.override_conf_defaults(conf_defaults, conf_overrides)
+    STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
+    static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
+
+    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
+    if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE):
+        dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE)
+    else:
+        dynamic_defaults = dict()
+
+    if args.properties_file and os.path.isfile(args.properties_file):
+        user_defaults = utils.read_property_file(args.properties_file)
+    else:
+        user_defaults = dict()
+
+    if args.conf:
+        user_overrides = utils.parse_conf_overrides(args.conf)
+    else:
+        user_overrides = dict()
+
+    conf = utils.merge_configurations([static_defaults, dynamic_defaults, user_defaults, user_overrides])
 
     submit_args = [f'--master {args.master or utils.autodetect_kubernetes_master(conf)}',
-                   f'--deploy-mode {args.deploy_mode}'] + utils.reconstruct_submit_args_with_conf_overrides(extra_args, conf)
+                   f'--deploy-mode {args.deploy_mode}'] + utils.reconstruct_submit_args(extra_args, conf)
 
     submit_cmd = '{}/bin/spark-submit'.format(os.environ['SPARK_HOME'])
     submit_cmd += ' ' + ' '.join(submit_args)
 
     logging.debug(submit_cmd)
 
-    with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-props-', suffix='.props') as t:
-        logging.info(f'Spark props available for reference at /tmp/snap.spark-client{t.name}\n')
+    with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
+        logging.info(f'Spark props available for reference at {utils.get_job_conf_tmp_dir()}{t.name}\n')
         utils.write_property_file(t.file, conf)
         t.flush()
         os.system(submit_cmd)

@@ -14,19 +14,13 @@ EXIT_CODE_BAD_KUBECONFIG = -100
 EXIT_CODE_BAD_CONF_ARG = -200
 
 def generate_spark_default_conf() -> Dict:
-    defaults = dict()
-    defaults['spark.app.name'] = 'spark-app'
-    defaults['spark.executor.instances'] = 2
-    defaults['spark.kubernetes.container.image'] = 'docker.io/averma32/sparkpy6:latest'
-    defaults['spark.kubernetes.container.image.pullPolicy'] = 'IfNotPresent'
-    defaults['spark.kubernetes.namespace'] = 'default'
-    defaults['spark.kubernetes.authenticate.driver.serviceAccountName'] = 'spark'
-    defaults['spark.eventLog.enabled'] = 'false'
+    generated_defaults = dict()
+    generated_defaults['spark.kubernetes.container.image'] = 'docker.io/averma32/sparkpy6:latest'
+    generated_defaults['spark.kubernetes.container.image.pullPolicy'] = 'IfNotPresent'
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
     SCALA_HIST_FILE_DIR = os.environ.get('SNAP_USER_COMMON', USER_HOME_DIR)
-    defaults['spark.driver.extraJavaOptions'] = f'-Dscala.shell.histfile={SCALA_HIST_FILE_DIR}/.scala_history'
-
-    return defaults
+    generated_defaults['spark.driver.extraJavaOptions'] = f'-Dscala.shell.histfile={SCALA_HIST_FILE_DIR}/.scala_history'
+    return generated_defaults
 
 def read_property_file(name: str) -> Dict :
     defaults = dict()
@@ -44,11 +38,11 @@ def write_property_file(fp: io.TextIOWrapper, props: Dict) -> None:
         v = props[k]
         fp.write(f"{k}={v.strip()}\n")
 
-def override_conf_defaults(defaults: Dict, overrides: Dict) -> Dict:
-    #result = defaults | overrides
-    #return result
-    defaults.update(overrides)
-    return defaults
+def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
+    result = dict()
+    for override in dictionaries_to_merge:
+        result.update(override)
+    return result
 
 def get_snap_defaults_conf_file() -> str:
     SPARK_HOME = os.environ.get('SPARK_HOME', os.environ.get('SNAP'))
@@ -56,8 +50,15 @@ def get_snap_defaults_conf_file() -> str:
     SPARK_CONF_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
     return SPARK_CONF_DEFAULTS_FILE
 
-def get_user_defaults_conf_file() -> str:
-    return '/etc/default/spark-defaults.conf'
+def get_static_defaults_conf_file() -> str:
+    return os.environ.get('SNAP') + '/conf/spark-defaults.conf'
+
+def get_dynamic_defaults_conf_file() -> str:
+    # return '/etc/default/spark-defaults.conf'
+    return os.environ.get('SNAP_USER_DATA') + '/spark-defaults.conf'
+
+def get_job_conf_tmp_dir() -> str:
+    return '/tmp/snap.spark-client'
 
 def parse_conf_overrides(conf_args: List) -> Dict:
     conf_overrides = dict()
@@ -73,7 +74,7 @@ def parse_conf_overrides(conf_args: List) -> Dict:
                 sys.exit(EXIT_CODE_BAD_CONF_ARG)
     return conf_overrides
 
-def reconstruct_submit_args_with_conf_overrides(args: List, conf: Dict) -> List:
+def reconstruct_submit_args(args: List, conf: Dict) -> List:
     submit_args = args
     conf_arg = ''
     for k in conf.keys():

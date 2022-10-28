@@ -8,10 +8,10 @@ env:
 on:
   push:
     branches:
-      - ${{ env.BRANCH }}
+      - *
   pull_request:
     branches:
-      - ${{ env.BRANCH }}
+      - *
   schedule:
     - cron: '30 10 * * *'
 
