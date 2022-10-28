@@ -25,8 +25,8 @@ if __name__ == "__main__":
     if os.environ.get('SPARK_HOME') is None or os.environ.get('SPARK_HOME') == '':
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
-    SPARK_CONF_DEFAULTS_FILE = args.properties_file or utils.get_spark_defaults_conf_file()
-    conf_defaults = utils.read_spark_defaults_file(SPARK_CONF_DEFAULTS_FILE)
+    SPARK_CONF_DEFAULTS_FILE = args.properties_file or utils.get_user_defaults_conf_file()
+    conf_defaults = utils.read_property_file(SPARK_CONF_DEFAULTS_FILE)
     conf_overrides = utils.parse_conf_overrides(args.conf)
     conf = utils.override_conf_defaults(conf_defaults, conf_overrides)
 
@@ -38,10 +38,8 @@ if __name__ == "__main__":
 
     logging.debug(submit_cmd)
 
-    with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
-        logging.info(f'Spark conf available for reference at /tmp/snap.spark-client{t.name}\n')
-        for k in conf.keys():
-            v = conf[k]
-            t.write(f"{k}={v.strip()}\n")
+    with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-props-', suffix='.props') as t:
+        logging.info(f'Spark props available for reference at /tmp/snap.spark-client{t.name}\n')
+        utils.write_property_file(t.file, conf)
         t.flush()
         os.system(submit_cmd)

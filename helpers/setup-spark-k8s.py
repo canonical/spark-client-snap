@@ -106,7 +106,8 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
     os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
 
 def setup_spark_conf_defaults(username: str, namespace: str) -> None:
-    SPARK_CONF_DEFAULTS_FILE = utils.get_spark_defaults_conf_file()
+    SNAP_DEFAULTS_CONF_FILE = utils.get_snap_defaults_conf_file()
+    USER_DEFAULTS_CONF_FILE = utils.get_user_defaults_conf_file()
     generated_defaults = utils.generate_spark_default_conf()
     if username:
         generated_defaults['spark.kubernetes.authenticate.driver.serviceAccountName'] = username
@@ -114,9 +115,11 @@ def setup_spark_conf_defaults(username: str, namespace: str) -> None:
     if namespace:
         generated_defaults['spark.kubernetes.namespace'] = namespace
 
-    user_provided_defaults = utils.read_spark_defaults_file(SPARK_CONF_DEFAULTS_FILE)
+    user_provided_defaults = utils.read_property_file(SNAP_DEFAULTS_CONF_FILE)
     final_defaults = utils.override_conf_defaults(generated_defaults, user_provided_defaults)
-    utils.write_spark_defaults_file(SPARK_CONF_DEFAULTS_FILE, final_defaults)
+
+    with open(USER_DEFAULTS_CONF_FILE, 'w') as f:
+        utils.write_property_file(f, final_defaults)
 
 if __name__ == "__main__":
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]

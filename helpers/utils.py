@@ -7,7 +7,7 @@ import re
 import pwd
 import subprocess
 import logging
-
+import io
 
 USER_HOME_DIR_ENT_IDX = 5
 EXIT_CODE_BAD_KUBECONFIG = -100
@@ -28,9 +28,9 @@ def generate_spark_default_conf() -> Dict:
 
     return defaults
 
-def read_spark_defaults_file(spark_defaults_file_name: str) -> Dict :
+def read_property_file(name: str) -> Dict :
     defaults = dict()
-    with open(spark_defaults_file_name) as f:
+    with open(name) as f:
         for line in f:
             kv = list(filter(None, re.split('=| ', line)))
             k = kv[0]
@@ -39,10 +39,10 @@ def read_spark_defaults_file(spark_defaults_file_name: str) -> Dict :
 
     return defaults
 
-def write_spark_defaults_file(spark_defaults_target_file_name: str, defaults: Dict) -> None:
-    with open(spark_defaults_target_file_name, 'w') as f:
-        for k in defaults.keys():
-            f.write(f"{k}={defaults[k]}\n")
+def write_property_file(fp: io.TextIOWrapper, props: Dict) -> None:
+    for k in props.keys():
+        v = props[k]
+        fp.write(f"{k}={v.strip()}\n")
 
 def override_conf_defaults(defaults: Dict, overrides: Dict) -> Dict:
     #result = defaults | overrides
@@ -50,12 +50,14 @@ def override_conf_defaults(defaults: Dict, overrides: Dict) -> Dict:
     defaults.update(overrides)
     return defaults
 
-def get_spark_defaults_conf_file() -> None:
+def get_snap_defaults_conf_file() -> str:
     SPARK_HOME = os.environ.get('SPARK_HOME', os.environ.get('SNAP'))
     SPARK_CONF_DIR = os.environ.get('SPARK_CONF_DIR', f"{SPARK_HOME}/conf")
     SPARK_CONF_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
     return SPARK_CONF_DEFAULTS_FILE
 
+def get_user_defaults_conf_file() -> str:
+    return '/etc/default/spark-defaults.conf'
 
 def parse_conf_overrides(conf_args: List) -> Dict:
     conf_overrides = dict()
