@@ -3,12 +3,11 @@ name: Build Spark client snap and run tests
 env:
   RELEASE: edge
   BRANCH: ${{ github.ref_name }}
-  VERSION: '3.3.0'
 
 on:
   push:
     branches:
-      - ${{ github.ref_name }}
+      - '*'
       - '!main'
   schedule:
     - cron: '30 10 * * *'
@@ -70,7 +69,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: spark-client_snap_amd64
-          path: spark-client_${{ env.VERSION }}_amd64.snap
+          path: spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap
 
   test:
     name: Test Snap
@@ -88,7 +87,7 @@ jobs:
 
       - name: Install snap file
         run: |
-          sudo snap install spark-client_${{ env.VERSION }}_amd64.snap --dangerous
+          sudo snap install spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap --dangerous
 
       - name: Setup Spark client
         run: |
@@ -159,7 +158,7 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
-          snap: spark-client_${{ env.VERSION }}_amd64.snap
+          snap: spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap
           release: ${{ env.RELEASE }}
       - name: Record the published version
         uses: DamianReeves/write-file-action@master
