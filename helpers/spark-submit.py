@@ -26,23 +26,12 @@ if __name__ == "__main__":
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
-    static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
-
     DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
-    if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE):
-        dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE)
-    else:
-        dynamic_defaults = dict()
 
-    if args.properties_file and os.path.isfile(args.properties_file):
-        user_defaults = utils.read_property_file(args.properties_file)
-    else:
-        user_defaults = dict()
-
-    if args.conf:
-        user_overrides = utils.parse_conf_overrides(args.conf)
-    else:
-        user_overrides = dict()
+    static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
+    dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE) if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE) else dict()
+    user_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
+    user_overrides = utils.parse_conf_overrides(args.conf) if args.conf else dict()
 
     conf = utils.merge_configurations([static_defaults, dynamic_defaults, user_defaults, user_overrides])
 

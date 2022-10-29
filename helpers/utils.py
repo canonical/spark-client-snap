@@ -26,11 +26,10 @@ def read_property_file(name: str) -> Dict :
     defaults = dict()
     with open(name) as f:
         for line in f:
-            kv = list(filter(None, re.split('=| ', line)))
+            kv = list(filter(None, re.split('=| ', line.strip())))
             k = kv[0]
             v = '='.join(kv[1:])
-            defaults[k] = os.environ.get(v, v)
-
+            defaults[k] = os.path.expandvars(v)
     return defaults
 
 def write_property_file(fp: io.TextIOWrapper, props: Dict) -> None:
