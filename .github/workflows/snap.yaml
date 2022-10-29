@@ -2,20 +2,14 @@ name: Build Spark client snap and run tests
 
 env:
   RELEASE: edge
-  BRANCH: ${{ github.ref_name || github.head_ref }}
+  BRANCH: ${{ github.ref_name }}
   VERSION: '3.3.0'
 
 on:
   push:
     branches:
-      - '*'
-      - '*/*'
-      - '!master'
-  pull_request:
-    branches:
-      - '*'
-      - '*/*'
-      - '!master'
+      - ${{ github.ref_name }}
+      - '!main'
   schedule:
     - cron: '30 10 * * *'
 
