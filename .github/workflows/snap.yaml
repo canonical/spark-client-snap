@@ -2,6 +2,7 @@ name: Build Spark client snap and run tests
 
 env:
   RELEASE: edge
+  SNAP_VERSION: '3.3.1'
   BRANCH: ${{ github.ref_name }}
 
 on:
@@ -26,10 +27,10 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
       - id: published-version
-        name: Read last published stable version
+        name: Read last published stable Spark version
         uses: juliangruber/read-file-action@v1
         with:
-          path: ./VERSION
+          path: ./SPARK_VERSION
       - id: latest-version
         name: Check latest stable version available for download
         run: |
@@ -69,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: spark-client_snap_amd64
-          path: spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap
+          path: spark-client_${{ env.SNAP_VERSION }}_amd64.snap
 
   test:
     name: Test Snap
@@ -87,7 +88,7 @@ jobs:
 
       - name: Install snap file
         run: |
-          sudo snap install spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap --dangerous
+          sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
 
       - name: Setup Spark client
         run: |
@@ -158,12 +159,12 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
-          snap: spark-client_${{ needs.build-condition.outputs.version }}_amd64.snap
+          snap: spark-client_${{ env.SNAP_VERSION }}_amd64.snap
           release: ${{ env.RELEASE }}
-      - name: Record the published version
+      - name: Record the published Spark version
         uses: DamianReeves/write-file-action@master
         with:
-          path: ./VERSION
+          path: ./SPARK_VERSION
           write-mode: overwrite
           contents: |
             ${{ needs.build-condition.outputs.version }}
