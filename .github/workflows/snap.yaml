@@ -93,8 +93,7 @@ jobs:
       - name: Setup Spark client
         run: |
           # connect interfaces
-          sudo snap connect spark-client:dot-kubeconfig-access
-          sudo snap connect spark-client:dot-scala-history
+          sudo snap connect spark-client:dot-kube-config
           
           # setup pre requisites
           sudo snap install microk8s --classic
