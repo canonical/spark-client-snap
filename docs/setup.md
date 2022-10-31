@@ -33,7 +33,7 @@ As you would have noticed, these commands can take following optional parameters
 First of you will have to allow the snap to access default kubeconfig file ```$HOME/.kube/config``` in case you have it placed there.
 
 ```bash
-sudo snap connect spark-client:dot-kubeconfig-access
+sudo snap connect spark-client:dot-kube-config
 ```
 
 The spark-client snap is a strictly confined snap. The above command grants the snap permission to read the afore-mentioned

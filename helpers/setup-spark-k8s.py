@@ -17,7 +17,7 @@ def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str):
     print('Looks like either kubernetes is not set up properly or default kubeconfig file is not accessible!')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
 
 def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print('\nERROR: Invalid or incomplete kubeconfig file {}. One or more of the following entries might be missing or invalid.\n'.format(kubeconfig))
@@ -30,7 +30,7 @@ def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print(' - cluster.certificate-authority-data')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
 
 def select_context_id(kube_cfg: Dict) -> int:
     NO_CONTEXT = -1

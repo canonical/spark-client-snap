@@ -9,7 +9,7 @@ grade: stable
 confinement: strict
 
 plugs:
-  dot-kubeconfig-access:
+  dot-kube-config:
     interface: personal-files
     read:
     - $HOME/.kube/config
@@ -27,7 +27,7 @@ apps:
     plugs:
         - network
         - home
-        - dot-kubeconfig-access
+        - dot-kube-config
   spark-submit:
     command: ops/spark-submit.py
     environment:
@@ -36,7 +36,7 @@ apps:
     plugs:
         - network
         - home
-        - dot-kubeconfig-access
+        - dot-kube-config
   spark-shell:
     command: bin/spark-shell
     plugs:
