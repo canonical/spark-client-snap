@@ -9,10 +9,6 @@ grade: stable
 confinement: strict
 
 plugs:
-  dot-scala-history:
-    interface: personal-files
-    write:
-    - $HOME/.scala_history
   dot-kubeconfig-access:
     interface: personal-files
     read:
@@ -47,7 +43,6 @@ apps:
         - network
         - network-bind
         - home
-        - dot-scala-history
   pyspark:
     command: bin/pyspark
     environment:

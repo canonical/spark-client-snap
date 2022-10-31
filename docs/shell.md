@@ -3,15 +3,7 @@ For interactive use cases, spark-client snap ships with Apache Spark's spark-she
 
 It's a useful tool to quickly validate your assumptions about Spark in Scala before finding out after an actual long running job failure.
 
-Before proceeding further, please note that by default the spark-shell maintains it's history in a file namely ```~/.scala_history```.
-
-So we need to first allow the snap to write to this location. Please run the following command to enable this write access.
-
-```bash
-sudo snap connect spark-client:dot-scala-history
-```
-
-Great! Now we can test out our spark-shell setup with the official Pi example from the Spark distribution.
+Great! Let us test out our spark-shell setup with the official Pi example from the Spark distribution.
 
 ```shell
 $ spark-client.spark-shell
