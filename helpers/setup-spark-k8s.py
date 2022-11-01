@@ -66,7 +66,6 @@ def get_defaults_from_kubeconfig(kubeconfig: str, context: str = None) -> Dict:
         with open(kubeconfig) as f:
             kube_cfg = yaml.safe_load(f)
             context_names = [n['name'] for n in kube_cfg['contexts']]
-            # namespaces = [n['context']['namespace'] for n in kube_cfg['contexts']]
             certs = [n['cluster']['certificate-authority-data'] for n in kube_cfg['clusters']]
             current_context = context or kube_cfg['current-context']
     except IOError as ioe:
@@ -85,7 +84,7 @@ def get_defaults_from_kubeconfig(kubeconfig: str, context: str = None) -> Dict:
 
     defaults = {}
     defaults['context'] = context_names[context_id]
-    defaults['namespace'] = 'default' # namespaces[context_id]
+    defaults['namespace'] = 'default'
     defaults['cert'] = certs[context_id]
     defaults['config'] = kubeconfig
     defaults['user'] = 'spark'

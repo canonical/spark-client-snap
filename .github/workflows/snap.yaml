@@ -160,10 +160,18 @@ jobs:
         with:
           snap: spark-client_${{ env.SNAP_VERSION }}_amd64.snap
           release: ${{ env.RELEASE }}
-      - name: Record the published Spark version
+      - name: Checkout SPARK_VERSION file
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Record the published Spark version in SPARK_VERSION file
         uses: DamianReeves/write-file-action@master
         with:
           path: ./SPARK_VERSION
           write-mode: overwrite
           contents: |
             ${{ needs.build-condition.outputs.version }}
+      - name: Commit updated SPARK_VERSION file
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Published snap for latest Spark version ${{ needs.build-condition.outputs.version }}
