@@ -4,7 +4,6 @@ import os
 import pwd
 import logging
 import argparse
-import tempfile
 import utils
 
 USER_HOME_DIR_ENT_IDX = 5
@@ -25,25 +24,23 @@ if __name__ == "__main__":
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
+    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
 
-    static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
+    snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
+    setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE)
     env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
-    user_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
+    props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
 
-    with tempfile.NamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
-        defaults = utils.merge_configurations([static_defaults, env_defaults, user_defaults])
-
-        final_properties_file = f'{utils.get_job_conf_tmp_dir()}{t.name}'
+    with utils.UmaskNamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
+        defaults = utils.merge_configurations([snap_static_defaults, setup_dynamic_defaults, env_defaults, props_file_arg_defaults])
+        logging.debug(f'Spark props available for reference at {utils.get_snap_temp_dir()}{t.name}\n')
         utils.write_property_file(t.file, defaults, log=True)
         t.flush()
-
         submit_args = [f'--master {args.master or utils.autodetect_kubernetes_master(defaults)}',
                        f'--deploy-mode {args.deploy_mode}',
-                       f'--properties-file {final_properties_file}'] + extra_args
-
+                       f'--properties-file {t.name}'] + extra_args
         submit_cmd = '{}/bin/spark-submit'.format(os.environ['SPARK_HOME'])
         submit_cmd += ' ' + ' '.join(submit_args)
-
         logging.debug(submit_cmd)
         os.system(submit_cmd)

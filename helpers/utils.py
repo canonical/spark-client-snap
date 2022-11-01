@@ -8,6 +8,7 @@ import pwd
 import subprocess
 import logging
 import io
+from tempfile import NamedTemporaryFile
 
 USER_HOME_DIR_ENT_IDX = 5
 EXIT_CODE_BAD_KUBECONFIG = -100
@@ -33,8 +34,8 @@ def read_property_file(name: str) -> Dict :
 def write_property_file(fp: io.TextIOWrapper, props: Dict, log: bool = None) -> None:
     for k in props.keys():
         v = props[k]
-        line = f"{k}={v.strip()}\n"
-        fp.write(line)
+        line = f"{k}={v.strip()}"
+        fp.write(line+'\n')
         if (log):
             logging.info(line)
 
@@ -48,11 +49,16 @@ def get_static_defaults_conf_file() -> str:
     SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP')}/conf/spark-defaults.conf"
     return SPARK_STATIC_DEFAULTS_FILE
 
+def get_dynamic_defaults_conf_file() -> str:
+    SPARK_DYNAMIC_DEFAULTS_FILE = f"{os.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
+    return SPARK_DYNAMIC_DEFAULTS_FILE
+
 def get_env_defaults_conf_file() -> str:
-    SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{os.environ.get('SNAP_USER_DATA')}/spark-defaults.conf")
+    SPARK_CONF_DIR = os.environ.get('SPARK_CONF_DIR', f"{os.environ.get('SPARK_HOME')}/conf")
+    SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
     return SPARK_ENV_DEFAULTS_FILE
 
-def get_job_conf_tmp_dir() -> str:
+def get_snap_temp_dir() -> str:
     return '/tmp/snap.spark-client'
 
 def parse_conf_overrides(conf_args: List) -> Dict:
@@ -96,3 +102,10 @@ def autodetect_kubernetes_master(conf: Dict) -> str:
        logging.error(e.output)
        sys.exit(EXIT_CODE_BAD_KUBECONFIG)
     return k8s_master_uri
+
+def UmaskNamedTemporaryFile(*args, **kargs):
+    fdesc = NamedTemporaryFile(*args, **kargs)
+    umask = os.umask(0o666)
+    os.umask(umask)
+    os.chmod(fdesc.name, 0o666 & ~umask)
+    return fdesc
