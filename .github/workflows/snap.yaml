@@ -141,7 +141,7 @@ jobs:
 
   publish:
     name: Publish Snap
-    if: needs.build-condition.outputs.decision  ==  '1'
+    if: needs.build-condition.outputs.decision  ==  '1' && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     needs:
       - build-condition
