@@ -106,14 +106,14 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
     os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
 
 def setup_spark_conf_defaults(username: str, namespace: str) -> None:
-    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
+    ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
     generated_defaults = utils.generate_spark_default_conf()
     if username:
         generated_defaults['spark.kubernetes.authenticate.driver.serviceAccountName'] = username
     if namespace:
         generated_defaults['spark.kubernetes.namespace'] = namespace
 
-    with open(DYNAMIC_DEFAULTS_CONF_FILE, 'w') as f:
+    with open(ENV_DEFAULTS_CONF_FILE, 'w') as f:
         utils.write_property_file(f, generated_defaults)
 
 if __name__ == "__main__":

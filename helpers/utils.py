@@ -15,8 +15,6 @@ EXIT_CODE_BAD_CONF_ARG = -200
 
 def generate_spark_default_conf() -> Dict:
     generated_defaults = dict()
-    generated_defaults['spark.kubernetes.container.image'] = 'docker.io/averma32/sparkpy6:latest'
-    generated_defaults['spark.kubernetes.container.image.pullPolicy'] = 'IfNotPresent'
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
     SCALA_HIST_FILE_DIR = os.environ.get('SNAP_USER_COMMON', USER_HOME_DIR)
     generated_defaults['spark.driver.extraJavaOptions'] = f'-Dscala.shell.histfile={SCALA_HIST_FILE_DIR}/.scala_history'
@@ -32,10 +30,13 @@ def read_property_file(name: str) -> Dict :
             defaults[k] = os.path.expandvars(v)
     return defaults
 
-def write_property_file(fp: io.TextIOWrapper, props: Dict) -> None:
+def write_property_file(fp: io.TextIOWrapper, props: Dict, log: bool = None) -> None:
     for k in props.keys():
         v = props[k]
-        fp.write(f"{k}={v.strip()}\n")
+        line = f"{k}={v.strip()}\n"
+        fp.write(line)
+        if (log):
+            logging.info(line)
 
 def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
     result = dict()
@@ -43,18 +44,13 @@ def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
         result.update(override)
     return result
 
-def get_snap_defaults_conf_file() -> str:
-    SPARK_HOME = os.environ.get('SPARK_HOME', os.environ.get('SNAP'))
-    SPARK_CONF_DIR = os.environ.get('SPARK_CONF_DIR', f"{SPARK_HOME}/conf")
-    SPARK_CONF_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
-    return SPARK_CONF_DEFAULTS_FILE
-
 def get_static_defaults_conf_file() -> str:
-    return os.environ.get('SNAP') + '/conf/spark-defaults.conf'
+    SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP')}/conf/spark-defaults.conf"
+    return SPARK_STATIC_DEFAULTS_FILE
 
-def get_dynamic_defaults_conf_file() -> str:
-    # return '/etc/default/spark-defaults.conf'
-    return os.environ.get('SNAP_USER_DATA') + '/spark-defaults.conf'
+def get_env_defaults_conf_file() -> str:
+    SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{os.environ.get('SNAP_USER_DATA')}/spark-defaults.conf")
+    return SPARK_ENV_DEFAULTS_FILE
 
 def get_job_conf_tmp_dir() -> str:
     return '/tmp/snap.spark-client'
