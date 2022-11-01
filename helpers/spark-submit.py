@@ -28,7 +28,7 @@ if __name__ == "__main__":
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
-    setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE)
+    setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE) if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE) else dict()
     env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
     props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
 
@@ -40,7 +40,9 @@ if __name__ == "__main__":
         submit_args = [f'--master {args.master or utils.autodetect_kubernetes_master(defaults)}',
                        f'--deploy-mode {args.deploy_mode}',
                        f'--properties-file {t.name}'] + extra_args
-        submit_cmd = '{}/bin/spark-submit'.format(os.environ['SPARK_HOME'])
-        submit_cmd += ' ' + ' '.join(submit_args)
+
+        SPARK_HOME = os.environ['SPARK_HOME']
+        SPARK_SUBMIT_ARGS = ' '.join(submit_args)
+        submit_cmd = f'{SPARK_HOME}/bin/spark-submit {SPARK_SUBMIT_ARGS}'
         logging.debug(submit_cmd)
         os.system(submit_cmd)

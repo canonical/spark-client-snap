@@ -55,7 +55,8 @@ $S3_PATH_FOR_CODE_PY_FILE
 
 These configuration parameters and others can be provided via a ```spark-defaults.conf``` config file placed as described here.
 * Either setting ***SPARK_HOME*** and placing the config as ```$SPARK_HOME/conf/spark-defaults.conf```. Or
-* Overriding ***SPARK_CONF_DIR*** and placing the config as ```$SPARK_CONF_DIR/spark-defaults.conf```
+* Overriding ***SPARK_CONF_DIR*** and placing the config as ```$SPARK_CONF_DIR/spark-defaults.conf``` Or
+* Overriding ***SNAP_SPARK_ENV_CONF*** to point to the config file to use
 
 For example, with a ```spark-defaults.conf``` similar to provided below for reference, we can make the submit command much simpler.
 
@@ -82,4 +83,4 @@ With a valid configuration file placed appropriately, the submit command becomes
 ```bash
 spark-client.spark-submit --deploy-mode cluster $S3_PATH_FOR_CODE_PY_FILE
 ```
-The configuration defaults can be overriden as well in the submit command as illustrated previously.
+The configuration defaults can be overriden as well in the submit command with ```--conf``` arguments as illustrated previously.
