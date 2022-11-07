@@ -54,8 +54,7 @@ def get_dynamic_defaults_conf_file() -> str:
     return SPARK_DYNAMIC_DEFAULTS_FILE
 
 def get_env_defaults_conf_file() -> str:
-    SPARK_CONF_DIR = os.environ.get('SPARK_CONF_DIR', f"{os.environ.get('SPARK_HOME')}/conf")
-    SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF', f"{SPARK_CONF_DIR}/spark-defaults.conf")
+    SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF')
     return SPARK_ENV_DEFAULTS_FILE
 
 def get_snap_temp_dir() -> str:

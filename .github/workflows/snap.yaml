@@ -36,8 +36,9 @@ jobs:
         run: |
           LATEST_STABLE_SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
           CURRENT_PUBLISHED_VERSION=${{ steps.published-version.outputs.content }}
+          LATEST_AVAILABLE_VERSION=${LATEST_STABLE_SPARK_VERSION:6}
           STATUSCODE=$(curl --silent --head https://downloads.apache.org/spark/${LATEST_STABLE_SPARK_VERSION}/${LATEST_STABLE_SPARK_VERSION}-bin-hadoop3.tgz | head -n 1 | cut -d' ' -f2)
-          if  [[ ${LATEST_STABLE_SPARK_VERSION:6} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
+          if  [[ ${LATEST_AVAILABLE_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
             then 
               echo "::set-output name=decision::1"
               echo "Allowed to publish....."
@@ -45,7 +46,7 @@ jobs:
               echo "::set-output name=decision::0"
               echo "Do NOT publish!"
           fi
-          echo "::set-output name=version::${LATEST_STABLE_SPARK_VERSION:6}"
+          echo "::set-output name=version::${LATEST_AVAILABLE_VERSION}"
   build:
     name: Build Snap
     if: needs.build-condition.outputs.decision  ==  '1' || github.event_name == 'push' || github.event_name == 'pull_request'
