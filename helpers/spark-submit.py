@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import pwd
-import subprocess
 import logging
 import argparse
+import utils
 
 USER_HOME_DIR_ENT_IDX = 5
 EXIT_CODE_BAD_KUBECONFIG = -100
@@ -16,55 +15,34 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--master", default=None, type=str, help='Kubernetes control plane uri.')
-    parser.add_argument("--properties-file", default=None, type=str, help='Spark default configuration properties file.')
-    parser.add_argument("--name", default="spark-app", type=str, help='Spark application\'s name.')
     parser.add_argument("--deploy-mode", default="client", type=str, help='Deployment mode for job submission. Default is \'client\'.')
-    parser.add_argument("--class", default=None, type=str, help='Java class of the application to be launched.')
-    parser.add_argument("--conf", action="append", type=str, help='Configuration properties to override the corresponding defaults.')
-    parser.add_argument("extra_args", nargs="*")
-    args = parser.parse_args()
+    parser.add_argument("--properties-file", default=None, type=str, help='Spark default configuration properties file.')
+    args, extra_args = parser.parse_known_args()
 
     os.environ["HOME"] = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
     if os.environ.get('SPARK_HOME') is None or os.environ.get('SPARK_HOME') == '':
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
-    submit_args = sys.argv[1:]
-    conf = dict()
+    STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
+    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
+    ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
 
-    if args.conf:
-        for c in args.conf:
-            try:
-                kv = c.split('=')
-                k = kv[0]
-                v = '='.join(kv[1:])
-                conf[k] = os.environ.get(v, v)
-            except IndexError as e:
-                logging.error('Configuration related arguments parsing error. Please check input arguments and try again.')
-                sys.exit(EXIT_CODE_BAD_CONF_ARG)
+    snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
+    setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE) if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE) else dict()
+    env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
+    props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
 
-    if not args.master:
-        USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
-        DEFAULT_KUBECONFIG = f'{USER_HOME_DIR}/.kube/config'
-        kubeconfig = os.environ.get('KUBECONFIG') or DEFAULT_KUBECONFIG
-        kubectl_cmd = '{}/kubectl'.format(os.environ['SNAP'])
+    with utils.UmaskNamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
+        defaults = utils.merge_configurations([snap_static_defaults, setup_dynamic_defaults, env_defaults, props_file_arg_defaults])
+        logging.debug(f'Spark props available for reference at {utils.get_snap_temp_dir()}{t.name}\n')
+        utils.write_property_file(t.file, defaults, log=True)
+        t.flush()
+        submit_args = [f'--master {args.master or utils.autodetect_kubernetes_master(defaults)}',
+                       f'--deploy-mode {args.deploy_mode}',
+                       f'--properties-file {t.name}'] + extra_args
 
-        context = conf.get('spark.kubernetes.context')
-        if context:
-            master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
-        else:
-            master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
-
-        try:
-           default_master = subprocess.check_output(master_kubectl_cmd, shell=True)
-           master_args = ['--master', 'k8s://' + default_master.decode("utf-8")]
-           submit_args = master_args + submit_args
-        except subprocess.CalledProcessError as e:
-           logging.error(f'Cannot determine default kubernetes control plane url. Probably bad or missing kubeconfig file {kubeconfig}')
-           logging.warning(f'Please set the KUBECONFIG environment variable to point to the kubeconfig. Or fix the default kubeconfig {kubeconfig}')
-           logging.error(e.output)
-           sys.exit(EXIT_CODE_BAD_KUBECONFIG)
-
-    submit_cmd = '{}/bin/spark-submit'.format(os.environ['SPARK_HOME'])
-
-    submit_cmd += ' ' + ' '.join(submit_args)
-    os.system(submit_cmd)
+        SPARK_HOME = os.environ['SPARK_HOME']
+        SPARK_SUBMIT_ARGS = ' '.join(submit_args)
+        submit_cmd = f'{SPARK_HOME}/bin/spark-submit {SPARK_SUBMIT_ARGS}'
+        logging.debug(submit_cmd)
+        os.system(submit_cmd)

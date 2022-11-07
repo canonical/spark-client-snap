@@ -6,6 +6,7 @@ import yaml
 import argparse
 import pwd
 from typing import Dict
+import utils
 
 KUBECTL_CMD= '{}/kubectl'.format(os.environ['SNAP'])
 USER_HOME_DIR_ENT_IDX = 5
@@ -16,7 +17,7 @@ def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str):
     print('Looks like either kubernetes is not set up properly or default kubeconfig file is not accessible!')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
 
 def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print('\nERROR: Invalid or incomplete kubeconfig file {}. One or more of the following entries might be missing or invalid.\n'.format(kubeconfig))
@@ -29,7 +30,7 @@ def print_help_for_bad_kubeconfig_file(kubeconfig: str):
     print(' - cluster.certificate-authority-data')
     print('Please take the following remedial actions.')
     print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
-    print('	2. sudo snap connect spark-client:dot-kubeconfig-access')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
 
 def select_context_id(kube_cfg: Dict) -> int:
     NO_CONTEXT = -1
@@ -65,7 +66,6 @@ def get_defaults_from_kubeconfig(kubeconfig: str, context: str = None) -> Dict:
         with open(kubeconfig) as f:
             kube_cfg = yaml.safe_load(f)
             context_names = [n['name'] for n in kube_cfg['contexts']]
-            # namespaces = [n['context']['namespace'] for n in kube_cfg['contexts']]
             certs = [n['cluster']['certificate-authority-data'] for n in kube_cfg['clusters']]
             current_context = context or kube_cfg['current-context']
     except IOError as ioe:
@@ -84,7 +84,7 @@ def get_defaults_from_kubeconfig(kubeconfig: str, context: str = None) -> Dict:
 
     defaults = {}
     defaults['context'] = context_names[context_id]
-    defaults['namespace'] = 'default' # namespaces[context_id]
+    defaults['namespace'] = 'default'
     defaults['cert'] = certs[context_id]
     defaults['config'] = kubeconfig
     defaults['user'] = 'spark'
@@ -103,6 +103,17 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
     os.system(f"{KUBECTL_CMD} create rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} --role={roleaccess}  --serviceaccount={namespace}:{username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
+
+def setup_spark_conf_defaults(username: str, namespace: str) -> None:
+    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
+    generated_defaults = utils.generate_spark_default_conf()
+    if username:
+        generated_defaults['spark.kubernetes.authenticate.driver.serviceAccountName'] = username
+    if namespace:
+        generated_defaults['spark.kubernetes.namespace'] = namespace
+
+    with open(DYNAMIC_DEFAULTS_CONF_FILE, 'w') as f:
+        utils.write_property_file(f, generated_defaults)
 
 if __name__ == "__main__":
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
@@ -127,3 +138,4 @@ if __name__ == "__main__":
         username = args.username
         namespace = args.namespace or defaults['namespace']
         set_up_user(username, namespace, defaults)
+        setup_spark_conf_defaults(username, namespace)

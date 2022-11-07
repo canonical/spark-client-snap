@@ -2,16 +2,14 @@ name: Build Spark client snap and run tests
 
 env:
   RELEASE: edge
-  BRANCH: dev
-  VERSION: '3.3.0'
+  SNAP_VERSION: '3.3.1'
+  BRANCH: ${{ github.ref_name }}
 
 on:
   push:
     branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
+      - '*'
+      - '!main'
   schedule:
     - cron: '30 10 * * *'
 
@@ -27,19 +25,20 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: ${{ env.BRANCH }}
       - id: published-version
-        name: Read last published stable version
+        name: Read last published stable Spark version
         uses: juliangruber/read-file-action@v1
         with:
-          path: ./VERSION
+          path: ./SPARK_VERSION
       - id: latest-version
         name: Check latest stable version available for download
         run: |
           LATEST_STABLE_SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
           CURRENT_PUBLISHED_VERSION=${{ steps.published-version.outputs.content }}
+          LATEST_AVAILABLE_VERSION=${LATEST_STABLE_SPARK_VERSION:6}
           STATUSCODE=$(curl --silent --head https://downloads.apache.org/spark/${LATEST_STABLE_SPARK_VERSION}/${LATEST_STABLE_SPARK_VERSION}-bin-hadoop3.tgz | head -n 1 | cut -d' ' -f2)
-          if  [[ ${LATEST_STABLE_SPARK_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
+          if  [[ ${LATEST_AVAILABLE_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
             then 
               echo "::set-output name=decision::1"
               echo "Allowed to publish....."
@@ -47,7 +46,7 @@ jobs:
               echo "::set-output name=decision::0"
               echo "Do NOT publish!"
           fi
-          echo "::set-output name=version::${LATEST_STABLE_SPARK_VERSION}"
+          echo "::set-output name=version::${LATEST_AVAILABLE_VERSION}"
   build:
     name: Build Snap
     if: needs.build-condition.outputs.decision  ==  '1' || github.event_name == 'push' || github.event_name == 'pull_request'
@@ -61,7 +60,7 @@ jobs:
         name: Checkout repo
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: ${{ env.BRANCH }}
       - id: build-snap
         name: Build snap
         uses: snapcore/action-build@v1
@@ -72,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: spark-client_snap_amd64
-          path: spark-client_${{ env.VERSION }}_amd64.snap
+          path: spark-client_${{ env.SNAP_VERSION }}_amd64.snap
 
   test:
     name: Test Snap
@@ -90,13 +89,12 @@ jobs:
 
       - name: Install snap file
         run: |
-          sudo snap install spark-client_${{ env.VERSION }}_amd64.snap --dangerous
+          sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
 
       - name: Setup Spark client
         run: |
           # connect interfaces
-          sudo snap connect spark-client:dot-kubeconfig-access
-          sudo snap connect spark-client:dot-scala-history
+          sudo snap connect spark-client:dot-kube-config
           
           # setup pre requisites
           sudo snap install microk8s --classic
@@ -144,7 +142,7 @@ jobs:
 
   publish:
     name: Publish Snap
-    if: needs.build-condition.outputs.decision  ==  '1'
+    if: needs.build-condition.outputs.decision  ==  '1' && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     needs:
       - build-condition
@@ -161,12 +159,20 @@ jobs:
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
-          snap: spark-client_${{ env.VERSION }}_amd64.snap
+          snap: spark-client_${{ env.SNAP_VERSION }}_amd64.snap
           release: ${{ env.RELEASE }}
-      - name: Record the published version
+      - name: Checkout SPARK_VERSION file
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Record the published Spark version in SPARK_VERSION file
         uses: DamianReeves/write-file-action@master
         with:
-          path: ./VERSION
+          path: ./SPARK_VERSION
           write-mode: overwrite
           contents: |
             ${{ needs.build-condition.outputs.version }}
+      - name: Commit updated SPARK_VERSION file
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Published snap for latest Spark version ${{ needs.build-condition.outputs.version }}
