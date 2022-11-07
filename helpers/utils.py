@@ -16,6 +16,7 @@ EXIT_CODE_BAD_KUBECONFIG = -100
 EXIT_CODE_BAD_CONF_ARG = -200
 EXIT_CODE_GET_SECRET_FAILED = -300
 EXIT_CODE_PUT_SECRET_FAILED = -400
+EXIT_CODE_DEL_SECRET_FAILED = -500
 
 def generate_spark_default_conf() -> Dict:
     generated_defaults = dict()
@@ -162,3 +163,14 @@ def retrieve_kubernetes_secret(service_account_name: str, keys: List[str]) -> No
         except subprocess.CalledProcessError as e:
             logging.error(e.output)
             sys.exit(EXIT_CODE_GET_SECRET_FAILED)
+
+def delete_kubernetes_secret(service_account_name: str) -> None:
+    secret_name = f"spark-client-sa-conf-{service_account_name or 'spark'}"
+    kubeconfig = get_kube_config()
+    kubectl_cmd = get_kubectl_cmd()
+    cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} delete secret {secret_name}"
+    try:
+        subprocess.check_output(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(e.output)
+        sys.exit(EXIT_CODE_DEL_SECRET_FAILED)

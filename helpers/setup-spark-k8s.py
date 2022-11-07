@@ -141,6 +141,10 @@ if __name__ == "__main__":
                                 help='Service Account for which configuration properties need to be retrieved.')
     parser_account.add_argument('--conf', action='append', type=str, help='Config property to retrieve.')
 
+    #  subparser for sa-conf-delete
+    parser_account = subparsers.add_parser('sa-conf-delete')
+    parser_account.add_argument('--service-account-name', default=None, help='Service Account for which configuration properties need to be deleted.')
+
     args = parser.parse_args()
 
     defaults = get_defaults_from_kubeconfig(args.kubeconfig or DEFAULT_KUBECONFIG, args.context)
@@ -154,4 +158,6 @@ if __name__ == "__main__":
         utils.setup_kubernetes_secret(args.properties_file, args.service_account_name)
     elif args.action == 'sa-conf-get':
         utils.retrieve_kubernetes_secret(args.service_account_name, args.conf)
+    elif args.action == 'sa-conf-delete':
+        utils.delete_kubernetes_secret(args.service_account_name)
 
