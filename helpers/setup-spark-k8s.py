@@ -130,6 +130,17 @@ if __name__ == "__main__":
     parser_account.add_argument('--username', default='spark', help='Service account username to be created in kubernetes. Default is spark')
     parser_account.add_argument('--namespace', default=None, help='Namespace for the service account to be created in kubernetes. Default is default namespace')
 
+    #  subparser for sa-conf-create
+    parser_account = subparsers.add_parser('sa-conf-create')
+    parser_account.add_argument('--service-account-name', default=None, help='Service Account for which configuration properties need to be initialized.')
+    parser_account.add_argument('--properties-file', default = None, help='File with all configuration properties assignments.')
+
+    #  subparser for sa-conf-get
+    parser_account = subparsers.add_parser('sa-conf-get')
+    parser_account.add_argument('--service-account-name', default=None,
+                                help='Service Account for which configuration properties need to be retrieved.')
+    parser_account.add_argument('--conf', action='append', type=str, help='Config property to retrieve.')
+
     args = parser.parse_args()
 
     defaults = get_defaults_from_kubeconfig(args.kubeconfig or DEFAULT_KUBECONFIG, args.context)
@@ -139,3 +150,8 @@ if __name__ == "__main__":
         namespace = args.namespace or defaults['namespace']
         set_up_user(username, namespace, defaults)
         setup_spark_conf_defaults(username, namespace)
+    elif args.action == 'sa-conf-create':
+        utils.setup_kubernetes_secret(args.properties_file, args.service_account_name)
+    elif args.action == 'sa-conf-get':
+        utils.retrieve_kubernetes_secret(args.service_account_name, args.conf)
+
