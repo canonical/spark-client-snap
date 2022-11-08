@@ -92,7 +92,7 @@ def get_defaults_from_kubeconfig(kubeconfig: str, context: str = None) -> Dict:
 
     return defaults
 
-def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
+def set_up_user(username: str, name_space: str, defaults: Dict, mark_primary: bool) -> None:
     namespace = name_space or defaults['namespace']
     kubeconfig = defaults['config']
     context_name = defaults['context']
@@ -100,10 +100,38 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
     rolebindingname = username + '-role'
     roleaccess='view'
     label = utils.get_management_label()
+
     os.system(f"{KUBECTL_CMD} create serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} create rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} --role={roleaccess}  --serviceaccount={namespace}:{username} --namespace={namespace}")
-    os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} --namespace={namespace}")
-    os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
+
+    primary_label_to_remove = utils.get_primary_label(label=False)
+    primary_label_full = utils.get_primary_label()
+
+    primary = utils.retrieve_primary_service_account_details()
+    is_primary_defined = len(primary.keys()) > 0
+
+    logging.debug(f"is_primary_defined={is_primary_defined}")
+    logging.debug(f"mark_primary={mark_primary}")
+
+    if is_primary_defined and mark_primary:
+        sa_to_unlabel = primary['spark.kubernetes.authenticate.driver.serviceAccountName']
+        namespace_of_sa_to_unlabel = primary['spark.kubernetes.namespace']
+        rolebindingname_to_unlabel = sa_to_unlabel + '-role'
+
+        os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} --namespace={namespace_of_sa_to_unlabel} {sa_to_unlabel} {primary_label_to_remove}-")
+        os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} --namespace={namespace_of_sa_to_unlabel} {rolebindingname_to_unlabel} {primary_label_to_remove}-")
+
+        os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} {primary_label_full} --namespace={namespace}")
+        os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} {primary_label_full} --namespace={namespace}")
+    elif is_primary_defined and not mark_primary:
+        os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} --namespace={namespace}")
+        os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
+    elif not is_primary_defined:
+        os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} {primary_label_full} --namespace={namespace}")
+        os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} {primary_label_full} --namespace={namespace}")
+    else:
+        logging.warning("Labeling logic issue.....")
+
 
 def cleanup_user(username: str, namespace: str, k8s_context: str) -> None:
     kubectl_cmd = utils.build_kubectl_cmd(namespace, k8s_context)
@@ -112,21 +140,6 @@ def cleanup_user(username: str, namespace: str, k8s_context: str) -> None:
     os.system(f"{kubectl_cmd} delete serviceaccount {username}")
     os.system(f"{kubectl_cmd} delete rolebinding {rolebindingname}")
     utils.delete_kubernetes_secret(username, namespace, k8s_context)
-
-    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
-    if DYNAMIC_DEFAULTS_CONF_FILE and os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE):
-        os.remove(DYNAMIC_DEFAULTS_CONF_FILE)
-
-def setup_spark_conf_defaults(username: str, namespace: str) -> None:
-    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
-    generated_defaults = utils.generate_spark_default_conf()
-    if username:
-        generated_defaults['spark.kubernetes.authenticate.driver.serviceAccountName'] = username
-    if namespace:
-        generated_defaults['spark.kubernetes.namespace'] = namespace
-
-    with open(DYNAMIC_DEFAULTS_CONF_FILE, 'w') as f:
-        utils.write_property_file(f, generated_defaults)
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
@@ -139,11 +152,13 @@ if __name__ == "__main__":
     parser.add_argument("--context", default=None, help='Context name to use within the provided kubernetes configuration file')
     parser.add_argument('--namespace', default='default', help='Namespace for the service account. Default is \'default\'.')
     parser.add_argument('--username', default='spark', help='Service account username. Default is \'spark\'.')
+
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
 
     #  subparser for service-account
     parser_account = subparsers.add_parser('service-account')
+    parser_account.add_argument('--primary', action='store_true', help='Boolean to mark the service account as primary.')
     parser_account.add_argument('--conf', action='append', type=str, help='Config properties to be added to the service account.')
 
     #  subparser for service-account-cleanup
@@ -160,8 +175,11 @@ if __name__ == "__main__":
     #  subparser for sa-conf-del
     parser_account = subparsers.add_parser('sa-conf-del')
 
-    #  subparser for sa-resources
-    parser_account = subparsers.add_parser('sa-resources')
+    # #  subparser for resources-sa
+    # parser_account = subparsers.add_parser('resources-sa')
+
+    #  subparser for resources-primary-sa
+    parser_account = subparsers.add_parser('resources-primary-sa')
 
     args = parser.parse_args()
 
@@ -170,19 +188,21 @@ if __name__ == "__main__":
     if args.action == 'service-account':
         username = args.username
         namespace = args.namespace or defaults['namespace']
-        set_up_user(username, namespace, defaults)
-        setup_spark_conf_defaults(username, namespace)
+        set_up_user(username, namespace, defaults, args.primary)
         utils.setup_kubernetes_secret_literal(username, namespace, args.context, args.conf)
     elif args.action == 'service-account-cleanup':
         cleanup_user(args.username, args.namespace, args.context)
     elif args.action == 'sa-conf-put':
-       utils.setup_kubernetes_secret_env_file(args.username, args.namespace or defaults['namespace'], args.context, args.properties_file)
+        utils.setup_kubernetes_secret_env_file(args.username, args.namespace or defaults['namespace'], args.context, args.properties_file)
     elif args.action == 'sa-conf-get':
         conf = utils.retrieve_kubernetes_secret(args.username, args.namespace, args.context, args.conf)
         utils.print_properties(conf)
     elif args.action == 'sa-conf-del':
         utils.delete_kubernetes_secret(args.username, args.namespace, args.context)
-    elif args.action == 'sa-resources':
-        conf = utils.retrieve_k8s_resources_by_label(args.namespace, args.context)
+    # elif args.action == 'resources-sa':
+    #     conf = utils.retrieve_k8s_resources_by_label(args.namespace, args.context)
+    #     utils.print_properties(conf)
+    elif args.action == 'resources-primary-sa':
+        conf = utils.retrieve_primary_service_account_details()
         utils.print_properties(conf)
 

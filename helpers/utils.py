@@ -19,6 +19,8 @@ EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED = -400
 EXIT_CODE_PUT_SECRET_LITERAL_FAILED = -500
 EXIT_CODE_DEL_SECRET_FAILED = -600
 EXIT_CODE_GET_K8S_PROPS_FAILED = -700
+EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED = -800
+EXIT_CODE_SET_PRIMARY_RESOURCES_FAILED = -900
 
 def generate_spark_default_conf() -> Dict:
     generated_defaults = dict()
@@ -156,13 +158,21 @@ def execute_kubectl_cmd(cmd: str, exit_code_on_error: int) -> str:
     return result
 
 def setup_kubernetes_secret_literal(username: str, namespace: str, k8s_context: str, conf : List[str]) -> None:
-    if not conf:
-        return
     kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
     secret_name = build_secret_name(username, namespace)
     cmd = f"{kubectl_cmd} create secret generic {secret_name}"
-    for c in conf:
-        cmd += f" --from-literal={c}"
+
+    if conf:
+        for c in conf:
+            cmd += f" --from-literal={c}"
+
+    defaults = generate_spark_default_conf()
+    for k in defaults.keys():
+        cmd += f" --from-literal={k}={defaults[k]}"
+
+    cmd += f" --from-literal=spark.kubernetes.authenticate.driver.serviceAccountName={username}"
+    cmd += f" --from-literal=spark.kubernetes.namespace={namespace}"
+
     execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_LITERAL_FAILED)
 
 def setup_kubernetes_secret_env_file(username: str, namespace: str, k8s_context: str, properties_file: str) -> None:
@@ -197,8 +207,11 @@ def delete_kubernetes_secret(username: str, namespace: str, k8s_context: str) ->
     cmd = f"{kubectl_cmd} delete secret {secret_name}"
     execute_kubectl_cmd(cmd, EXIT_CODE_DEL_SECRET_FAILED)
 
-def get_management_label() -> str:
-    return 'app.kubernetes.io/managed-by=spark-client'
+def get_management_label(label: bool = True) -> str:
+    return 'app.kubernetes.io/managed-by=spark-client' if label else 'app.kubernetes.io/managed-by'
+
+def get_primary_label(label: bool = True) -> str:
+    return 'app.kubernetes.io/spark-client-primary=1' if label else 'app.kubernetes.io/spark-client-primary'
 
 def retrieve_k8s_resources_by_label(namespace: str, k8s_context: str) -> Dict:
     kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
@@ -206,9 +219,26 @@ def retrieve_k8s_resources_by_label(namespace: str, k8s_context: str) -> Dict:
     conf = dict()
 
     cmd = f"{kubectl_cmd} get serviceaccount -l {label} -o jsonpath={{.items[0].metadata.name}}"
-    conf['serviceaccount'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
+    conf['spark.kubernetes.authenticate.driver.serviceAccountName'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
 
     cmd = f"{kubectl_cmd} get rolebinding -l {label} -o jsonpath={{.items[0].metadata.name}}"
-    conf['rolebinding'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
+    conf['spark-client.rolebinding'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
 
     return conf
+
+def retrieve_primary_service_account_details() -> Dict:
+    kubeconfig = get_kube_config()
+    kubectl_cmd = get_kubectl_cmd()
+    label = get_primary_label()
+    cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig}  get serviceaccount -l {label} -A -o yaml"
+    out_yaml_str = execute_kubectl_cmd(cmd, EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED)
+    out = yaml.safe_load(out_yaml_str)
+    result = dict()
+    if len(out['items']) > 0:
+        result['spark.kubernetes.authenticate.driver.serviceAccountName'] = out['items'][0]['metadata']['name']
+        result['spark.kubernetes.namespace'] = out['items'][0]['metadata']['namespace']
+    return result
+
+def is_primary_sa_defined() -> bool:
+    conf = retrieve_primary_service_account_details()
+    return len(conf.keys()) > 0
