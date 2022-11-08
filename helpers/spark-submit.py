@@ -25,14 +25,18 @@ if __name__ == "__main__":
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
+    primary = utils.retrieve_primary_service_account_details()
+    primary_username = primary['spark.kubernetes.authenticate.driver.serviceAccountName']
+    primary_namespace = primary['spark.kubernetes.namespace']
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
     setup_dynamic_defaults = utils.retrieve_primary_service_account_details()
+    setup_dynamic_defaults_conf = utils.retrieve_kubernetes_secret(primary_username, primary_namespace, None, None)
     env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
     props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
 
     with utils.UmaskNamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
-        defaults = utils.merge_configurations([snap_static_defaults, setup_dynamic_defaults, env_defaults, props_file_arg_defaults])
+        defaults = utils.merge_configurations([snap_static_defaults, setup_dynamic_defaults, setup_dynamic_defaults_conf, env_defaults, props_file_arg_defaults])
         logging.debug(f'Spark props available for reference at {utils.get_snap_temp_dir()}{t.name}\n')
         utils.write_property_file(t.file, defaults, log=True)
         t.flush()
