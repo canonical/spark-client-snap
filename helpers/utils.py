@@ -15,8 +15,10 @@ USER_HOME_DIR_ENT_IDX = 5
 EXIT_CODE_BAD_KUBECONFIG = -100
 EXIT_CODE_BAD_CONF_ARG = -200
 EXIT_CODE_GET_SECRET_FAILED = -300
-EXIT_CODE_PUT_SECRET_FAILED = -400
-EXIT_CODE_DEL_SECRET_FAILED = -500
+EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED = -400
+EXIT_CODE_PUT_SECRET_LITERAL_FAILED = -500
+EXIT_CODE_DEL_SECRET_FAILED = -600
+EXIT_CODE_GET_K8S_PROPS_FAILED = -700
 
 def generate_spark_default_conf() -> Dict:
     generated_defaults = dict()
@@ -42,6 +44,11 @@ def write_property_file(fp: io.TextIOWrapper, props: Dict, log: bool = None) -> 
         fp.write(line+'\n')
         if (log):
             logging.info(line)
+
+def print_properties(props: Dict) -> None:
+    for k in props.keys():
+        v = props[k]
+        print(f"{k}={v}")
 
 def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
     result = dict()
@@ -121,56 +128,87 @@ def UmaskNamedTemporaryFile(*args, **kargs):
     os.chmod(fdesc.name, 0o666 & ~umask)
     return fdesc
 
-def setup_kubernetes_secret(properties_file: str, service_account_name: str) -> None:
+def build_kubectl_cmd(namespace: str, k8s_context: str) -> str:
+    kubeconfig = get_kube_config()
+    kubectl_cmd = get_kubectl_cmd()
+    cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} --namespace={namespace}"
+    if k8s_context:
+        cmd += f" --context {k8s_context}"
+    return cmd
+
+def build_secret_name(username: str, namespace: str) -> str:
+    return f"spark-client-sa-conf-{username or 'spark'}"
+
+def execute_kubectl_cmd(cmd: str, exit_code_on_error: int) -> str:
+    logging.debug(cmd)
+    # kubeconfig = get_kube_config()
+    try:
+        out = subprocess.check_output(cmd, shell=True)
+        result = out.decode('utf-8') if out else None
+    except subprocess.CalledProcessError as e:
+        # logging.error(
+        #     f'Probably bad or missing kubeconfig file {kubeconfig}')
+        # logging.warning(
+        #     f'Please set the KUBECONFIG environment variable to point to the kubeconfig. Or fix the default kubeconfig {kubeconfig}')
+        logging.error(e.output)
+        sys.exit(exit_code_on_error)
+
+    return result
+
+def setup_kubernetes_secret_literal(username: str, namespace: str, k8s_context: str, conf : List[str]) -> None:
+    if not conf:
+        return
+    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+    secret_name = build_secret_name(username, namespace)
+    cmd = f"{kubectl_cmd} create secret generic {secret_name}"
+    for c in conf:
+        cmd += f" --from-literal={c}"
+    execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_LITERAL_FAILED)
+
+def setup_kubernetes_secret_env_file(username: str, namespace: str, k8s_context: str, properties_file: str) -> None:
     if not properties_file:
         return
-    kubeconfig = get_kube_config()
-    kubectl_cmd = get_kubectl_cmd()
-    secret_name = f"spark-client-sa-conf-{service_account_name or 'spark'}"
-    cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} create secret generic {secret_name} --from-env-file={properties_file}"
-    try:
-        subprocess.check_output(cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        logging.error(
-            f'Cannot create secret. Probably bad or missing kubeconfig file {kubeconfig}')
-        logging.warning(
-            f'Please set the KUBECONFIG environment variable to point to the kubeconfig. Or fix the default kubeconfig {kubeconfig}')
-        logging.error(e.output)
-        sys.exit(EXIT_CODE_BAD_KUBECONFIG)
+    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+    secret_name = build_secret_name(username, namespace)
+    cmd = f"{kubectl_cmd} create secret generic {secret_name} --from-env-file={properties_file}"
+    execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED)
 
-def retrieve_kubernetes_secret(service_account_name: str, keys: List[str]) -> None:
-    secret_name = f"spark-client-sa-conf-{service_account_name or 'spark'}"
-    kubeconfig = get_kube_config()
-    kubectl_cmd = get_kubectl_cmd()
+def retrieve_kubernetes_secret(username: str, namespace: str, k8s_context: str, keys: List[str]) -> Dict:
+    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+    secret_name = build_secret_name(username, namespace)
+    result = dict()
 
     if not keys or len(keys) == 0:
-        cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} get secret {secret_name} -o yaml"
-        try:
-            out = subprocess.check_output(cmd, shell=True)
-            secret = yaml.safe_load(out.decode("utf-8"))
-            keys = secret['data'].keys()
-        except subprocess.CalledProcessError as e:
-            logging.error(e.output)
-            sys.exit(EXIT_CODE_GET_SECRET_FAILED)
+        cmd = f"{kubectl_cmd} get secret {secret_name} -o yaml"
+        out_yaml_str = execute_kubectl_cmd(cmd, EXIT_CODE_GET_SECRET_FAILED)
+        secret = yaml.safe_load(out_yaml_str)
+        keys = secret['data'].keys()
 
     for k in keys:
         k1 = k.replace('.', '\\.')
-        cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} get secret {secret_name} -o jsonpath='{{.data.{k1}}}' | base64 --decode"
-        try:
-            out = subprocess.check_output(cmd, shell=True)
-            v = out.decode("utf-8")
-            print(f"{k}={v}")
-        except subprocess.CalledProcessError as e:
-            logging.error(e.output)
-            sys.exit(EXIT_CODE_GET_SECRET_FAILED)
+        cmd = f"{kubectl_cmd} get secret {secret_name} -o jsonpath='{{.data.{k1}}}' | base64 --decode"
+        result[k] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_SECRET_FAILED)
 
-def delete_kubernetes_secret(service_account_name: str) -> None:
-    secret_name = f"spark-client-sa-conf-{service_account_name or 'spark'}"
-    kubeconfig = get_kube_config()
-    kubectl_cmd = get_kubectl_cmd()
-    cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} delete secret {secret_name}"
-    try:
-        subprocess.check_output(cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        logging.error(e.output)
-        sys.exit(EXIT_CODE_DEL_SECRET_FAILED)
+    return result
+
+def delete_kubernetes_secret(username: str, namespace: str, k8s_context: str) -> None:
+    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+    secret_name = build_secret_name(username, namespace)
+    cmd = f"{kubectl_cmd} delete secret {secret_name}"
+    execute_kubectl_cmd(cmd, EXIT_CODE_DEL_SECRET_FAILED)
+
+def get_management_label() -> str:
+    return 'app.kubernetes.io/managed-by=spark-client'
+
+def retrieve_k8s_resources_by_label(namespace: str, k8s_context: str) -> Dict:
+    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+    label = get_management_label()
+    conf = dict()
+
+    cmd = f"{kubectl_cmd} get serviceaccount -l {label} -o jsonpath={{.items[0].metadata.name}}"
+    conf['serviceaccount'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
+
+    cmd = f"{kubectl_cmd} get rolebinding -l {label} -o jsonpath={{.items[0].metadata.name}}"
+    conf['rolebinding'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
+
+    return conf

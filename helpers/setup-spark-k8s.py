@@ -7,6 +7,7 @@ import argparse
 import pwd
 from typing import Dict
 import utils
+import logging
 
 KUBECTL_CMD= '{}/kubectl'.format(os.environ['SNAP'])
 USER_HOME_DIR_ENT_IDX = 5
@@ -98,11 +99,23 @@ def set_up_user(username: str, name_space: str, defaults: Dict) -> None:
 
     rolebindingname = username + '-role'
     roleaccess='view'
-    label = 'app.kubernetes.io/managed-by=spark-client'
+    label = utils.get_management_label()
     os.system(f"{KUBECTL_CMD} create serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} create rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} --role={roleaccess}  --serviceaccount={namespace}:{username} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} label serviceaccount --kubeconfig={kubeconfig} --context={context_name} {username} {label} --namespace={namespace}")
     os.system(f"{KUBECTL_CMD} label rolebinding --kubeconfig={kubeconfig} --context={context_name} {rolebindingname} {label} --namespace={namespace}")
+
+def cleanup_user(username: str, namespace: str, k8s_context: str) -> None:
+    kubectl_cmd = utils.build_kubectl_cmd(namespace, k8s_context)
+    rolebindingname = username + '-role'
+
+    os.system(f"{kubectl_cmd} delete serviceaccount {username}")
+    os.system(f"{kubectl_cmd} delete rolebinding {rolebindingname}")
+    utils.delete_kubernetes_secret(username, namespace, k8s_context)
+
+    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
+    if DYNAMIC_DEFAULTS_CONF_FILE and os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE):
+        os.remove(DYNAMIC_DEFAULTS_CONF_FILE)
 
 def setup_spark_conf_defaults(username: str, namespace: str) -> None:
     DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
@@ -116,34 +129,39 @@ def setup_spark_conf_defaults(username: str, namespace: str) -> None:
         utils.write_property_file(f, generated_defaults)
 
 if __name__ == "__main__":
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
     DEFAULT_KUBECONFIG = f'{USER_HOME_DIR}/.kube/config'
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--kubeconfig", default=None, help='Kubernetes configuration file')
     parser.add_argument("--context", default=None, help='Context name to use within the provided kubernetes configuration file')
+    parser.add_argument('--namespace', default='default', help='Namespace for the service account. Default is \'default\'.')
+    parser.add_argument('--username', default='spark', help='Service account username. Default is \'spark\'.')
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
 
     #  subparser for service-account
     parser_account = subparsers.add_parser('service-account')
-    parser_account.add_argument('--username', default='spark', help='Service account username to be created in kubernetes. Default is spark')
-    parser_account.add_argument('--namespace', default=None, help='Namespace for the service account to be created in kubernetes. Default is default namespace')
+    parser_account.add_argument('--conf', action='append', type=str, help='Config properties to be added to the service account.')
 
-    #  subparser for sa-conf-create
-    parser_account = subparsers.add_parser('sa-conf-create')
-    parser_account.add_argument('--service-account-name', default=None, help='Service Account for which configuration properties need to be initialized.')
+    #  subparser for service-account-cleanup
+    parser_account = subparsers.add_parser('service-account-cleanup')
+
+    #  subparser for sa-conf-put
+    parser_account = subparsers.add_parser('sa-conf-put')
     parser_account.add_argument('--properties-file', default = None, help='File with all configuration properties assignments.')
 
     #  subparser for sa-conf-get
     parser_account = subparsers.add_parser('sa-conf-get')
-    parser_account.add_argument('--service-account-name', default=None,
-                                help='Service Account for which configuration properties need to be retrieved.')
     parser_account.add_argument('--conf', action='append', type=str, help='Config property to retrieve.')
 
-    #  subparser for sa-conf-delete
-    parser_account = subparsers.add_parser('sa-conf-delete')
-    parser_account.add_argument('--service-account-name', default=None, help='Service Account for which configuration properties need to be deleted.')
+    #  subparser for sa-conf-del
+    parser_account = subparsers.add_parser('sa-conf-del')
+
+    #  subparser for sa-resources
+    parser_account = subparsers.add_parser('sa-resources')
 
     args = parser.parse_args()
 
@@ -154,10 +172,17 @@ if __name__ == "__main__":
         namespace = args.namespace or defaults['namespace']
         set_up_user(username, namespace, defaults)
         setup_spark_conf_defaults(username, namespace)
-    elif args.action == 'sa-conf-create':
-        utils.setup_kubernetes_secret(args.properties_file, args.service_account_name)
+        utils.setup_kubernetes_secret_literal(username, namespace, args.context, args.conf)
+    elif args.action == 'service-account-cleanup':
+        cleanup_user(args.username, args.namespace, args.context)
+    elif args.action == 'sa-conf-put':
+       utils.setup_kubernetes_secret_env_file(args.username, args.namespace or defaults['namespace'], args.context, args.properties_file)
     elif args.action == 'sa-conf-get':
-        utils.retrieve_kubernetes_secret(args.service_account_name, args.conf)
-    elif args.action == 'sa-conf-delete':
-        utils.delete_kubernetes_secret(args.service_account_name)
+        conf = utils.retrieve_kubernetes_secret(args.username, args.namespace, args.context, args.conf)
+        utils.print_properties(conf)
+    elif args.action == 'sa-conf-del':
+        utils.delete_kubernetes_secret(args.username, args.namespace, args.context)
+    elif args.action == 'sa-resources':
+        conf = utils.retrieve_k8s_resources_by_label(args.namespace, args.context)
+        utils.print_properties(conf)
 
