@@ -91,11 +91,13 @@ jobs:
         run: |
           sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
 
-      - name: Setup Spark client
+      - name: Connect client interfaces
         run: |
           # connect interfaces
           sudo snap connect spark-client:dot-kube-config
-          
+
+      - name: Setup prerequisites
+        run: |
           # setup pre requisites
           sudo snap install microk8s --classic
           sudo microk8s status --wait-ready
@@ -106,7 +108,9 @@ jobs:
           sudo microk8s config > /home/runner/.kube/config
           sudo chown -f -R runner /home/runner/.kube
           sudo microk8s.enable dns
-          
+
+      - name: Setup client
+        run: |
           # create the service account
           spark-client.setup-spark-k8s service-account
 
