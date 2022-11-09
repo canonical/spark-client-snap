@@ -12,6 +12,7 @@ from tempfile import NamedTemporaryFile
 import yaml
 
 USER_HOME_DIR_ENT_IDX = 5
+
 EXIT_CODE_BAD_KUBECONFIG = -100
 EXIT_CODE_BAD_CONF_ARG = -200
 EXIT_CODE_GET_SECRET_FAILED = -300
@@ -103,21 +104,14 @@ def get_kubectl_cmd() -> str:
 
 def autodetect_kubernetes_master(conf: Dict) -> str:
     kubeconfig = get_kube_config()
-    kubectl_cmd = get_kubectl_cmd()
+    namespace = conf.get('spark.kubernetes.namespace')
     context = conf.get('spark.kubernetes.context')
-    if context:
-        master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
-    else:
-        master_kubectl_cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
-    try:
-       default_master = subprocess.check_output(master_kubectl_cmd, shell=True)
-       k8s_master_uri = 'k8s://' + default_master.decode("utf-8")
-    except subprocess.CalledProcessError as e:
-       logging.error(f'Cannot determine default kubernetes control plane url. Probably bad or missing kubeconfig file {kubeconfig}')
-       logging.warning(f'Please set the KUBECONFIG environment variable to point to the kubeconfig. Or fix the default kubeconfig {kubeconfig}')
-       logging.error(e.output)
-       sys.exit(EXIT_CODE_BAD_KUBECONFIG)
-    return k8s_master_uri
+    primary_sa = retrieve_primary_service_account_details(namespace, kubeconfig, context)
+    primary_namespace = primary_sa.get('spark.kubernetes.namespace') or 'default'
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, primary_namespace, context)
+    master_cmd = f"{kubectl_cmd} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
+    default_master = execute_kubectl_cmd(master_cmd, EXIT_CODE_BAD_KUBECONFIG)
+    return f'k8s://{default_master}'
 
 def UmaskNamedTemporaryFile(*args, **kargs):
     fdesc = NamedTemporaryFile(*args, **kargs)
@@ -126,12 +120,12 @@ def UmaskNamedTemporaryFile(*args, **kargs):
     os.chmod(fdesc.name, 0o666 & ~umask)
     return fdesc
 
-def build_kubectl_cmd(namespace: str, k8s_context: str) -> str:
-    kubeconfig = get_kube_config()
+def build_kubectl_cmd(kube_config: str, namespace: str, k8s_context: str) -> str:
+    kubeconfig = kube_config or get_kube_config()
     kubectl_cmd = get_kubectl_cmd()
     cmd = f"{kubectl_cmd} --kubeconfig {kubeconfig}"
     if namespace:
-        cmd += f" --namespace={namespace}"
+        cmd += f" --namespace {namespace}"
     if k8s_context:
         cmd += f" --context {k8s_context}"
     return cmd
@@ -152,8 +146,8 @@ def execute_kubectl_cmd(cmd: str, exit_code_on_error: int, log_on_error: bool = 
 
     return result
 
-def setup_kubernetes_secret(username: str, namespace: str, k8s_context: str, properties_file: str, conf : List[str]) -> None:
-    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+def setup_kubernetes_secret(username: str, namespace: str, kubeconfig: str, k8s_context: str, properties_file: str, conf : List[str]) -> None:
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     secret_name = build_secret_name(username)
     props_from_file = read_property_file(properties_file)
     props_from_conf = parse_conf_overrides(conf)
@@ -166,8 +160,8 @@ def setup_kubernetes_secret(username: str, namespace: str, k8s_context: str, pro
         logging.debug(cmd)
         execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED)
 
-def retrieve_kubernetes_secret(username: str, namespace: str, k8s_context: str, keys: List[str]) -> Dict:
-    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+def retrieve_kubernetes_secret(username: str, namespace: str, kubeconfig: str, k8s_context: str, keys: List[str]) -> Dict:
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     secret_name = build_secret_name(username)
     result = dict()
 
@@ -184,8 +178,8 @@ def retrieve_kubernetes_secret(username: str, namespace: str, k8s_context: str, 
 
     return result
 
-def delete_kubernetes_secret(username: str, namespace: str, k8s_context: str) -> None:
-    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+def delete_kubernetes_secret(username: str, namespace: str, kubeconfig: str, k8s_context: str) -> None:
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     secret_name = build_secret_name(username)
     cmd = f"{kubectl_cmd} delete secret {secret_name}"
     execute_kubectl_cmd(cmd, EXIT_CODE_DEL_SECRET_FAILED, log_on_error=False)
@@ -196,21 +190,8 @@ def get_management_label(label: bool = True) -> str:
 def get_primary_label(label: bool = True) -> str:
     return 'app.kubernetes.io/spark-client-primary=1' if label else 'app.kubernetes.io/spark-client-primary'
 
-def retrieve_k8s_resources_by_label(namespace: str, k8s_context: str) -> Dict:
-    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
-    label = get_management_label()
-    conf = dict()
-
-    cmd = f"{kubectl_cmd} get serviceaccount -l {label} -o jsonpath={{.items[0].metadata.name}}"
-    conf['spark.kubernetes.authenticate.driver.serviceAccountName'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
-
-    cmd = f"{kubectl_cmd} get rolebinding -l {label} -o jsonpath={{.items[0].metadata.name}}"
-    conf['spark-client.rolebinding'] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_K8S_PROPS_FAILED)
-
-    return conf
-
-def retrieve_primary_service_account_details(namespace: str, k8s_context: str) -> Dict:
-    kubectl_cmd = build_kubectl_cmd(namespace, k8s_context)
+def retrieve_primary_service_account_details(namespace: str, kubeconfig: str, k8s_context: str) -> Dict:
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     label = get_primary_label()
     cmd = f"{kubectl_cmd}  get serviceaccount -l {label} -A -o yaml"
     out_yaml_str = execute_kubectl_cmd(cmd, EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED)
@@ -221,13 +202,149 @@ def retrieve_primary_service_account_details(namespace: str, k8s_context: str) -
         result['spark.kubernetes.namespace'] = out['items'][0]['metadata']['namespace']
     return result
 
-def is_primary_sa_defined(namespace: str, k8s_context: str) -> bool:
-    conf = retrieve_primary_service_account_details(namespace, k8s_context)
+def is_primary_sa_defined(namespace: str, kubeconfig: str, k8s_context: str) -> bool:
+    conf = retrieve_primary_service_account_details(namespace, kubeconfig, k8s_context)
     return len(conf.keys()) > 0
 
 def get_dynamic_defaults():
-    setup_dynamic_defaults = retrieve_primary_service_account_details(None, None)
-    primary_username = setup_dynamic_defaults['spark.kubernetes.authenticate.driver.serviceAccountName']
-    primary_namespace = setup_dynamic_defaults['spark.kubernetes.namespace']
-    setup_dynamic_defaults_conf = retrieve_kubernetes_secret(primary_username, primary_namespace, None, None)
+    kubeconfig = get_kube_config()
+    setup_dynamic_defaults = retrieve_primary_service_account_details(None, kubeconfig, None)
+    primary_username = setup_dynamic_defaults.get('spark.kubernetes.authenticate.driver.serviceAccountName') or 'spark'
+    primary_namespace = setup_dynamic_defaults.get('spark.kubernetes.namespace') or 'default'
+    setup_dynamic_defaults_conf = retrieve_kubernetes_secret(primary_username, primary_namespace, kubeconfig, None, None)
     return merge_configurations([setup_dynamic_defaults, setup_dynamic_defaults_conf])
+
+
+def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str):
+    print('\nERROR: Missing kubeconfig file {}. Or default kubeconfig file {}/.kube/config not found.'.format(kubeconfig, pwd.getpwuid(os.getuid())[5]))
+    print('\n')
+    print('Looks like either kubernetes is not set up properly or default kubeconfig file is not accessible!')
+    print('Please take the following remedial actions.')
+    print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
+
+def print_help_for_bad_kubeconfig_file(kubeconfig: str):
+    print('\nERROR: Invalid or incomplete kubeconfig file {}. One or more of the following entries might be missing or invalid.\n'.format(kubeconfig))
+    print('	- current-context')
+    print('	- context.name')
+    print('	- context.namespace')
+    print('	- context.cluster')
+    print('	- cluster.name')
+    print('	- cluster.server')
+    print(' - cluster.certificate-authority-data')
+    print('Please take the following remedial actions.')
+    print('	1. Please set up kubernetes and make sure kubeconfig file is available, accessible and correct.')
+    print('	2. sudo snap connect spark-client:dot-kube-config')
+
+def select_context_id(kube_cfg: Dict) -> int:
+    NO_CONTEXT = -1
+    SINGLE_CONTEXT = 0
+    context_names = [n['name'] for n in kube_cfg['contexts']]
+
+    selected_context_id = NO_CONTEXT
+    if len(context_names) == 1:
+        return SINGLE_CONTEXT
+
+    context_list_ux = '\n'.join(["{}. {}".format(context_names.index(a), a) for a in context_names])
+    while selected_context_id == NO_CONTEXT:
+        print (context_list_ux)
+        print('\nPlease select a kubernetes context by index:')
+        selected_context_id = input()
+
+        try:
+           int(selected_context_id)
+        except ValueError:
+            print('Invalid context index selection, please try again....')
+            selected_context_id = NO_CONTEXT
+            continue
+
+        if int(selected_context_id) not in range(len(context_names)):
+            print('Invalid context index selection, please try again....')
+            selected_context_id = NO_CONTEXT
+            continue
+
+    return int(selected_context_id)
+
+def get_defaults_from_kubeconfig(kube_config: str, context: str = None) -> Dict:
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    DEFAULT_KUBECONFIG = f'{USER_HOME_DIR}/.kube/config'
+    kubeconfig = kube_config or DEFAULT_KUBECONFIG
+    try:
+        with open(kubeconfig) as f:
+            kube_cfg = yaml.safe_load(f)
+            context_names = [n['name'] for n in kube_cfg['contexts']]
+            certs = [n['cluster']['certificate-authority-data'] for n in kube_cfg['clusters']]
+            current_context = context or kube_cfg['current-context']
+    except IOError as ioe:
+        print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig)
+        sys.exit(-1)
+    except KeyError as ke:
+        print_help_for_bad_kubeconfig_file(kubeconfig)
+        sys.exit(-2)
+
+    try:
+        context_id = context_names.index(current_context)
+    except ValueError:
+        print(f'WARNING: Current context in provided kubeconfig file {kubeconfig} is invalid!')
+        print(f'\nProceeding with explicit context selection....')
+        context_id = select_context_id(kube_cfg)
+
+    defaults = {}
+    defaults['context'] = context_names[context_id]
+    defaults['namespace'] = 'default'
+    defaults['cert'] = certs[context_id]
+    defaults['config'] = kubeconfig
+    defaults['user'] = 'spark'
+
+    return defaults
+
+def set_up_user(username: str, name_space: str, kube_config: str, k8s_context: str, defaults: Dict, mark_primary: bool) -> None:
+    namespace = name_space or defaults['namespace']
+    kubeconfig = kube_config or defaults['config']
+    context_name = k8s_context or defaults['context']
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, context_name)
+
+    rolebindingname = username + '-role'
+    roleaccess='view'
+    label = get_management_label()
+
+    os.system(f"{kubectl_cmd} create serviceaccount {username}")
+    os.system(f"{kubectl_cmd} create rolebinding {rolebindingname} --role={roleaccess} --serviceaccount={namespace}:{username}")
+
+    primary_label_to_remove = get_primary_label(label=False)
+    primary_label_full = get_primary_label()
+
+    primary = retrieve_primary_service_account_details(namespace, kubeconfig, context_name)
+    is_primary_defined = len(primary.keys()) > 0
+
+    logging.debug(f"is_primary_defined={is_primary_defined}")
+    logging.debug(f"mark_primary={mark_primary}")
+
+    if is_primary_defined and mark_primary:
+        sa_to_unlabel = primary['spark.kubernetes.authenticate.driver.serviceAccountName']
+        namespace_of_sa_to_unlabel = primary['spark.kubernetes.namespace']
+        rolebindingname_to_unlabel = sa_to_unlabel + '-role'
+        kubectl_cmd_unlabel = build_kubectl_cmd(kubeconfig, namespace_of_sa_to_unlabel, context_name)
+
+        os.system(f"{kubectl_cmd_unlabel} label serviceaccount --namespace={namespace_of_sa_to_unlabel} {sa_to_unlabel} {primary_label_to_remove}-")
+        os.system(f"{kubectl_cmd_unlabel} label rolebinding --namespace={namespace_of_sa_to_unlabel} {rolebindingname_to_unlabel} {primary_label_to_remove}-")
+
+        os.system(f"{kubectl_cmd} label serviceaccount {username} {label} {primary_label_full}")
+        os.system(f"{kubectl_cmd} label rolebinding {rolebindingname} {label} {primary_label_full}")
+    elif is_primary_defined and not mark_primary:
+        os.system(f"{kubectl_cmd} label serviceaccount {username} {label}")
+        os.system(f"{kubectl_cmd} label rolebinding {rolebindingname} {label}")
+    elif not is_primary_defined:
+        os.system(f"{kubectl_cmd} label serviceaccount {username} {label} {primary_label_full}")
+        os.system(f"{kubectl_cmd} label rolebinding {rolebindingname} {label} {primary_label_full}")
+    else:
+        logging.warning("Labeling logic issue.....")
+
+
+def cleanup_user(username: str, namespace: str, kubeconfig: str, k8s_context: str) -> None:
+    kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
+    rolebindingname = username + '-role'
+
+    os.system(f"{kubectl_cmd} delete serviceaccount {username}")
+    os.system(f"{kubectl_cmd} delete rolebinding {rolebindingname}")
+    delete_kubernetes_secret(username, namespace, kubeconfig, k8s_context)

@@ -6,10 +6,6 @@ import logging
 import argparse
 import utils
 
-USER_HOME_DIR_ENT_IDX = 5
-EXIT_CODE_BAD_KUBECONFIG = -100
-EXIT_CODE_BAD_CONF_ARG = -200
-
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
@@ -19,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--properties-file", default=None, type=str, help='Spark default configuration properties file.')
     args, extra_args = parser.parse_known_args()
 
-    os.environ["HOME"] = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    os.environ["HOME"] = pwd.getpwuid(os.getuid())[utils.USER_HOME_DIR_ENT_IDX]
     if os.environ.get('SPARK_HOME') is None or os.environ.get('SPARK_HOME') == '':
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
