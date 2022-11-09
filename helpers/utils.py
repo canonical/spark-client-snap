@@ -161,6 +161,9 @@ def setup_kubernetes_secret(username: str, namespace: str, kubeconfig: str, k8s_
         execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED)
 
 def retrieve_kubernetes_secret(username: str, namespace: str, kubeconfig: str, k8s_context: str, keys: List[str]) -> Dict:
+    if not username:
+        return dict()
+
     kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     secret_name = build_secret_name(username)
     result = dict()
@@ -206,12 +209,14 @@ def is_primary_sa_defined(namespace: str, kubeconfig: str, k8s_context: str) -> 
     conf = retrieve_primary_service_account_details(namespace, kubeconfig, k8s_context)
     return len(conf.keys()) > 0
 
-def get_dynamic_defaults():
+def get_dynamic_defaults(user_name: str, name_space: str):
     kubeconfig = get_kube_config()
     setup_dynamic_defaults = retrieve_primary_service_account_details(None, kubeconfig, None)
-    primary_username = setup_dynamic_defaults.get('spark.kubernetes.authenticate.driver.serviceAccountName') or 'spark'
-    primary_namespace = setup_dynamic_defaults.get('spark.kubernetes.namespace') or 'default'
-    setup_dynamic_defaults_conf = retrieve_kubernetes_secret(primary_username, primary_namespace, kubeconfig, None, None)
+    username = user_name or setup_dynamic_defaults.get('spark.kubernetes.authenticate.driver.serviceAccountName')
+    namespace = name_space or setup_dynamic_defaults.get('spark.kubernetes.namespace')
+    logging.debug(f"Dynamic defaults conf: username={username}")
+    logging.debug(f"Dynamic defaults conf: namespace={namespace}")
+    setup_dynamic_defaults_conf = retrieve_kubernetes_secret(username, namespace, kubeconfig, None, None)
     return merge_configurations([setup_dynamic_defaults, setup_dynamic_defaults_conf])
 
 
