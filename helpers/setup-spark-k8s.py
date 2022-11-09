@@ -107,7 +107,7 @@ def set_up_user(username: str, name_space: str, defaults: Dict, mark_primary: bo
     primary_label_to_remove = utils.get_primary_label(label=False)
     primary_label_full = utils.get_primary_label()
 
-    primary = utils.retrieve_primary_service_account_details()
+    primary = utils.retrieve_primary_service_account_details(namespace, context_name)
     is_primary_defined = len(primary.keys()) > 0
 
     logging.debug(f"is_primary_defined={is_primary_defined}")
@@ -159,21 +159,23 @@ if __name__ == "__main__":
     #  subparser for service-account
     parser_account = subparsers.add_parser('service-account')
     parser_account.add_argument('--primary', action='store_true', help='Boolean to mark the service account as primary.')
+    parser_account.add_argument('--properties-file', default = None, help='File with all configuration properties assignments.')
     parser_account.add_argument('--conf', action='append', type=str, help='Config properties to be added to the service account.')
 
     #  subparser for service-account-cleanup
     parser_account = subparsers.add_parser('service-account-cleanup')
 
     #  subparser for sa-conf-put
-    parser_account = subparsers.add_parser('sa-conf-put')
+    parser_account = subparsers.add_parser('sa-conf-create')
     parser_account.add_argument('--properties-file', default = None, help='File with all configuration properties assignments.')
+    parser_account.add_argument('--conf', action='append', type=str, help='Config properties to be added to the service account.')
 
     #  subparser for sa-conf-get
     parser_account = subparsers.add_parser('sa-conf-get')
     parser_account.add_argument('--conf', action='append', type=str, help='Config property to retrieve.')
 
     #  subparser for sa-conf-del
-    parser_account = subparsers.add_parser('sa-conf-del')
+    parser_account = subparsers.add_parser('sa-conf-delete')
 
     # #  subparser for resources-sa
     # parser_account = subparsers.add_parser('resources-sa')
@@ -189,20 +191,21 @@ if __name__ == "__main__":
         username = args.username
         namespace = args.namespace or defaults['namespace']
         set_up_user(username, namespace, defaults, args.primary)
-        utils.setup_kubernetes_secret_literal(username, namespace, args.context, args.conf)
+        utils.setup_kubernetes_secret(username, namespace, args.context, args.properties_file, args.conf)
     elif args.action == 'service-account-cleanup':
         cleanup_user(args.username, args.namespace, args.context)
-    elif args.action == 'sa-conf-put':
-        utils.setup_kubernetes_secret_env_file(args.username, args.namespace or defaults['namespace'], args.context, args.properties_file)
+    elif args.action == 'sa-conf-create':
+        utils.delete_kubernetes_secret(args.username, args.namespace, args.context)
+        utils.setup_kubernetes_secret(args.username, args.namespace or defaults['namespace'], args.context, args.properties_file, args.conf)
     elif args.action == 'sa-conf-get':
         conf = utils.retrieve_kubernetes_secret(args.username, args.namespace, args.context, args.conf)
         utils.print_properties(conf)
-    elif args.action == 'sa-conf-del':
+    elif args.action == 'sa-conf-delete':
         utils.delete_kubernetes_secret(args.username, args.namespace, args.context)
     # elif args.action == 'resources-sa':
     #     conf = utils.retrieve_k8s_resources_by_label(args.namespace, args.context)
     #     utils.print_properties(conf)
     elif args.action == 'resources-primary-sa':
-        conf = utils.retrieve_primary_service_account_details()
+        conf = utils.retrieve_primary_service_account_details(args.namespace, args.context)
         utils.print_properties(conf)
 
