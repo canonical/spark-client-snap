@@ -43,6 +43,7 @@ apps:
         - network
         - network-bind
         - home
+        - dot-kube-config
   pyspark:
     command: bin/pyspark
     environment:
