@@ -57,6 +57,12 @@ def get_env_defaults_conf_file() -> str:
     SPARK_ENV_DEFAULTS_FILE = os.environ.get('SNAP_SPARK_ENV_CONF')
     return SPARK_ENV_DEFAULTS_FILE
 
+def get_scala_shell_history_file() -> str:
+    """Returns location of .scala_history file for spark-shell"""
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    SCALA_HIST_FILE_DIR = os.environ.get('SNAP_USER_DATA', USER_HOME_DIR)
+    return f'{SCALA_HIST_FILE_DIR}/.scala_history'
+
 def get_snap_temp_dir() -> str:
     return '/tmp/snap.spark-client'
 
