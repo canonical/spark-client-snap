@@ -6,10 +6,6 @@ import logging
 import argparse
 import utils
 
-USER_HOME_DIR_ENT_IDX = 5
-EXIT_CODE_BAD_KUBECONFIG = -100
-EXIT_CODE_BAD_CONF_ARG = -200
-
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
@@ -17,23 +13,24 @@ if __name__ == "__main__":
     parser.add_argument("--master", default=None, type=str, help='Kubernetes control plane uri.')
     parser.add_argument("--deploy-mode", default="client", type=str, help='Deployment mode for job submission. Default is \'client\'.')
     parser.add_argument("--properties-file", default=None, type=str, help='Spark default configuration properties file.')
+    parser.add_argument("--username", default=None, type=str, help='Service account name to use other than primary.')
+    parser.add_argument("--namespace", default=None, type=str, help='Namespace of service account name to use other than primary.')
     args, extra_args = parser.parse_known_args()
 
-    os.environ["HOME"] = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    os.environ["HOME"] = pwd.getpwuid(os.getuid())[utils.USER_HOME_DIR_ENT_IDX]
     if os.environ.get('SPARK_HOME') is None or os.environ.get('SPARK_HOME') == '':
         os.environ['SPARK_HOME'] = os.environ['SNAP']
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
-    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
-    setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE) if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE) else dict()
-    env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
-    props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
+    dynamic_defaults = utils.get_dynamic_defaults(args.username, args.namespace)
+    env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE)
+    props_file_arg_defaults = utils.read_property_file(args.properties_file)
 
     with utils.UmaskNamedTemporaryFile(mode = 'w', prefix='spark-conf-', suffix='.conf') as t:
-        defaults = utils.merge_configurations([snap_static_defaults, setup_dynamic_defaults, env_defaults, props_file_arg_defaults])
+        defaults = utils.merge_configurations([snap_static_defaults, dynamic_defaults, env_defaults, props_file_arg_defaults])
         logging.debug(f'Spark props available for reference at {utils.get_snap_temp_dir()}{t.name}\n')
         utils.write_property_file(t.file, defaults, log=True)
         t.flush()
