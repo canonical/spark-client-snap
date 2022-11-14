@@ -27,6 +27,8 @@ if __name__ == "__main__":
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
     setup_dynamic_defaults = utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE) if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE) else dict()
+    # TODO: User override of 'spark.driver.extraJavaOptions' will disturb the scala.shell.histfile. Needs to handled.
+    # TODO: Add documentation explaining this limitation and what to do in that case.
     setup_dynamic_defaults['spark.driver.extraJavaOptions'] = f'-Dscala.shell.histfile={SCALA_HISTORY_FILE}'
     env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE) if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE) else dict()
     props_file_arg_defaults = utils.read_property_file(args.properties_file) if args.properties_file else dict()
