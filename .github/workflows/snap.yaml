@@ -113,7 +113,8 @@ jobs:
       - name: Run example job
         run: |
           K8S_MASTER_URL=k8s://$(sudo kubectl --kubeconfig=/home/runner/.kube/config config view -o jsonpath="{.clusters[0]['cluster.server']}")
-          SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+          # SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+          SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.1.jar'
           
           # run the sample pi job using spark-submit
           spark-client.spark-submit \
