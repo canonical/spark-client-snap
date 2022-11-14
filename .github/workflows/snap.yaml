@@ -148,7 +148,7 @@ jobs:
           echo "val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)" >> test-spark-shell.scala
           echo "println(s\"Pi is roughly \${4.0 * count / (n - 1)}\")" >> test-spark-shell.scala
           echo "System.exit(0)" >> test-spark-shell.scala
-          spark-client.spark-shell  --conf spark.kubernetes.container.image=averma32/sparkrock:latest < test-spark-shell.scala > spark-shell.out
+          spark-client.spark-shell < test-spark-shell.scala > spark-shell.out
           pi=$(grep -v "scala>" spark-shell.out  | grep "Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-4)
           echo -e "Spark-shell Pi Job Output: \n ${pi}"
           if [ "${pi}" != "3.14" ]; then
