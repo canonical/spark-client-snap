@@ -669,3 +669,10 @@ def create_dir_if_not_exists(directory: PathLike) -> PathLike:
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
+
+
+def get_scala_shell_history_file() -> str:
+    """Returns location of .scala_history file for spark-shell"""
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    SCALA_HIST_FILE_DIR = os.environ.get("SNAP_USER_DATA", USER_HOME_DIR)
+    return f"{SCALA_HIST_FILE_DIR}/.scala_history"
