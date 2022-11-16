@@ -36,15 +36,15 @@ test_example_job() {
   # Check job output
   pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
   echo -e "Spark Pi Job Output: \n ${pi}"
+
+  spark-client.setup-spark-k8s service-account-cleanup
+
   if [ "${pi}" != "3.14" ]; then
       exit 1
   fi
-
-  spark-client.setup-spark-k8s service-account-cleanup
 }
 
 test_spark_shell() {
-
   spark-client.setup-spark-k8s service-account
   echo "import scala.math.random" > test-spark-shell.scala
   echo "val slices = 1000" >> test-spark-shell.scala
@@ -55,10 +55,10 @@ test_spark_shell() {
   spark-client.spark-shell < test-spark-shell.scala > spark-shell.out
   pi=$(cat spark-shell.out  | grep "Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-4)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
+  spark-client.setup-spark-k8s service-account-cleanup
   if [ "${pi}" != "3.14" ]; then
       exit 1
   fi
-  spark-client.setup-spark-k8s service-account-cleanup
 }
 
 setup_tests

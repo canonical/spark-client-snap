@@ -28,6 +28,10 @@ EXIT_CODE_SET_PRIMARY_RESOURCES_FAILED = -900
 PathLike = Union[str, "os.PathLike[str]"]
 
 
+def is_java_options_type_parsing_required_key(key: str) -> bool:
+    return key in ["spark.driver.extraJavaOptions"]
+
+
 def read_property_file_unsafe(name: str) -> Dict:
     """Rread properties in given file into a dictionary.
 
@@ -39,7 +43,11 @@ def read_property_file_unsafe(name: str) -> Dict:
         for line in f:
             kv = list(filter(None, re.split("=| ", line.strip())))
             k = kv[0]
-            v = "=".join(kv[1:])
+            if is_java_options_type_parsing_required_key(k):
+                v1 = "-D".join(line.strip().split("-D")[1:])
+                v = f"-D{v1}"
+            else:
+                v = "=".join(kv[1:])
             defaults[k] = os.path.expandvars(v)
     return defaults
 
