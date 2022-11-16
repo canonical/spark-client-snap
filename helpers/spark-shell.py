@@ -24,7 +24,7 @@ if __name__ == "__main__":
     )
     args, extra_args = parser.parse_known_args()
 
-    os.environ["HOME"] = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX])
     if os.environ.get("SPARK_HOME") is None or os.environ.get("SPARK_HOME") == "":
         os.environ["SPARK_HOME"] = os.environ["SNAP"]
 
