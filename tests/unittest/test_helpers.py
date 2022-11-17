@@ -3,7 +3,7 @@ import os
 import unittest
 import uuid
 
-import helpers.utils
+import helpers.utils  # type: ignore
 from tests import UnittestWithTmpFolder
 
 
@@ -67,11 +67,11 @@ class TestProperties(UnittestWithTmpFolder):
         options1 = dict()
         options1[
             "spark.driver.extraJavaOptions"
-        ] = f'"-Dscala.shell.histfile=file1 -Da=A"'
+        ] = '"-Dscala.shell.histfile=file1 -Da=A"'
         options2 = dict()
         options2[
             "spark.driver.extraJavaOptions"
-        ] = f'"-Dscala.shell.histfile=file2 -Db=B"'
+        ] = '"-Dscala.shell.histfile=file2 -Db=B"'
         options3 = dict()
         options3[
             "spark.driver.extraJavaOptions"

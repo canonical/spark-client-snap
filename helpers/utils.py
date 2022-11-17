@@ -92,8 +92,8 @@ def print_properties(props: Dict) -> None:
         print(f"{k}={v}")
 
 
-def parse_options(options_string: str) -> Dict:
-    options = dict()
+def parse_options(options_string: Optional[str]) -> Dict:
+    options: Dict[str, str] = dict()
 
     if not options_string:
         return options
@@ -116,7 +116,7 @@ def construct_options_string(options: Dict) -> str:
     return result
 
 
-def merge_dictionaries(dictionaries_to_merge: List[Dict]):
+def merge_dictionaries(dictionaries_to_merge: List[Dict]) -> Dict:
     """Merges a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
     result = dict()
     for override in dictionaries_to_merge:
@@ -124,8 +124,8 @@ def merge_dictionaries(dictionaries_to_merge: List[Dict]):
     return result
 
 
-def merge_options(dictionaries_to_merge: List[Dict]):
-    result = dict()
+def merge_options(dictionaries_to_merge: List[Dict]) -> Dict:
+    result: Dict[str, str] = dict()
     for override in dictionaries_to_merge:
         options_override = get_properties_with_options(override)
         for k in options_override:
