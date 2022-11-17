@@ -28,8 +28,16 @@ EXIT_CODE_SET_PRIMARY_RESOURCES_FAILED = -900
 PathLike = Union[str, "os.PathLike[str]"]
 
 
-def is_java_options_type_parsing_required_key(key: str) -> bool:
+def is_property_with_options(key: str) -> bool:
     return key in ["spark.driver.extraJavaOptions"]
+
+
+def get_properties_with_options(conf: Dict) -> Dict:
+    result = dict()
+    for k in conf.keys():
+        if is_property_with_options(k):
+            result[k] = conf[k]
+    return result
 
 
 def read_property_file_unsafe(name: str) -> Dict:
@@ -42,12 +50,12 @@ def read_property_file_unsafe(name: str) -> Dict:
     with open(name) as f:
         for line in f:
             kv = list(filter(None, re.split("=| ", line.strip())))
-            k = kv[0]
-            if is_java_options_type_parsing_required_key(k):
-                v1 = "-D".join(line.strip().split("-D")[1:])
-                v = f"-D{v1}"
+            k = kv[0].strip()
+            if is_property_with_options(k):
+                kv2 = line.split("=", 1)
+                v = kv2[1].strip()
             else:
-                v = "=".join(kv[1:])
+                v = kv[1].strip()
             defaults[k] = os.path.expandvars(v)
     return defaults
 
@@ -84,12 +92,56 @@ def print_properties(props: Dict) -> None:
         print(f"{k}={v}")
 
 
-def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
+def parse_options(options_string: str) -> Dict:
+    options = dict()
+
+    if not options_string:
+        return options
+
+    # cleanup quotes
+    line = options_string.strip().replace("'", "").replace('"', "")
+    for arg in line.split("-D")[1:]:
+        kv = arg.split("=")
+        options[kv[0].strip()] = kv[1].strip()
+
+    return options
+
+
+def construct_options_string(options: Dict) -> str:
+    result = ""
+    for k in options:
+        v = options[k]
+        result += f" -D{k}={v}"
+
+    return result
+
+
+def merge_dictionaries(dictionaries_to_merge: List[Dict]):
     """Merges a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
     result = dict()
     for override in dictionaries_to_merge:
         result.update(override)
     return result
+
+
+def merge_options(dictionaries_to_merge: List[Dict]):
+    result = dict()
+    for override in dictionaries_to_merge:
+        options_override = get_properties_with_options(override)
+        for k in options_override:
+            options = parse_options(result.get(k))
+            options_override = parse_options(options_override.get(k))
+            result[k] = construct_options_string(
+                merge_dictionaries([options, options_override])
+            )
+    return result
+
+
+def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
+    """Merges a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
+    result = merge_dictionaries(dictionaries_to_merge)
+    options = merge_options(dictionaries_to_merge)
+    return merge_dictionaries([result, options])
 
 
 def get_static_defaults_conf_file() -> str:
