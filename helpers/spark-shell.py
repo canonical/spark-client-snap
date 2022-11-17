@@ -15,8 +15,12 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--username", default=None, type=str, help="Username of service account to use.")
-    parser.add_argument("--namespace", default=None, type=str, help="Namespace of service account.")
+    parser.add_argument(
+        "--username", default=None, type=str, help="Username of service account to use."
+    )
+    parser.add_argument(
+        "--namespace", default=None, type=str, help="Namespace of service account."
+    )
     parser.add_argument("--master", default=None, type=str, help="Control plane uri.")
     parser.add_argument(
         "--properties-file",
