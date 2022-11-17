@@ -15,6 +15,8 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--username", default=None, type=str, help="Username of service account to use.")
+    parser.add_argument("--namespace", default=None, type=str, help="Namespace of service account.")
     parser.add_argument("--master", default=None, type=str, help="Control plane uri.")
     parser.add_argument(
         "--properties-file",
@@ -29,19 +31,14 @@ if __name__ == "__main__":
         os.environ["SPARK_HOME"] = os.environ["SNAP"]
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
-    DYNAMIC_DEFAULTS_CONF_FILE = utils.get_dynamic_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
     SCALA_HISTORY_FILE = utils.get_scala_shell_history_file()
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
-    setup_dynamic_defaults = (
-        utils.read_property_file(DYNAMIC_DEFAULTS_CONF_FILE)
-        if os.path.isfile(DYNAMIC_DEFAULTS_CONF_FILE)
-        else dict()
-    )
-    setup_dynamic_defaults[
+    snap_static_defaults[
         "spark.driver.extraJavaOptions"
     ] = f"-Dscala.shell.histfile={SCALA_HISTORY_FILE}"
+    setup_dynamic_defaults = utils.get_dynamic_defaults(args.username, args.namespace)
     env_defaults = (
         utils.read_property_file(ENV_DEFAULTS_CONF_FILE)
         if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE)
