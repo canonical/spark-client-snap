@@ -85,6 +85,87 @@ class TestProperties(UnittestWithTmpFolder):
             == expected_merged_options.strip()
         )
 
+    def test_merge_configurations(self):
+        test_id = str(uuid.uuid4())
+        conf1 = dict()
+        conf1["spark.app.name"] = "spark1-app"
+        conf1["spark.executor.instances"] = "3"
+        conf1[
+            "spark.kubernetes.container.image"
+        ] = "docker.io/averma32/sparkrock:latest"
+        conf1["spark.kubernetes.container.image.pullPolicy"] = "IfNotPresent"
+        conf1["spark.kubernetes.namespace"] = "default"
+        conf1["spark.kubernetes.authenticate.driver.serviceAccountName"] = "spark"
+        conf1[
+            "spark.driver.extraJavaOptions"
+        ] = "-Dscala.shell.histfile=file1 -DpropA=A1 -DpropB=B"
+
+        conf2 = dict()
+        conf2["spark.app.name"] = "spark2-app"
+        conf2["spark.hadoop.fs.s3a.endpoint"] = "http://192.168.1.39:9000"
+        conf2["spark.hadoop.fs.s3a.access.key"] = "PJRzbIei0ZOJQOun"
+        conf2["spark.hadoop.fs.s3a.secret.key"] = "BHERvH7cap87UFe3PEqTb3sksSmjCbK7"
+        conf2[
+            "spark.hadoop.fs.s3a.aws.credentials.provider"
+        ] = "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider"
+        conf2[
+            "spark.driver.extraJavaOptions"
+        ] = "-DpropA=A2 -Dscala.shell.histfile=file2 -DpropC=C"
+
+        conf3 = dict()
+        conf3["spark.app.name"] = "spark3-app"
+        conf3["spark.hadoop.fs.s3a.connection.ssl.enabled"] = "false"
+        conf3["spark.hadoop.fs.s3a.path.style.access"] = "true"
+        conf3["spark.eventLog.enabled"] = "true"
+        conf3["spark.eventLog.dir"] = "s3a://spark-history-server-dir/spark-events"
+        conf3[
+            "spark.history.fs.logDirectory"
+        ] = "s3a://spark-history-server-dir/spark-events"
+        conf3[
+            "spark.driver.extraJavaOptions"
+        ] = f"-DpropA=A3 -DpropD=D -Dscala.shell.histfile={test_id}"
+
+        expected_merged_options = (
+            f"-Dscala.shell.histfile={test_id} -DpropA=A3 -DpropB=B -DpropC=C -DpropD=D"
+        )
+
+        conf = helpers.utils.merge_configurations([conf1, conf2, conf3])
+
+        assert conf["spark.app.name"] == "spark3-app"
+        assert conf["spark.executor.instances"] == "3"
+        assert (
+            conf["spark.kubernetes.container.image"]
+            == "docker.io/averma32/sparkrock:latest"
+        )
+        assert conf["spark.kubernetes.container.image.pullPolicy"] == "IfNotPresent"
+        assert conf["spark.kubernetes.namespace"] == "default"
+        assert (
+            conf["spark.kubernetes.authenticate.driver.serviceAccountName"] == "spark"
+        )
+        assert conf["spark.hadoop.fs.s3a.endpoint"] == "http://192.168.1.39:9000"
+        assert conf["spark.hadoop.fs.s3a.access.key"] == "PJRzbIei0ZOJQOun"
+        assert (
+            conf["spark.hadoop.fs.s3a.secret.key"] == "BHERvH7cap87UFe3PEqTb3sksSmjCbK7"
+        )
+        assert (
+            conf["spark.hadoop.fs.s3a.aws.credentials.provider"]
+            == "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider"
+        )
+        assert conf["spark.hadoop.fs.s3a.connection.ssl.enabled"] == "false"
+        assert conf["spark.hadoop.fs.s3a.path.style.access"] == "true"
+        assert conf["spark.eventLog.enabled"] == "true"
+        assert (
+            conf["spark.eventLog.dir"] == "s3a://spark-history-server-dir/spark-events"
+        )
+        assert (
+            conf["spark.history.fs.logDirectory"]
+            == "s3a://spark-history-server-dir/spark-events"
+        )
+        assert (
+            conf["spark.driver.extraJavaOptions"].strip()
+            == expected_merged_options.strip()
+        )
+
 
 if __name__ == "__main__":
 

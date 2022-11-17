@@ -29,10 +29,20 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 
 def is_property_with_options(key: str) -> bool:
+    """Check if a given property is known to be options-like requiring special parsing.
+
+    Args:
+        key: Property for which special options-like parsing decision has to be taken
+    """
     return key in ["spark.driver.extraJavaOptions"]
 
 
 def get_properties_with_options(conf: Dict) -> Dict:
+    """Extract properties which are known to be options-like requiring special parsing.
+
+    Args:
+        conf: All configuration properties as a dict
+    """
     result = dict()
     for k in conf.keys():
         if is_property_with_options(k):
@@ -41,7 +51,7 @@ def get_properties_with_options(conf: Dict) -> Dict:
 
 
 def read_property_file_unsafe(name: str) -> Dict:
-    """Rread properties in given file into a dictionary.
+    """Read properties in given file into a dictionary.
 
     Args:
         name: file name to be read
@@ -421,7 +431,7 @@ def get_primary_label(label: bool = True) -> str:
 def retrieve_primary_service_account_details(
     namespace: Optional[str], kubeconfig: Optional[str], k8s_context: Optional[str]
 ) -> Dict:
-    """Boolean to check if a primary service account has been defined.
+    """Retrieve primary service account details.
 
     Args:
         namespace: namespace to point to the service account
