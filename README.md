@@ -12,6 +12,8 @@ This repository hosts the source for ***spark-client*** snap from Canonical. The
 The spark-client snap from Canonical simplifies the setup to run Spark jobs against your Kubernetes cluster. Please follow the 
 instructions in the [setup](/docs/setup.md) section to get started.
 
+Do check out the section on [config resolution](/docs/config.md) to understand how [spark-submit](/docs/submit.md) actually resolves the configuration properties coming from a diverse set of available sources.
+
 ## Play!
 Once the [setup](/docs/setup.md) is complete, please follow the Spark job [submission guide](/docs/submit.md) to validate and start utilizing your 
 Kubernetes cluster for big data workloads.

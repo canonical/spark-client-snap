@@ -9,28 +9,42 @@ spark-client.setup-spark-k8s --help
 ```
 
 From the output you will notice that the setup utility supports the following actions.
-* ***service-account*** - Action to set up the service account in Kubernetes for use during Spark job submission to Kubernetes
+* ***service-account*** - Set up a service account in Kubernetes for use during Spark job submission
+* ***service-account-cleanup*** - Delete a service account and associated resources from Kubernetes
+* ***sa-conf-create*** - Create configuration entries associated with the specified service account in Kubernetes. Immutable once created.
+* ***sa-conf-get*** - Fetch configuration entries associated with the specified service account from Kubernetes
+* ***sa-conf-delete*** - Delete all configuration entries associated with the specified service account from Kubernetes
+* ***resources-primary-sa*** - List resources related to 'primary' service account used implicitly for spark-submit
 
 ```bash
-usage: setup-spark-k8s.py [-h] [--kubeconfig KUBECONFIG] [--context CONTEXT] {service-account} ...
+usage: setup-spark-k8s.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME]
+                          {service-account,service-account-cleanup,sa-conf-create,sa-conf-get,sa-conf-delete,resources-primary-sa} ...
 
 positional arguments:
-  {service-account}
+  {service-account,service-account-cleanup,sa-conf-create,sa-conf-get,sa-conf-delete,resources-primary-sa}
 
 optional arguments:
   -h, --help            show this help message and exit
+  --log-level LOG_LEVEL
+                        Level for logging.
   --kubeconfig KUBECONFIG
                         Kubernetes configuration file
   --context CONTEXT     Context name to use within the provided kubernetes configuration file
+  --namespace NAMESPACE
+                        Namespace for the service account. Default is 'default'.
+  --username USERNAME   Service account username. Default is 'spark'.
 ```
 
 As you would have noticed, these commands can take following optional parameters.
+* ***log-level*** - Log level used by the logging module. Default is 'INFO'.
 * ***kubeconfig*** - Kubernetes configuration file. If not provided, ```$HOME/.kube/config``` is used by default
 * ***context*** - For multi cluster Kubernetes deployments, Kubernetes configuration file will have multiple context entries. This parameter specifies which context name to pick from the configuration.
+* ***namespace*** - Namespace for the service account to be used for the action. Default is 'default'.
+* ***username*** - Username for the service account to be used for the action. Default is 'spark'.
 
 #### Enabling Default Kubernetes Config File Access
 
-First of you will have to allow the snap to access default kubeconfig file ```$HOME/.kube/config``` in case you have it placed there.
+First of you will have to allow the snap to access default kubeconfig file ```$HOME/.kube/config``` by executing the following command.
 
 ```bash
 sudo snap connect spark-client:dot-kube-config
@@ -39,7 +53,7 @@ sudo snap connect spark-client:dot-kube-config
 The spark-client snap is a strictly confined snap. The above command grants the snap permission to read the afore-mentioned
 kubeconfig file from default location.
 
-#### Creating Service Account in Kubernetes
+#### Service Account Creation
 To submit Spark jobs to Kubernetes, we need a service account in Kubernetes. Service Account belongs to a Kubernetes namespace. 
 
 You might already have a functional Service Account. Or you can use this spark-client snap to create a fresh one in a namespace of choice.
@@ -50,16 +64,93 @@ To get help regarding the usage of service account setup command within the snap
 spark-client.setup-spark-k8s service-account --help
 ```
 
-You will notice from the help output that the command takes an optional ```username``` as well as an optional ```namespace``` 
-argument where the service account named username will be created in the namespace as specified. Default user is ```spark``` and namespace where user is created is ```default```.
+You will notice from the help output that the action takes following optional arguments
+* ***primary*** - A marker to indicate the current service account should be made 'primary' for implicit spark-submit job submission purposes.
+* ***properties-file*** - File with all configuration properties to be associated with a service account.
+* ***conf*** - Values to add to and override the ones in specified properties-file param.
 
 ```bash
-usage: setup-spark-k8s.py service-account [-h] [--username USERNAME] [--namespace NAMESPACE]
+usage: setup-spark-k8s.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --username USERNAME   Service account username to be created in kubernetes. Default is spark
-  --namespace NAMESPACE
-                        Namespace for the service account to be created in kubernetes. Default is default namespace
+  --primary             Boolean to mark the service account as primary.
+  --properties-file PROPERTIES_FILE
+                        File with all configuration properties assignments.
+  --conf CONF           Config properties to be added to the service account.
+```
+Service account is an abstraction for a set of associated kubernetes resources needed to run a Spark job. The user can choose to associate configuration properties 
+with the service account that can serve as default while submitting jobs against that service account from any machine within the kubernetes cluster. A typical use 
+of this feature would look like this.
 
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace service-account --properties-file /home/demouser/conf/spark-defaults.conf --conf spark.app.name=demo-spark-app --conf spark.executor.instances=3
+```
+
+The above command sets up a service account for user ```demonamespace:demouser``` for Spark job submission using configuration properties coming from the specified 
+properties file while overriding the configuration properties ```spark.app.name``` and ```spark.executor.instances```.
+
+As you will discover further in the documentation for [job submission](/docs/submit.md), this service account along with it's default configuration properties can be used to submit a Spark job.
+
+For example, assuming the properties file provided has configuration details to access data in S3, one could submit a job like
+```bash
+spark-client.spark-submit  --username demouser --namespace demonamespace --deploy-mode cluster --conf spark.app.name=demo-spark-s3-app $S3_PATH_FOR_CODE_FILE
+```
+This would launch the spark job with configuration coming from the service account for user ```demonamespace:demouser``` but the app name would be ```demo-spark-s3-app```. 
+
+**_NOTE:_** The comamnd described above does not create a kubernetes namespace but needs it to be there. It does however create the requested username in the specified and existing namespace. 
+
+#### Creating configuration for a Service Account after account creation
+
+The configuration functionality mentioned in the previous section can be done after account creation as well. Useful for redefining the configuration associated with a existing service account.
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-create --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
+```
+
+The above command will **drop** the existing configuration associated with service account ```demonamespace:demouser``` and recreate it with properties in the new properties file and override the ```spark.app.name```.
+
+All job submissions using this service-account will use the new default configuration going forward.
+
+
+#### Inspecting configuration for a Service Account
+
+For inspecting the current properties configured for a service account, the ```sa-conf-get``` utility comes handy.
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-get --conf spark.app.name --conf spark.kubernetes.namespace --conf spark.executor.instances
+```
+
+If you wish to not pick specific properties and see all of them for service account ```demonamespace:demouser```
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-get
+```
+
+#### Deleting configuration for a Service Account
+
+For deleting all configuration associated with a service account,
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-delete
+```
+
+#### Inspecting Primary Service Account
+
+While discussing service account creation, it was mentioned that a service account can be marked as the ```primary``` account to be used implicitly if no service account is specified during job submission.
+
+There is always a single service account marked as ```primary```. The first service account created will automatically be considered the ```primary```.
+
+To inspect which service account is marked as ```primary```, one would use the ```resources-primary-sa``` utility which would list the current ```primary``` service account.
+
+```bash
+spark-client.setup-spark-k8s resources-primary-sa
+```
+
+#### Service Account Cleanup
+
+To clean up all resources associated with a given service account,
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace service-account-cleanup
 ```
