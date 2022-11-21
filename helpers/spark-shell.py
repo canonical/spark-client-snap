@@ -9,37 +9,22 @@ import constants
 import utils
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--log-level", default="ERROR", type=str, help="Level for logging."
     )
     parser.add_argument(
-        "--master", default=None, type=str, help="Kubernetes control plane uri."
+        "--username", default=None, type=str, help="Username of service account to use."
     )
     parser.add_argument(
-        "--deploy-mode",
-        default="cluster",
-        type=str,
-        help="Deployment mode for job submission. Default is 'cluster'.",
+        "--namespace", default=None, type=str, help="Namespace of service account."
     )
+    parser.add_argument("--master", default=None, type=str, help="Control plane uri.")
     parser.add_argument(
         "--properties-file",
         default=None,
         type=str,
         help="Spark default configuration properties file.",
-    )
-    parser.add_argument(
-        "--username",
-        default=None,
-        type=str,
-        help="Service account name to use other than primary.",
-    )
-    parser.add_argument(
-        "--namespace",
-        default=None,
-        type=str,
-        help="Namespace of service account name to use other than primary.",
     )
     args, extra_args = parser.parse_known_args()
 
@@ -53,11 +38,23 @@ if __name__ == "__main__":
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()
+    SCALA_HISTORY_FILE = utils.get_scala_shell_history_file()
 
     snap_static_defaults = utils.read_property_file(STATIC_DEFAULTS_CONF_FILE)
-    dynamic_defaults = utils.get_dynamic_defaults(args.username, args.namespace)
-    env_defaults = utils.read_property_file(ENV_DEFAULTS_CONF_FILE)
-    props_file_arg_defaults = utils.read_property_file(args.properties_file)
+    snap_static_defaults[
+        "spark.driver.extraJavaOptions"
+    ] = f"-Dscala.shell.histfile={SCALA_HISTORY_FILE}"
+    setup_dynamic_defaults = utils.get_dynamic_defaults(args.username, args.namespace)
+    env_defaults = (
+        utils.read_property_file(ENV_DEFAULTS_CONF_FILE)
+        if ENV_DEFAULTS_CONF_FILE and os.path.isfile(ENV_DEFAULTS_CONF_FILE)
+        else dict()
+    )
+    props_file_arg_defaults = (
+        utils.read_property_file(args.properties_file)
+        if args.properties_file
+        else dict()
+    )
 
     with utils.UmaskNamedTemporaryFile(
         mode="w", prefix="spark-conf-", suffix=".conf"
@@ -65,7 +62,7 @@ if __name__ == "__main__":
         defaults = utils.merge_configurations(
             [
                 snap_static_defaults,
-                dynamic_defaults,
+                setup_dynamic_defaults,
                 env_defaults,
                 props_file_arg_defaults,
             ]
@@ -75,14 +72,14 @@ if __name__ == "__main__":
         )
         utils.write_property_file(t.file, defaults, log=True)
         t.flush()
-        submit_args = [
+
+        shell_args = [
             f"--master {args.master or utils.autodetect_kubernetes_master(defaults)}",
-            f"--deploy-mode {args.deploy_mode}",
             f"--properties-file {t.name}",
         ] + extra_args
 
         SPARK_HOME = os.environ["SPARK_HOME"]
-        SPARK_SUBMIT_ARGS = " ".join(submit_args)
-        submit_cmd = f"{SPARK_HOME}/bin/spark-submit {SPARK_SUBMIT_ARGS}"
-        logging.debug(submit_cmd)
-        os.system(submit_cmd)
+        SPARK_SHELL_ARGS = " ".join(shell_args)
+        shell_cmd = f"{SPARK_HOME}/bin/spark-shell {SPARK_SHELL_ARGS}"
+        logging.info(shell_cmd)
+        os.system(shell_cmd)

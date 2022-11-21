@@ -1,14 +1,16 @@
 #!/bin/bash
 
-test_example_job() {
+setup_tests() {
   sudo snap connect spark-client:dot-kube-config
+}
 
+test_example_job() {
   spark-client.setup-spark-k8s service-account
 
   KUBE_CONFIG=/home/${USER}/.kube/config
 
   K8S_MASTER_URL=k8s://$(kubectl --kubeconfig=${KUBE_CONFIG} config view -o jsonpath="{.clusters[0]['cluster.server']}")
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.1.jar'
 
   echo $K8S_MASTER_URL
 
@@ -33,9 +35,36 @@ test_example_job() {
   # Check job output
   pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-4)
   echo -e "Spark Pi Job Output: \n ${pi}"
+
+  spark-client.setup-spark-k8s service-account-cleanup
+
   if [ "${pi}" != "3.14" ]; then
       exit 1
   fi
 }
 
+test_spark_shell() {
+  spark-client.setup-spark-k8s service-account
+
+  export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
+
+  echo "import scala.math.random" > test-spark-shell.scala
+  echo "val slices = 1000" >> test-spark-shell.scala
+  echo "val n = math.min(100000L * slices, Int.MaxValue).toInt" >> test-spark-shell.scala
+  echo "val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)" >> test-spark-shell.scala
+  echo "println(s\"Pi is roughly \${4.0 * count / (n - 1)}\")" >> test-spark-shell.scala
+  echo "System.exit(0)" >> test-spark-shell.scala
+  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --conf "spark.driver.host=${DRIVER_IP}")" > spark-shell.out
+  pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+  echo -e "Spark-shell Pi Job Output: \n ${pi}"
+  spark-client.setup-spark-k8s service-account-cleanup
+  if [ "${pi}" != "3.14" ]; then
+      exit 1
+  fi
+}
+
+setup_tests
+
 test_example_job
+
+test_spark_shell

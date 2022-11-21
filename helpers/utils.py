@@ -11,25 +11,41 @@ import sys
 from tempfile import NamedTemporaryFile
 from typing import Dict, List, Optional, Union
 
+import constants
 import yaml
-
-USER_HOME_DIR_ENT_IDX = 5
-
-EXIT_CODE_BAD_KUBECONFIG = -100
-EXIT_CODE_BAD_CONF_ARG = -200
-EXIT_CODE_GET_SECRET_FAILED = -300
-EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED = -400
-EXIT_CODE_PUT_SECRET_LITERAL_FAILED = -500
-EXIT_CODE_DEL_SECRET_FAILED = -600
-EXIT_CODE_GET_K8S_PROPS_FAILED = -700
-EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED = -800
-EXIT_CODE_SET_PRIMARY_RESOURCES_FAILED = -900
 
 PathLike = Union[str, "os.PathLike[str]"]
 
 
+def is_property_with_options(key: str) -> bool:
+    """Check if a given property is known to be options-like requiring special parsing.
+
+    Args:
+        key: Property for which special options-like parsing decision has to be taken
+    """
+    return key in [
+        constants.OPTION_SPARK_DRIVER_DEFAULT_JAVA_OPTIONS,
+        constants.OPTION_SPARK_DRIVER_EXTRA_JAVA_OPTIONS,
+        constants.OPTION_SPARK_EXECUTOR_DEFAULT_JAVA_OPTIONS,
+        constants.OPTION_SPARK_EXECUTOR_EXTRA_JAVA_OPTIONS,
+    ]
+
+
+def get_properties_with_options(conf: Dict) -> Dict:
+    """Extract properties which are known to be options-like requiring special parsing.
+
+    Args:
+        conf: All configuration properties as a dict
+    """
+    result = dict()
+    for k in conf.keys():
+        if is_property_with_options(k):
+            result[k] = conf[k]
+    return result
+
+
 def read_property_file_unsafe(name: str) -> Dict:
-    """Rread properties in given file into a dictionary.
+    """Read properties in given file into a dictionary.
 
     Args:
         name: file name to be read
@@ -38,8 +54,12 @@ def read_property_file_unsafe(name: str) -> Dict:
     with open(name) as f:
         for line in f:
             kv = list(filter(None, re.split("=| ", line.strip())))
-            k = kv[0]
-            v = "=".join(kv[1:])
+            k = kv[0].strip()
+            if is_property_with_options(k):
+                kv2 = line.split("=", 1)
+                v = kv2[1].strip()
+            else:
+                v = kv[1].strip()
             defaults[k] = os.path.expandvars(v)
     return defaults
 
@@ -76,22 +96,89 @@ def print_properties(props: Dict) -> None:
         print(f"{k}={v}")
 
 
-def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
-    """Merges a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
+def parse_options(options_string: Optional[str]) -> Dict:
+    """Parse options from given string into a dictionary
+
+    Input string would be of the format "-DpropA=A -DpropB=B -DpropC=C"
+
+    Args:
+        options_string: options string to parse
+    """
+    options: Dict[str, str] = dict()
+
+    if not options_string:
+        return options
+
+    # cleanup quotes
+    line = options_string.strip().replace("'", "").replace('"', "")
+    for arg in line.split("-D")[1:]:
+        kv = arg.split("=")
+        options[kv[0].strip()] = kv[1].strip()
+
+    return options
+
+
+def construct_options_string(options: Dict) -> str:
+    """Construct options string from a given dictionary of options
+
+    Output string would be of the format "-Dk1=v1 -Dk2=v2 -Dk3=v3"
+
+    Args:
+        options: options to form the string
+    """
+    result = ""
+    for k in options:
+        v = options[k]
+        result += f" -D{k}={v}"
+
+    return result
+
+
+def merge_dictionaries(dictionaries_to_merge: List[Dict]) -> Dict:
+    """Merge a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
     result = dict()
     for override in dictionaries_to_merge:
         result.update(override)
     return result
 
 
+def merge_options(dictionaries_to_merge: List[Dict]) -> Dict:
+    """Merge a given list of options, options in subsequent ones override the options in prior ones in the list.
+
+    Args:
+        dictionaries_to_merge: options to merge
+    """
+    result: Dict[str, str] = dict()
+    for override in dictionaries_to_merge:
+        options_override = get_properties_with_options(override)
+        for k in options_override:
+            options = parse_options(result.get(k))
+            options_override = parse_options(options_override.get(k))
+            result[k] = construct_options_string(
+                merge_dictionaries([options, options_override])
+            )
+    return result
+
+
+def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
+    """Merge a given list of properties including java type options, properties in subsequent ones override the properties in prior ones in the list.
+
+    Args:
+        dictionaries_to_merge: options to merge
+    """
+    result = merge_dictionaries(dictionaries_to_merge)
+    options = merge_options(dictionaries_to_merge)
+    return merge_dictionaries([result, options])
+
+
 def get_static_defaults_conf_file() -> str:
-    """Returns static config properties file packaged with the client snap."""
+    """Return static config properties file packaged with the client snap."""
     SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP')}/conf/spark-defaults.conf"
     return SPARK_STATIC_DEFAULTS_FILE
 
 
 def get_dynamic_defaults_conf_file() -> str:
-    """Returns dynamic config properties file generated during client setup."""
+    """Return dynamic config properties file generated during client setup."""
     SPARK_DYNAMIC_DEFAULTS_FILE = (
         f"{os.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
     )
@@ -99,13 +186,13 @@ def get_dynamic_defaults_conf_file() -> str:
 
 
 def get_env_defaults_conf_file() -> Optional[str]:
-    """Returns env var provided by user to point to the config properties file with conf overrides."""
+    """Return env var provided by user to point to the config properties file with conf overrides."""
     SPARK_ENV_DEFAULTS_FILE = os.environ.get("SNAP_SPARK_ENV_CONF")
     return SPARK_ENV_DEFAULTS_FILE
 
 
 def get_snap_temp_dir() -> str:
-    """Returns /tmp directory as seen by the snap, for user's reference."""
+    """Return /tmp directory as seen by the snap, for user's reference."""
     return "/tmp/snap.spark-client"
 
 
@@ -127,12 +214,12 @@ def parse_conf_overrides(conf_args: List) -> Dict:
                 logging.error(
                     "Configuration related arguments parsing error. Please check input arguments and try again."
                 )
-                sys.exit(EXIT_CODE_BAD_CONF_ARG)
+                sys.exit(constants.EXIT_CODE_BAD_CONF_ARG)
     return conf_overrides
 
 
 def reconstruct_submit_args(args: List, conf: Dict) -> List:
-    """Adding back possibly overridden config properties to list of other spark-submit arguments
+    """Add back possibly overridden config properties to list of other spark-submit arguments
 
     Args:
         args: regular args passed to spark-submit
@@ -147,15 +234,15 @@ def reconstruct_submit_args(args: List, conf: Dict) -> List:
 
 
 def get_kube_config() -> str:
-    """Returns default kubeconfig to use if not explicitly provided."""
-    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    """Return default kubeconfig to use if not explicitly provided."""
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX]
     DEFAULT_KUBECONFIG = f"{USER_HOME_DIR}/.kube/config"
     kubeconfig = os.environ.get("KUBECONFIG") or DEFAULT_KUBECONFIG
     return kubeconfig
 
 
 def get_kubectl_cmd() -> str:
-    """Returns the kubectl binary location within the snap, used to build k8s commands."""
+    """Return the kubectl binary location within the snap, used to build k8s commands."""
     kubectl_cmd = "{}/kubectl".format(os.environ["SNAP"])
     return kubectl_cmd
 
@@ -175,7 +262,7 @@ def autodetect_kubernetes_master(conf: Dict) -> str:
     primary_namespace = primary_sa.get("spark.kubernetes.namespace") or "default"
     kubectl_cmd = build_kubectl_cmd(kubeconfig, primary_namespace, context)
     master_cmd = f"{kubectl_cmd} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
-    default_master = execute_kubectl_cmd(master_cmd, EXIT_CODE_BAD_KUBECONFIG)
+    default_master = execute_kubectl_cmd(master_cmd, constants.EXIT_CODE_BAD_KUBECONFIG)
     return f"k8s://{default_master}"
 
 
@@ -191,7 +278,7 @@ def UmaskNamedTemporaryFile(*args, **kargs):
 def build_kubectl_cmd(
     kube_config: Optional[str], namespace: Optional[str], k8s_context: Optional[str]
 ) -> str:
-    """Returns a kubectl based command prefix to be used to construct various commands to run.
+    """Return a kubectl based command prefix to be used to construct various commands to run.
 
     Args:
         kube_config: config to be used for kubernetes
@@ -209,7 +296,7 @@ def build_kubectl_cmd(
 
 
 def build_secret_name(username: str) -> str:
-    """Returns the secret name associated with a service account associated with the provided username.
+    """Return the secret name associated with a service account associated with the provided username.
 
     Args:
         username: username to indicate the service account for which secret name has to be returned
@@ -273,7 +360,7 @@ def setup_kubernetes_secret(
         t.flush()
         cmd = f"{kubectl_cmd} create secret generic {secret_name} --from-env-file={t.name}"
         logging.debug(cmd)
-        execute_kubectl_cmd(cmd, EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED)
+        execute_kubectl_cmd(cmd, constants.EXIT_CODE_PUT_SECRET_ENV_FILE_FAILED)
 
 
 def retrieve_kubernetes_secret(
@@ -301,7 +388,7 @@ def retrieve_kubernetes_secret(
 
     if keys is None:
         cmd = f"{kubectl_cmd} get secret {secret_name} -o yaml"
-        out_yaml_str = execute_kubectl_cmd(cmd, EXIT_CODE_GET_SECRET_FAILED)
+        out_yaml_str = execute_kubectl_cmd(cmd, constants.EXIT_CODE_GET_SECRET_FAILED)
         if out_yaml_str is None:
             raise ValueError("could not get the secret")
         secret = yaml.safe_load(out_yaml_str)
@@ -310,7 +397,7 @@ def retrieve_kubernetes_secret(
     for k in keys:
         k1 = k.replace(".", "\\.")
         cmd = f"{kubectl_cmd} get secret {secret_name} -o jsonpath='{{.data.{k1}}}' | base64 --decode"
-        result[k] = execute_kubectl_cmd(cmd, EXIT_CODE_GET_SECRET_FAILED)
+        result[k] = execute_kubectl_cmd(cmd, constants.EXIT_CODE_GET_SECRET_FAILED)
 
     return result
 
@@ -329,11 +416,11 @@ def delete_kubernetes_secret(
     kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     secret_name = build_secret_name(username)
     cmd = f"{kubectl_cmd} delete secret {secret_name}"
-    execute_kubectl_cmd(cmd, EXIT_CODE_DEL_SECRET_FAILED, log_on_error=False)
+    execute_kubectl_cmd(cmd, constants.EXIT_CODE_DEL_SECRET_FAILED, log_on_error=False)
 
 
 def get_management_label(label: bool = True) -> str:
-    """Returns uber spark-client management label
+    """Return uber spark-client management label
 
     Args:
         label: bool to be turned off to retrieve the label fragment for unlabel command
@@ -346,7 +433,7 @@ def get_management_label(label: bool = True) -> str:
 
 
 def get_primary_label(label: bool = True) -> str:
-    """Returns label used to mark the primary service account.
+    """Return label used to mark the primary service account.
 
     Args:
         label: bool to be turned off to retrieve the label fragment for unlabel command
@@ -361,7 +448,7 @@ def get_primary_label(label: bool = True) -> str:
 def retrieve_primary_service_account_details(
     namespace: Optional[str], kubeconfig: Optional[str], k8s_context: Optional[str]
 ) -> Dict:
-    """Boolean to check if a primary service account has been defined.
+    """Retrieve primary service account details.
 
     Args:
         namespace: namespace to point to the service account
@@ -371,7 +458,9 @@ def retrieve_primary_service_account_details(
     kubectl_cmd = build_kubectl_cmd(kubeconfig, namespace, k8s_context)
     label = get_primary_label()
     cmd = f"{kubectl_cmd}  get serviceaccount -l {label} -A -o yaml"
-    out_yaml_str = execute_kubectl_cmd(cmd, EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED)
+    out_yaml_str = execute_kubectl_cmd(
+        cmd, constants.EXIT_CODE_GET_PRIMARY_RESOURCES_FAILED
+    )
     if out_yaml_str is None:
         raise ValueError("could not get the secret")
     out = yaml.safe_load(out_yaml_str)
@@ -385,7 +474,7 @@ def retrieve_primary_service_account_details(
 
 
 def is_primary_sa_defined(namespace: str, kubeconfig: str, k8s_context: str) -> bool:
-    """Boolean to check if a primary service account has been defined.
+    """Check if a primary service account has been defined.
 
     Args:
         user_name: username to point to the service account
@@ -420,7 +509,7 @@ def get_dynamic_defaults(user_name: str, name_space: str) -> Dict:
 
 
 def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str) -> None:
-    """Helpful error message for the user indicating expected kubeconfig is missing or inaccessible.
+    """Print error message for the user indicating expected kubeconfig is missing or inaccessible.
 
     Args:
         kubeconfig: config for kubectl command execution pointing to the right k8s cluster
@@ -442,7 +531,7 @@ def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str) -> N
 
 
 def print_help_for_bad_kubeconfig_file(kubeconfig: str) -> None:
-    """Helpful error message for the user indicating kubeconfig provided might be corrupted.
+    """Print error message for the user indicating kubeconfig provided might be corrupted.
 
     Args:
         kubeconfig: config for kubectl command execution pointing to the right k8s cluster
@@ -509,7 +598,7 @@ def get_defaults_from_kubeconfig(kube_config: str, context: str = None) -> Dict:
         kube_config: config for kubectl command execution pointing to the right k8s cluster
         k8s_context: context of user's choice from within the provided kubeconfig
     """
-    USER_HOME_DIR = pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX]
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX]
     DEFAULT_KUBECONFIG = f"{USER_HOME_DIR}/.kube/config"
     kubeconfig = kube_config or DEFAULT_KUBECONFIG
     try:
@@ -554,7 +643,7 @@ def set_up_user(
     defaults: Dict,
     mark_primary: bool,
 ) -> None:
-    """Setup all resources related to a service account.
+    """Set up all resources related to a service account.
 
     Args:
         username: username corresponding to the service account to be set up.
@@ -629,7 +718,7 @@ def set_up_user(
 def cleanup_user(
     username: str, namespace: str, kubeconfig: str, k8s_context: str
 ) -> None:
-    """Cleanup all resources related to a service account.
+    """Clean up all resources related to a service account.
 
     Args:
         username: username corresponding to the service account to be cleaned up.
@@ -669,3 +758,10 @@ def create_dir_if_not_exists(directory: PathLike) -> PathLike:
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
+
+
+def get_scala_shell_history_file() -> str:
+    """Return the location of .scala_history file for spark-shell"""
+    USER_HOME_DIR = pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX]
+    SCALA_HIST_FILE_DIR = os.environ.get("SNAP_USER_DATA", USER_HOME_DIR)
+    return f"{SCALA_HIST_FILE_DIR}/.scala_history"

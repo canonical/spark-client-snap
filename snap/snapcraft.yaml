@@ -38,11 +38,12 @@ apps:
         - home
         - dot-kube-config
   spark-shell:
-    command: bin/spark-shell
+    command: ops/spark-shell.py
     plugs:
         - network
         - network-bind
         - home
+        - dot-kube-config
   pyspark:
     command: bin/pyspark
     environment:
@@ -129,8 +130,12 @@ parts:
       chmod 755 "${target_dir}/setup-spark-k8s.py"
       cp spark-submit.py "${target_dir}/"
       chmod 755 "${target_dir}/spark-submit.py"
+      cp spark-shell.py "${target_dir}/"
+      chmod 755 "${target_dir}/spark-shell.py"
       cp utils.py "${target_dir}/"
       chmod 755 "${target_dir}/utils.py"
+      cp constants.py "${target_dir}/"
+      chmod 755 "${target_dir}/constants.py"
       
       mkdir -p "$SNAPCRAFT_PRIME/conf"
       cp spark-defaults.conf "$SNAPCRAFT_PRIME/conf/"
