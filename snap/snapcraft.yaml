@@ -134,6 +134,8 @@ parts:
       chmod 755 "${target_dir}/spark-shell.py"
       cp utils.py "${target_dir}/"
       chmod 755 "${target_dir}/utils.py"
+      cp constants.py "${target_dir}/"
+      chmod 755 "${target_dir}/constants.py"
       
       mkdir -p "$SNAPCRAFT_PRIME/conf"
       cp spark-defaults.conf "$SNAPCRAFT_PRIME/conf/"
