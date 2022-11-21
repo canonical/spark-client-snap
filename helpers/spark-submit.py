@@ -5,6 +5,7 @@ import logging
 import os
 import pwd
 
+import constants
 import utils
 
 if __name__ == "__main__":
@@ -18,9 +19,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--deploy-mode",
-        default="client",
+        default="cluster",
         type=str,
-        help="Deployment mode for job submission. Default is 'client'.",
+        help="Deployment mode for job submission. Default is 'cluster'.",
     )
     parser.add_argument(
         "--properties-file",
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[utils.USER_HOME_DIR_ENT_IDX])
+    os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX])
     if os.environ.get("SPARK_HOME") is None or os.environ.get("SPARK_HOME") == "":
         os.environ["SPARK_HOME"] = os.environ["SNAP"]
 

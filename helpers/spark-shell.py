@@ -5,16 +5,14 @@ import logging
 import os
 import pwd
 
+import constants
 import utils
 
-USER_HOME_DIR_ENT_IDX = 5
-
 if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(message)s", level=logging.INFO
-    )
-
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--log-level", default="ERROR", type=str, help="Level for logging."
+    )
     parser.add_argument(
         "--username", default=None, type=str, help="Username of service account to use."
     )
@@ -30,7 +28,11 @@ if __name__ == "__main__":
     )
     args, extra_args = parser.parse_known_args()
 
-    os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[USER_HOME_DIR_ENT_IDX])
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
+    )
+
+    os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX])
     if os.environ.get("SPARK_HOME") is None or os.environ.get("SPARK_HOME") == "":
         os.environ["SPARK_HOME"] = os.environ["SNAP"]
 
