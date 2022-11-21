@@ -262,6 +262,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "logging"
+version = "0.4.9.6"
+description = "A logging module for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "mccabe"
 version = "0.7.0"
 description = "McCabe checker, plugin for flake8"
@@ -504,7 +512,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "1.1"
 python-versions = ">3.8,<4.0"
-content-hash = "55b5747b2d73d9ee3ef1b21405d25b43183b07a49c288f27f4a5207a32b5eb3a"
+content-hash = "366e162490256b42c0a5a643544442f37b6507d13109c32a2af5ac8a4809b1de"
 
 [metadata.files]
 anyio = [
@@ -656,6 +664,9 @@ lightkube = [
 lightkube-models = [
     {file = "lightkube-models-1.24.1.4.tar.gz", hash = "sha256:6e473734433f3fe3f1c5e7e5c551d82e9a8c3604af7ff2ca4fd0bb155a2b3986"},
     {file = "lightkube_models-1.24.1.4-py3-none-any.whl", hash = "sha256:3d12c9cf55045f7c182bd75648e32c954829cec20c03eb7d9c980769ed5fd3f8"},
+]
+logging = [
+    {file = "logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417"},
 ]
 mccabe = [
     {file = "mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e"},
