@@ -74,7 +74,7 @@ def read_property_file(name: Optional[str]) -> Dict:
 
 
 def write_property_file(fp: io.TextIOWrapper, props: Dict, log: bool = None) -> None:
-    """Writes a given dictionary to provided file descriptor.
+    """Write a given dictionary to provided file descriptor.
 
     Args:
         fp: file pointer to write to
@@ -135,7 +135,7 @@ def construct_options_string(options: Dict) -> str:
 
 
 def merge_dictionaries(dictionaries_to_merge: List[Dict]) -> Dict:
-    """Merges a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
+    """Merge a given list of dictionaries, properties in subsequent ones override the properties in prior ones in the dictionary list."""
     result = dict()
     for override in dictionaries_to_merge:
         result.update(override)
@@ -143,7 +143,7 @@ def merge_dictionaries(dictionaries_to_merge: List[Dict]) -> Dict:
 
 
 def merge_options(dictionaries_to_merge: List[Dict]) -> Dict:
-    """Merges a given list of options, options in subsequent ones override the options in prior ones in the list.
+    """Merge a given list of options, options in subsequent ones override the options in prior ones in the list.
 
     Args:
         dictionaries_to_merge: options to merge
@@ -161,7 +161,7 @@ def merge_options(dictionaries_to_merge: List[Dict]) -> Dict:
 
 
 def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
-    """Merges a given list of properties including java type options, properties in subsequent ones override the properties in prior ones in the list.
+    """Merge a given list of properties including java type options, properties in subsequent ones override the properties in prior ones in the list.
 
     Args:
         dictionaries_to_merge: options to merge
@@ -172,13 +172,13 @@ def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
 
 
 def get_static_defaults_conf_file() -> str:
-    """Returns static config properties file packaged with the client snap."""
+    """Return static config properties file packaged with the client snap."""
     SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP')}/conf/spark-defaults.conf"
     return SPARK_STATIC_DEFAULTS_FILE
 
 
 def get_dynamic_defaults_conf_file() -> str:
-    """Returns dynamic config properties file generated during client setup."""
+    """Return dynamic config properties file generated during client setup."""
     SPARK_DYNAMIC_DEFAULTS_FILE = (
         f"{os.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
     )
@@ -186,13 +186,13 @@ def get_dynamic_defaults_conf_file() -> str:
 
 
 def get_env_defaults_conf_file() -> Optional[str]:
-    """Returns env var provided by user to point to the config properties file with conf overrides."""
+    """Return env var provided by user to point to the config properties file with conf overrides."""
     SPARK_ENV_DEFAULTS_FILE = os.environ.get("SNAP_SPARK_ENV_CONF")
     return SPARK_ENV_DEFAULTS_FILE
 
 
 def get_snap_temp_dir() -> str:
-    """Returns /tmp directory as seen by the snap, for user's reference."""
+    """Return /tmp directory as seen by the snap, for user's reference."""
     return "/tmp/snap.spark-client"
 
 
@@ -219,7 +219,7 @@ def parse_conf_overrides(conf_args: List) -> Dict:
 
 
 def reconstruct_submit_args(args: List, conf: Dict) -> List:
-    """Adding back possibly overridden config properties to list of other spark-submit arguments
+    """Add back possibly overridden config properties to list of other spark-submit arguments
 
     Args:
         args: regular args passed to spark-submit
@@ -234,7 +234,7 @@ def reconstruct_submit_args(args: List, conf: Dict) -> List:
 
 
 def get_kube_config() -> str:
-    """Returns default kubeconfig to use if not explicitly provided."""
+    """Return default kubeconfig to use if not explicitly provided."""
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX]
     DEFAULT_KUBECONFIG = f"{USER_HOME_DIR}/.kube/config"
     kubeconfig = os.environ.get("KUBECONFIG") or DEFAULT_KUBECONFIG
@@ -242,7 +242,7 @@ def get_kube_config() -> str:
 
 
 def get_kubectl_cmd() -> str:
-    """Returns the kubectl binary location within the snap, used to build k8s commands."""
+    """Return the kubectl binary location within the snap, used to build k8s commands."""
     kubectl_cmd = "{}/kubectl".format(os.environ["SNAP"])
     return kubectl_cmd
 
@@ -278,7 +278,7 @@ def UmaskNamedTemporaryFile(*args, **kargs):
 def build_kubectl_cmd(
     kube_config: Optional[str], namespace: Optional[str], k8s_context: Optional[str]
 ) -> str:
-    """Returns a kubectl based command prefix to be used to construct various commands to run.
+    """Return a kubectl based command prefix to be used to construct various commands to run.
 
     Args:
         kube_config: config to be used for kubernetes
@@ -296,7 +296,7 @@ def build_kubectl_cmd(
 
 
 def build_secret_name(username: str) -> str:
-    """Returns the secret name associated with a service account associated with the provided username.
+    """Return the secret name associated with a service account associated with the provided username.
 
     Args:
         username: username to indicate the service account for which secret name has to be returned
@@ -420,7 +420,7 @@ def delete_kubernetes_secret(
 
 
 def get_management_label(label: bool = True) -> str:
-    """Returns uber spark-client management label
+    """Return uber spark-client management label
 
     Args:
         label: bool to be turned off to retrieve the label fragment for unlabel command
@@ -433,7 +433,7 @@ def get_management_label(label: bool = True) -> str:
 
 
 def get_primary_label(label: bool = True) -> str:
-    """Returns label used to mark the primary service account.
+    """Return label used to mark the primary service account.
 
     Args:
         label: bool to be turned off to retrieve the label fragment for unlabel command
@@ -474,7 +474,7 @@ def retrieve_primary_service_account_details(
 
 
 def is_primary_sa_defined(namespace: str, kubeconfig: str, k8s_context: str) -> bool:
-    """Boolean to check if a primary service account has been defined.
+    """Check if a primary service account has been defined.
 
     Args:
         user_name: username to point to the service account
@@ -509,7 +509,7 @@ def get_dynamic_defaults(user_name: str, name_space: str) -> Dict:
 
 
 def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str) -> None:
-    """Helpful error message for the user indicating expected kubeconfig is missing or inaccessible.
+    """Print error message for the user indicating expected kubeconfig is missing or inaccessible.
 
     Args:
         kubeconfig: config for kubectl command execution pointing to the right k8s cluster
@@ -531,7 +531,7 @@ def print_help_for_missing_or_inaccessible_kubeconfig_file(kubeconfig: str) -> N
 
 
 def print_help_for_bad_kubeconfig_file(kubeconfig: str) -> None:
-    """Helpful error message for the user indicating kubeconfig provided might be corrupted.
+    """Print error message for the user indicating kubeconfig provided might be corrupted.
 
     Args:
         kubeconfig: config for kubectl command execution pointing to the right k8s cluster
@@ -718,7 +718,7 @@ def set_up_user(
 def cleanup_user(
     username: str, namespace: str, kubeconfig: str, k8s_context: str
 ) -> None:
-    """Cleanup all resources related to a service account.
+    """Clean up all resources related to a service account.
 
     Args:
         username: username corresponding to the service account to be cleaned up.
@@ -761,7 +761,7 @@ def create_dir_if_not_exists(directory: PathLike) -> PathLike:
 
 
 def get_scala_shell_history_file() -> str:
-    """Return location of .scala_history file for spark-shell"""
+    """Return the location of .scala_history file for spark-shell"""
     USER_HOME_DIR = pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX]
     SCALA_HIST_FILE_DIR = os.environ.get("SNAP_USER_DATA", USER_HOME_DIR)
     return f"{SCALA_HIST_FILE_DIR}/.scala_history"
