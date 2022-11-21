@@ -21,6 +21,8 @@ Kubernetes cluster for big data workloads.
 Don't forget to check out the interactive shells for [Scala](/docs/shell.md) and [Python](/docs/pyspark.md). 
 They can save you a lot of time and debugging effort for authoring Spark jobs in the Kubernetes environment.
 
+Check out the [How-Tos](/docs/howto.md) section for a list of useful commands that will make your life easy working with the Spark client. 
+
 ## Common Mistakes to Avoid
 Spark on Kubernetes is a complex environment with many moving parts. Sometimes, small mistakes can take a lot of time to debug and figure out.
 Please follow our list of [common mistakes](/docs/gotchas.md) to avoid while setting up and playing with Spark on Kubernetes.
