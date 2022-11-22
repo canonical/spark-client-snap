@@ -199,11 +199,13 @@ class TestProperties(UnittestWithTmpFolder):
 
     @patch("helpers.utils.subprocess.check_output")
     def test_autodetect_kubernetes_master(self, mock_subprocess):
+        # mock logic
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = helpers.utils.get_kube_config()
@@ -224,10 +226,9 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_get_master: output_get_master,
         }
 
-        def side_effect(*args, **kwargs):
-            return values[args[0]]
-
-        mock_subprocess.side_effect = side_effect
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         conf = dict()
         conf["spark.kubernetes.namespace"] = namespace
@@ -251,27 +252,18 @@ class TestProperties(UnittestWithTmpFolder):
     def test_setup_kubernetes_secret(
         self, mock_subprocess, mock_os, mock_fp, mock_tempfile
     ):
+        # mock logic
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
         context = str(uuid.uuid4())
         properties_file = str(uuid.uuid4())
-
-        cmd_create_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create secret generic spark-client-sa-conf-{username} --from-env-file={properties_file}"
-        output_create_secret_str = ""
-        output_create_secret = output_create_secret_str.encode("utf-8")
-
-        values = {cmd_create_secret: output_create_secret}
-
-        def side_effect(*args, **kwargs):
-            return values[args[0]]
-
-        mock_subprocess.side_effect = side_effect
 
         mock_os.umask.return_value = 0
         mock_os.chmod.return_value = 0
@@ -280,6 +272,16 @@ class TestProperties(UnittestWithTmpFolder):
         mock_tempfile.file.return_value = mock_fp
         mock_tempfile.flush.return_value = 0
         mock_tempfile.return_value.__enter__.return_value.name = properties_file
+
+        cmd_create_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create secret generic spark-client-sa-conf-{username} --from-env-file={properties_file}"
+        output_create_secret_str = ""
+        output_create_secret = output_create_secret_str.encode("utf-8")
+
+        values = {cmd_create_secret: output_create_secret}
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         conf = [
             f"spark.kubernetes.namespace={namespace}",
@@ -298,11 +300,13 @@ class TestProperties(UnittestWithTmpFolder):
     @patch("helpers.utils.os")
     @patch("helpers.utils.subprocess.check_output")
     def test_retrieve_kubernetes_secret(self, mock_subprocess, mock_os):
+        # mock logic
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
@@ -310,6 +314,8 @@ class TestProperties(UnittestWithTmpFolder):
         conf_key = str(uuid.uuid4())
         conf_value = str(uuid.uuid4())
         conf_value_base64_encoded = base64.b64encode(conf_value.encode("ascii"))
+
+        mock_os.environ.__getitem__.return_value = test_id
 
         cmd_retrieve_secret_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o yaml"
         output_retrieve_secret_yaml_str = f'apiVersion: v1\ndata:\n  {conf_key}: {conf_value_base64_encoded}\nkind: Secret\nmetadata:\n  creationTimestamp: "2022-11-21T07:54:51Z"\n  name: spark-client-sa-conf-{username}\n  namespace: {namespace}\n  resourceVersion: "292967"\n  uid: 943b82c3-2891-4332-886c-621ef4f4633f\ntype: Opaque'
@@ -324,11 +330,9 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_retrieve_secret: output_retrieve_secret,
         }
 
-        def side_effect(*args, **kwargs):
-            return values[args[0]]
-
-        mock_subprocess.side_effect = side_effect
-        mock_os.environ.__getitem__.return_value = test_id
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         helpers.utils.retrieve_kubernetes_secret(
             username, namespace, kubeconfig, context, None
@@ -345,11 +349,19 @@ class TestProperties(UnittestWithTmpFolder):
     def test_set_up_user_primary_defined_primary_reassigned(
         self, mock_subprocess, mock_os_system
     ):
+        # mock logic
+        def side_effect_subprocess(*args, **kwargs):
+            return values_subprocess[args[0]]
+
+        def side_effect_os(*args, **kwargs):
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
@@ -377,15 +389,9 @@ class TestProperties(UnittestWithTmpFolder):
         cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_new_rolebinding = ""
 
-        call_trace = []
-
         values_subprocess = {
             cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
         }
-
-        def side_effect_subprocess(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_subprocess[args[0]]
 
         values_os = {
             cmd_create_service_account: output_create_service_account,
@@ -396,14 +402,9 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_label_new_rolebinding: output_label_new_rolebinding,
         }
 
-        def side_effect_os(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_os[args[0]]
-
-        mock_os_system.side_effect = side_effect_os
-        mock_os_system.return_value = 0
-
-        mock_subprocess.side_effect = side_effect_subprocess
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         defaults = dict()
         defaults[conf_key] = conf_value
@@ -429,11 +430,19 @@ class TestProperties(UnittestWithTmpFolder):
     def test_set_up_user_primary_defined_primary_not_reassigned(
         self, mock_subprocess, mock_os_system
     ):
+        # mock logic
+        def side_effect_subprocess(*args, **kwargs):
+            return values_subprocess[args[0]]
+
+        def side_effect_os(*args, **kwargs):
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
@@ -457,15 +466,9 @@ class TestProperties(UnittestWithTmpFolder):
         cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client"
         output_label_new_rolebinding = ""
 
-        call_trace = []
-
         values_subprocess = {
             cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
         }
-
-        def side_effect_subprocess(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_subprocess[args[0]]
 
         values_os = {
             cmd_create_service_account: output_create_service_account,
@@ -474,14 +477,9 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_label_new_rolebinding: output_label_new_rolebinding,
         }
 
-        def side_effect_os(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_os[args[0]]
-
-        mock_os_system.side_effect = side_effect_os
-        mock_os_system.return_value = 0
-
-        mock_subprocess.side_effect = side_effect_subprocess
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         defaults = dict()
         defaults[conf_key] = conf_value
@@ -503,11 +501,19 @@ class TestProperties(UnittestWithTmpFolder):
     @patch("helpers.utils.os.system")
     @patch("helpers.utils.subprocess.check_output")
     def test_set_up_user_primary_not_defined(self, mock_subprocess, mock_os_system):
+        # mock logic
+        def side_effect_subprocess(*args, **kwargs):
+            return values_subprocess[args[0]]
+
+        def side_effect_os(*args, **kwargs):
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
@@ -533,15 +539,9 @@ class TestProperties(UnittestWithTmpFolder):
         cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_new_rolebinding = ""
 
-        call_trace = []
-
         values_subprocess = {
             cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
         }
-
-        def side_effect_subprocess(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_subprocess[args[0]]
 
         values_os = {
             cmd_create_service_account: output_create_service_account,
@@ -550,14 +550,9 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_label_new_rolebinding: output_label_new_rolebinding,
         }
 
-        def side_effect_os(*args, **kwargs):
-            call_trace.append(args[0])
-            return values_os[args[0]]
-
-        mock_os_system.side_effect = side_effect_os
-        mock_os_system.return_value = 0
-
-        mock_subprocess.side_effect = side_effect_subprocess
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
         defaults = dict()
         defaults[conf_key] = conf_value
@@ -579,11 +574,19 @@ class TestProperties(UnittestWithTmpFolder):
     @patch("helpers.utils.os.system")
     @patch("helpers.utils.subprocess.check_output")
     def test_clean_up_user(self, mock_subprocess, mock_os_system):
+        # mock logic
+        def side_effect_os(*args, **kwargs):
+            return values_os[args[0]]
+
+        def side_effect_subprocess(*args, **kwargs):
+            return values_subprocess[args[0]]
+
+        mock_subprocess.side_effect = side_effect_subprocess
+        mock_subprocess.return_value = 0
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
         test_id = str(uuid.uuid4())
-
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
-
         username = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
@@ -602,20 +605,14 @@ class TestProperties(UnittestWithTmpFolder):
             cmd_cleanup_role_binding: output_cleanup_role_binding,
         }
 
-        def side_effect_os(*args, **kwargs):
-            return values_os[args[0]]
-
         values_subprocess = {
             cmd_delete_kubernetes_secret: output_delete_kubernetes_secret
         }
 
-        def side_effect_subprocess(*args, **kwargs):
-            return values_subprocess[args[0]]
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
 
-        mock_subprocess.side_effect = side_effect_subprocess
-        mock_subprocess.return_value = 0
-        mock_os_system.side_effect = side_effect_os
-        mock_os_system.return_value = 0
         helpers.utils.cleanup_user(username, namespace, kubeconfig, context)
 
         if env_snap:
