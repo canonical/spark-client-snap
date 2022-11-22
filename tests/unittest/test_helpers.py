@@ -1,8 +1,11 @@
+import base64
 import logging
 import os
 import unittest
 import uuid
+from unittest.mock import patch
 
+import helpers.constants  # type: ignore
 import helpers.utils  # type: ignore
 from tests import UnittestWithTmpFolder
 
@@ -165,6 +168,463 @@ class TestProperties(UnittestWithTmpFolder):
             conf["spark.driver.extraJavaOptions"].strip()
             == expected_merged_options.strip()
         )
+
+    def test_parse_conf_overrides(self):
+        test_id = str(uuid.uuid4())
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+
+        os.environ["CONF_OVERRIDE_CONTEXT"] = context
+
+        conf_list = [
+            f"spark.kubernetes.namespace={namespace}",
+            f"spark.kubernetes.authenticate.driver.serviceAccountName={username}",
+            f"{helpers.constants.OPTION_SPARK_DRIVER_EXTRA_JAVA_OPTIONS}=-Dscala.shell.histfile={test_id} -Dkubeconfig={kubeconfig} -Dcontext=$CONF_OVERRIDE_CONTEXT",
+        ]
+
+        overrides = helpers.utils.parse_conf_overrides(conf_list)
+
+        assert overrides.get("spark.kubernetes.namespace") == namespace
+        assert (
+            overrides.get("spark.kubernetes.authenticate.driver.serviceAccountName")
+            == username
+        )
+        assert (
+            overrides.get(helpers.constants.OPTION_SPARK_DRIVER_EXTRA_JAVA_OPTIONS)
+            == f"-Dscala.shell.histfile={test_id} -Dkubeconfig={kubeconfig} -Dcontext={context}"
+        )
+
+    @patch("helpers.utils.subprocess.check_output")
+    def test_autodetect_kubernetes_master(self, mock_subprocess):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = helpers.utils.get_kube_config()
+        context = str(uuid.uuid4())
+        control_plane_uri = f"http://{str(uuid.uuid4())}:{str(uuid.uuid4())}"
+
+        label = helpers.utils.get_primary_label()
+
+        cmd_get_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l {label} -A -o yaml"
+        output_get_service_account_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
+        output_get_service_account = output_get_service_account_yaml_str.encode("utf-8")
+
+        cmd_get_master = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
+        output_get_master = control_plane_uri.encode("utf-8")
+
+        values = {
+            cmd_get_service_account: output_get_service_account,
+            cmd_get_master: output_get_master,
+        }
+
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+
+        conf = dict()
+        conf["spark.kubernetes.namespace"] = namespace
+        conf["spark.kubernetes.context"] = context
+        master = helpers.utils.autodetect_kubernetes_master(conf)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        expected_master = f"k8s://{control_plane_uri}"
+
+        mock_subprocess.assert_any_call(cmd_get_service_account, shell=True)
+        mock_subprocess.assert_called_with(cmd_get_master, shell=True)
+
+        assert master == expected_master
+
+    @patch("helpers.utils.NamedTemporaryFile")
+    @patch("helpers.utils.io.TextIOWrapper")
+    @patch("helpers.utils.os")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_setup_kubernetes_secret(
+        self, mock_subprocess, mock_os, mock_fp, mock_tempfile
+    ):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        properties_file = str(uuid.uuid4())
+
+        cmd_create_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create secret generic spark-client-sa-conf-{username} --from-env-file={properties_file}"
+        output_create_secret_str = ""
+        output_create_secret = output_create_secret_str.encode("utf-8")
+
+        values = {cmd_create_secret: output_create_secret}
+
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+
+        mock_os.umask.return_value = 0
+        mock_os.chmod.return_value = 0
+        mock_os.environ.__getitem__.return_value = test_id
+        mock_fp.write.return_value = 0
+        mock_tempfile.file.return_value = mock_fp
+        mock_tempfile.flush.return_value = 0
+        mock_tempfile.return_value.__enter__.return_value.name = properties_file
+
+        conf = [
+            f"spark.kubernetes.namespace={namespace}",
+            f"spark.kubernetes.context={context}",
+        ]
+
+        helpers.utils.setup_kubernetes_secret(
+            username, namespace, kubeconfig, context, None, conf
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_subprocess.assert_called_with(cmd_create_secret, shell=True)
+
+    @patch("helpers.utils.os")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_retrieve_kubernetes_secret(self, mock_subprocess, mock_os):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        conf_key = str(uuid.uuid4())
+        conf_value = str(uuid.uuid4())
+        conf_value_base64_encoded = base64.b64encode(conf_value.encode("ascii"))
+
+        cmd_retrieve_secret_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o yaml"
+        output_retrieve_secret_yaml_str = f'apiVersion: v1\ndata:\n  {conf_key}: {conf_value_base64_encoded}\nkind: Secret\nmetadata:\n  creationTimestamp: "2022-11-21T07:54:51Z"\n  name: spark-client-sa-conf-{username}\n  namespace: {namespace}\n  resourceVersion: "292967"\n  uid: 943b82c3-2891-4332-886c-621ef4f4633f\ntype: Opaque'
+        output_retrieve_secret_yaml = output_retrieve_secret_yaml_str.encode("utf-8")
+
+        cmd_retrieve_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o jsonpath='{{.data.{conf_key}}}' | base64 --decode"
+        output_retrieve_secret_str = conf_value
+        output_retrieve_secret = output_retrieve_secret_str.encode("utf-8")
+
+        values = {
+            cmd_retrieve_secret_yaml: output_retrieve_secret_yaml,
+            cmd_retrieve_secret: output_retrieve_secret,
+        }
+
+        def side_effect(*args, **kwargs):
+            return values[args[0]]
+
+        mock_subprocess.side_effect = side_effect
+        mock_os.environ.__getitem__.return_value = test_id
+
+        helpers.utils.retrieve_kubernetes_secret(
+            username, namespace, kubeconfig, context, None
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_subprocess.assert_any_call(cmd_retrieve_secret_yaml, shell=True)
+        mock_subprocess.assert_called_with(cmd_retrieve_secret, shell=True)
+
+    @patch("helpers.utils.os.system")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_set_up_user_primary_defined_primary_reassigned(
+        self, mock_subprocess, mock_os_system
+    ):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        conf_key = str(uuid.uuid4())
+        conf_value = str(uuid.uuid4())
+
+        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        output_create_service_account = ""
+        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        output_create_role_binding = ""
+
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        output_retrieve_primary_sa_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
+        output_retrieve_primary_sa_yaml = output_retrieve_primary_sa_yaml_str.encode(
+            "utf-8"
+        )
+
+        cmd_unlabel_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount --namespace={namespace} {username} app.kubernetes.io/spark-client-primary-"
+        output_unlabel_service_account = ""
+        cmd_unlabel_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding --namespace={namespace} {username}-role app.kubernetes.io/spark-client-primary-"
+        output_unlabel_rolebinding = ""
+        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        output_label_service_account = ""
+        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        output_label_new_rolebinding = ""
+
+        call_trace = []
+
+        values_subprocess = {
+            cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
+        }
+
+        def side_effect_subprocess(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_subprocess[args[0]]
+
+        values_os = {
+            cmd_create_service_account: output_create_service_account,
+            cmd_create_role_binding: output_create_role_binding,
+            cmd_unlabel_service_account: output_unlabel_service_account,
+            cmd_unlabel_rolebinding: output_unlabel_rolebinding,
+            cmd_label_new_service_account: output_label_service_account,
+            cmd_label_new_rolebinding: output_label_new_rolebinding,
+        }
+
+        def side_effect_os(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
+        defaults = dict()
+        defaults[conf_key] = conf_value
+        helpers.utils.set_up_user(
+            username, namespace, kubeconfig, context, defaults, mark_primary=True
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_os_system.assert_any_call(cmd_create_service_account)
+        mock_os_system.assert_any_call(cmd_create_role_binding)
+
+        mock_subprocess.assert_any_call(cmd_retrieve_primary_sa_yaml, shell=True)
+
+        mock_os_system.assert_any_call(cmd_unlabel_service_account)
+        mock_os_system.assert_any_call(cmd_unlabel_rolebinding)
+        mock_os_system.assert_any_call(cmd_label_new_service_account)
+        mock_os_system.assert_any_call(cmd_label_new_rolebinding)
+
+    @patch("helpers.utils.os.system")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_set_up_user_primary_defined_primary_not_reassigned(
+        self, mock_subprocess, mock_os_system
+    ):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        conf_key = str(uuid.uuid4())
+        conf_value = str(uuid.uuid4())
+
+        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        output_create_service_account = ""
+        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        output_create_role_binding = ""
+
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        output_retrieve_primary_sa_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
+        output_retrieve_primary_sa_yaml = output_retrieve_primary_sa_yaml_str.encode(
+            "utf-8"
+        )
+
+        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client"
+        output_label_service_account = ""
+        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client"
+        output_label_new_rolebinding = ""
+
+        call_trace = []
+
+        values_subprocess = {
+            cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
+        }
+
+        def side_effect_subprocess(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_subprocess[args[0]]
+
+        values_os = {
+            cmd_create_service_account: output_create_service_account,
+            cmd_create_role_binding: output_create_role_binding,
+            cmd_label_new_service_account: output_label_service_account,
+            cmd_label_new_rolebinding: output_label_new_rolebinding,
+        }
+
+        def side_effect_os(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
+        defaults = dict()
+        defaults[conf_key] = conf_value
+        helpers.utils.set_up_user(
+            username, namespace, kubeconfig, context, defaults, mark_primary=False
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_os_system.assert_any_call(cmd_create_service_account)
+        mock_os_system.assert_any_call(cmd_create_role_binding)
+
+        mock_subprocess.assert_any_call(cmd_retrieve_primary_sa_yaml, shell=True)
+
+        mock_os_system.assert_any_call(cmd_label_new_service_account)
+        mock_os_system.assert_any_call(cmd_label_new_rolebinding)
+
+    @patch("helpers.utils.os.system")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_set_up_user_primary_not_defined(self, mock_subprocess, mock_os_system):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        conf_key = str(uuid.uuid4())
+        conf_value = str(uuid.uuid4())
+
+        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        output_create_service_account = ""
+        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        output_create_role_binding = ""
+
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        output_retrieve_primary_sa_yaml_str = (
+            'apiVersion: v1\nitems: []\nkind: List\nmetadata:\n  resourceVersion: ""'
+        )
+        output_retrieve_primary_sa_yaml = output_retrieve_primary_sa_yaml_str.encode(
+            "utf-8"
+        )
+
+        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        output_label_service_account = ""
+        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        output_label_new_rolebinding = ""
+
+        call_trace = []
+
+        values_subprocess = {
+            cmd_retrieve_primary_sa_yaml: output_retrieve_primary_sa_yaml
+        }
+
+        def side_effect_subprocess(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_subprocess[args[0]]
+
+        values_os = {
+            cmd_create_service_account: output_create_service_account,
+            cmd_create_role_binding: output_create_role_binding,
+            cmd_label_new_service_account: output_label_service_account,
+            cmd_label_new_rolebinding: output_label_new_rolebinding,
+        }
+
+        def side_effect_os(*args, **kwargs):
+            call_trace.append(args[0])
+            return values_os[args[0]]
+
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+
+        mock_subprocess.side_effect = side_effect_subprocess
+
+        defaults = dict()
+        defaults[conf_key] = conf_value
+        helpers.utils.set_up_user(
+            username, namespace, kubeconfig, context, defaults, mark_primary=False
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_os_system.assert_any_call(cmd_create_service_account)
+        mock_os_system.assert_any_call(cmd_create_role_binding)
+
+        mock_subprocess.assert_any_call(cmd_retrieve_primary_sa_yaml, shell=True)
+
+        mock_os_system.assert_any_call(cmd_label_new_service_account)
+        mock_os_system.assert_any_call(cmd_label_new_rolebinding)
+
+    @patch("helpers.utils.os.system")
+    @patch("helpers.utils.subprocess.check_output")
+    def test_clean_up_user(self, mock_subprocess, mock_os_system):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+
+        cmd_cleanup_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete serviceaccount {username}"
+        output_cleanup_service_account = ""
+        cmd_cleanup_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete rolebinding {username}-role"
+        output_cleanup_role_binding = ""
+
+        cmd_delete_kubernetes_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete secret spark-client-sa-conf-{username}"
+        output_delete_kubernetes_secret = ""
+
+        values_os = {
+            cmd_cleanup_service_account: output_cleanup_service_account,
+            cmd_cleanup_role_binding: output_cleanup_role_binding,
+        }
+
+        def side_effect_os(*args, **kwargs):
+            return values_os[args[0]]
+
+        values_subprocess = {
+            cmd_delete_kubernetes_secret: output_delete_kubernetes_secret
+        }
+
+        def side_effect_subprocess(*args, **kwargs):
+            return values_subprocess[args[0]]
+
+        mock_subprocess.side_effect = side_effect_subprocess
+        mock_subprocess.return_value = 0
+        mock_os_system.side_effect = side_effect_os
+        mock_os_system.return_value = 0
+        helpers.utils.cleanup_user(username, namespace, kubeconfig, context)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_os_system.assert_any_call(cmd_cleanup_service_account)
+        mock_os_system.assert_any_call(cmd_cleanup_role_binding)
+
+        mock_subprocess.assert_any_call(cmd_delete_kubernetes_secret, shell=True)
 
 
 if __name__ == "__main__":
