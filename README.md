@@ -5,12 +5,10 @@ You can get started right away with [Microk8s](https://microk8s.io/) - the might
 You can install MicroK8s on your Ubuntu laptop, workstation, or nodes in your workgroup or server cluster with just one command - ```snap install microk8s --classic```. Learn more at [microk8s.io](https://microk8s.io/).
 
 ## Spark-client Snap
-This repository hosts the source for ***spark-client*** snap from Canonical. The spark-client snap includes the scripts [spark-submit](/docs/submit.md), 
-[spark-shell](/docs/shell.md), [pyspark](/docs/pyspark.md) and other tools for managing ***Apache Spark*** jobs for ***Kubernetes***.
+The ***spark-client*** snap includes the scripts [spark-submit](/docs/submit.md), [spark-shell](/docs/shell.md), [pyspark](/docs/pyspark.md) and other tools for managing ***Apache Spark*** jobs for ***Kubernetes***.
 
 ## Setup
-The spark-client snap from Canonical simplifies the setup to run Spark jobs against your Kubernetes cluster. Please follow the 
-instructions in the [setup](/docs/setup.md) section to get started.
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. Please follow the instructions in the [setup](/docs/setup.md) section to get started.
 
 Do check out the section on [config resolution](/docs/config.md) to understand how [spark-submit](/docs/submit.md) actually resolves the configuration properties coming from a diverse set of available sources.
 

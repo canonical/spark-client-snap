@@ -1,53 +1,48 @@
-#### How to create configuration for a Service Account after account creation
+### How-To Guide
 
-The configuration functionality mentioned in the previous section can be done after account creation as well. Useful for redefining the configuration associated with a existing service account.
+This section provides general commands on how to use the CLI interface for creating, managing and configuring spark applications.
+
+#### Create Service Account
+
+```bash
+spark-client.setup-spark-k8s --username demouser --namespace demonamespace service-account --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
+```
+
+This creates a service account associated with configuration properties provided either via property file or explicit configuration arguments.
+
+#### Create Service Account Configuration
 
 ```bash
 spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-create --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
 ```
 
-The above command will **drop** the existing configuration associated with service account ```demonamespace:demouser``` and recreate it with properties in the new properties file and override the ```spark.app.name```.
+If the account ```demouser``` already exists, this will drop the existing configuration associated with the account.
 
-All job submissions using this service-account will use the new default configuration going forward.
-
-
-#### How to inspect configuration for a Service Account
-
-For inspecting the current properties configured for a service account, the ```sa-conf-get``` utility comes handy.
+#### Inspect Specific Configurations For Service Account
 
 ```bash
 spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-get --conf spark.app.name --conf spark.kubernetes.namespace --conf spark.executor.instances
 ```
 
-If you wish to not pick specific properties and see all of them for service account ```demonamespace:demouser```
+#### Inspect All Configuration For Service Account 
 
 ```bash
 spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-get
 ```
 
-#### How to delete configuration for a Service Account
-
-For deleting all configuration associated with a service account,
+#### Delete Service Account Configuration
 
 ```bash
 spark-client.setup-spark-k8s --username demouser --namespace demonamespace sa-conf-delete
 ```
 
-#### How to check Primary Service Account
-
-While discussing service account creation, it was mentioned that a service account can be marked as the ```primary``` account to be used implicitly if no service account is specified during job submission.
-
-There is always a single service account marked as ```primary```. The first service account created will automatically be considered the ```primary```.
-
-To inspect which service account is marked as ```primary```, one would use the ```resources-primary-sa``` utility which would list the current ```primary``` service account.
+#### Inspect Primary Service Account
 
 ```bash
 spark-client.setup-spark-k8s resources-primary-sa
 ```
 
-#### How to clean up a Service Account
-
-To clean up all resources associated with a given service account,
+#### Cleanup a Service Account
 
 ```bash
 spark-client.setup-spark-k8s --username demouser --namespace demonamespace service-account-cleanup
