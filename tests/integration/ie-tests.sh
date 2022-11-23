@@ -63,8 +63,40 @@ test_spark_shell() {
   fi
 }
 
+test_pyspark() {
+  spark-client.setup-spark-k8s service-account
+
+  export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
+
+  echo "import sys" > test-pyspark.py
+  echo "from random import random" >> test-pyspark.py
+  echo "from operator import add" >> test-pyspark.py
+  echo "from pyspark.context import SparkContext" >> test-pyspark.py
+  echo "from pyspark.sql.session import SparkSession" >> test-pyspark.py
+  echo "sc = SparkContext()" >> test-pyspark.py
+  echo "spark = SparkSession(sc)" >> test-pyspark.py
+  echo "for conf in spark.sparkContext.getConf().getAll(): print (conf)" >> test-pyspark.py
+  echo "partitions = 1000" >> test-pyspark.py
+  echo "n = 100000 * partitions" >> test-pyspark.py
+  echo "def f(_: int) -> float:" >> test-pyspark.py
+  echo "     x = random() * 2 - 1" >> test-pyspark.py
+  echo "     y = random() * 2 - 1" >> test-pyspark.py
+  echo "     return 1 if x ** 2 + y ** 2 <= 1 else 0" >> test-pyspark.py
+  echo "count = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)" >> test-pyspark.py
+  echo "print (\"Pi is roughly %f\" % (4.0 * count / n))" >> test-pyspark.py
+  echo -e "$(cat test-pyspark.py | spark-client.pyspark --conf "spark.driver.host=${DRIVER_IP}")" > pyspark.out
+  pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-4)
+  echo -e "Pyspark Pi Job Output: \n ${pi}"
+  spark-client.setup-spark-k8s service-account-cleanup
+  if [ "${pi}" != "3.14" ]; then
+      exit 1
+  fi
+}
+
 setup_tests
 
 test_example_job
 
 test_spark_shell
+
+test_pyspark
