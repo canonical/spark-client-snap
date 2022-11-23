@@ -1,5 +1,5 @@
 name: spark-client
-base: core20
+base: core22
 version: '3.3.1'
 summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
@@ -45,13 +45,14 @@ apps:
         - home
         - dot-kube-config
   pyspark:
-    command: bin/pyspark
+    command: ops/pyspark.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
     plugs:
         - network
         - network-bind
         - home
+        - dot-kube-config
 
 parts:
   spark:
@@ -103,12 +104,12 @@ parts:
             exit 1
         fi
         cd ..
-        mkdir -p $SNAPCRAFT_PRIME/bin
-        cp -r bin/* $SNAPCRAFT_PRIME/bin/
-        mkdir -p $SNAPCRAFT_PRIME/jars
-        cp -r jars/* $SNAPCRAFT_PRIME/jars/
-        mkdir -p $SNAPCRAFT_PRIME/python
-        cp -r python/* $SNAPCRAFT_PRIME/python/
+        mkdir -p $CRAFT_PART_INSTALL/bin
+        cp -r bin/* $CRAFT_PART_INSTALL/bin/
+        mkdir -p $CRAFT_PART_INSTALL/jars
+        cp -r jars/* $CRAFT_PART_INSTALL/jars/
+        mkdir -p $CRAFT_PART_INSTALL/python
+        cp -r python/* $CRAFT_PART_INSTALL/python/
     override-prime: |
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
@@ -122,7 +123,7 @@ parts:
     source: helpers
     source-type: local
     override-build: |
-      target_dir="${SNAPCRAFT_PRIME}/ops"
+      target_dir="${CRAFT_PART_INSTALL}/ops"
       
       rm -rf "${target_dir}"
       mkdir -p "${target_dir}"
@@ -132,16 +133,18 @@ parts:
       chmod 755 "${target_dir}/spark-submit.py"
       cp spark-shell.py "${target_dir}/"
       chmod 755 "${target_dir}/spark-shell.py"
+      cp pyspark.py "${target_dir}/"
+      chmod 755 "${target_dir}/pyspark.py"
       cp utils.py "${target_dir}/"
       chmod 755 "${target_dir}/utils.py"
       cp constants.py "${target_dir}/"
       chmod 755 "${target_dir}/constants.py"
       
-      mkdir -p "$SNAPCRAFT_PRIME/conf"
-      cp spark-defaults.conf "$SNAPCRAFT_PRIME/conf/"
+      mkdir -p "$CRAFT_PART_INSTALL/conf"
+      cp spark-defaults.conf "$CRAFT_PART_INSTALL/conf/"
       
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
-      cp kubectl ${SNAPCRAFT_PRIME}/
+      cp kubectl ${CRAFT_PART_INSTALL}/
       
       
