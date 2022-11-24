@@ -84,7 +84,8 @@ test_pyspark() {
   echo "     return 1 if x ** 2 + y ** 2 <= 1 else 0" >> test-pyspark.py
   echo "count = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)" >> test-pyspark.py
   echo "print (\"Pi is roughly %f\" % (4.0 * count / n))" >> test-pyspark.py
-  echo -e "$(cat test-pyspark.py | spark-client.pyspark --conf "spark.driver.host=${DRIVER_IP}")" > pyspark.out
+  echo -e "$(cat test-pyspark.py | spark-client.pyspark --conf "spark.driver.host=${DRIVER_IP} --conf spark.executor.instances=4")" > pyspark.out
+  cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-4)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
   spark-client.setup-spark-k8s service-account-cleanup
