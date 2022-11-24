@@ -623,6 +623,258 @@ class TestProperties(UnittestWithTmpFolder):
 
         mock_subprocess.assert_any_call(cmd_delete_kubernetes_secret, shell=True)
 
+    @patch("helpers.utils.get_kube_config")
+    @patch("helpers.utils.retrieve_kubernetes_secret")
+    @patch("helpers.utils.retrieve_primary_service_account_details")
+    def test_get_dynamic_defaults(
+        self,
+        mock_retrieve_primary_service_account_details,
+        mock_retrieve_kubernetes_secret,
+        mock_get_kube_config,
+    ):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        username2 = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        namespace2 = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+
+        conf = str(uuid.uuid4())
+        value1 = str(uuid.uuid4())
+        value2 = str(uuid.uuid4())
+
+        primary_sa_conf = dict()
+        primary_sa_conf["username"] = username2
+        primary_sa_conf["namespace"] = namespace2
+        primary_sa_conf[conf] = value1
+        mock_retrieve_primary_service_account_details.return_value = primary_sa_conf
+
+        sa_conf = dict()
+        sa_conf["test_id"] = test_id
+        sa_conf["kubeconfig"] = kubeconfig
+        sa_conf["context"] = context
+        sa_conf[conf] = value2
+        mock_retrieve_kubernetes_secret.return_value = sa_conf
+
+        mock_get_kube_config.return_value = kubeconfig
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        merged_result = helpers.utils.get_dynamic_defaults(username, namespace)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_retrieve_primary_service_account_details.assert_any_call(
+            None, kubeconfig, None
+        )
+        mock_get_kube_config.assert_any_call()
+        mock_retrieve_kubernetes_secret.assert_any_call(
+            username, namespace, kubeconfig, None, None
+        )
+
+        assert merged_result.get("username") == username2
+        assert merged_result.get("namespace") == namespace2
+        assert merged_result.get("kubeconfig") == kubeconfig
+        assert merged_result.get("context") == context
+        assert merged_result.get(conf) == value2
+
+    @patch("helpers.utils.yaml.safe_load")
+    @patch("builtins.open")
+    @patch("helpers.utils.pwd.getpwuid")
+    @patch("helpers.utils.os.getuid")
+    def test_get_defaults_from_kubeconfig(
+        self, mock_os_get_uid, mock_pwd_getpwuid, mock_open, mock_yaml_safe_load
+    ):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        token = str(uuid.uuid4())
+
+        mock_os_get_uid.return_value = 100
+        mock_pwd_getpwuid.return_value = [
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+        ]
+
+        mock_yaml_safe_load.return_value = {
+            "apiVersion": "v1",
+            "clusters": [
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context}-cluster",
+                }
+            ],
+            "contexts": [
+                {
+                    "context": {"cluster": f"{context}-cluster", "user": f"{username}"},
+                    "name": f"{context}",
+                }
+            ],
+            "current-context": f"{context}",
+            "kind": "Config",
+            "preferences": {},
+            "users": [{"name": f"{username}", "user": {"token": f"{token}"}}],
+        }
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        with patch("builtins.open", mock_open(read_data="test")):
+            result = helpers.utils.get_defaults_from_kubeconfig(kubeconfig, context)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        assert result["context"] == context
+        assert result["namespace"] == "default"
+        assert result["cert"] == test_id
+        assert result["config"] == kubeconfig
+        assert result["user"] == "spark"
+
+    @patch("builtins.input")
+    def test_select_context_id(self, mock_input):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username1 = str(uuid.uuid4())
+        context1 = str(uuid.uuid4())
+        token1 = str(uuid.uuid4())
+        username2 = str(uuid.uuid4())
+        context2 = str(uuid.uuid4())
+        token2 = str(uuid.uuid4())
+        username3 = str(uuid.uuid4())
+        context3 = str(uuid.uuid4())
+        token3 = str(uuid.uuid4())
+
+        kubeconfig_yaml = {
+            "apiVersion": "v1",
+            "clusters": [
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context1}-cluster",
+                },
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context2}-cluster",
+                },
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context3}-cluster",
+                },
+            ],
+            "contexts": [
+                {
+                    "context": {
+                        "cluster": f"{context1}-cluster",
+                        "user": f"{username1}",
+                    },
+                    "name": f"{context1}",
+                },
+                {
+                    "context": {
+                        "cluster": f"{context2}-cluster",
+                        "user": f"{username2}",
+                    },
+                    "name": f"{context2}",
+                },
+                {
+                    "context": {
+                        "cluster": f"{context3}-cluster",
+                        "user": f"{username3}",
+                    },
+                    "name": f"{context3}",
+                },
+            ],
+            "current-context": f"{context2}",
+            "kind": "Config",
+            "preferences": {},
+            "users": [
+                {"name": f"{username1}", "user": {"token": f"{token1}"}},
+                {"name": f"{username2}", "user": {"token": f"{token2}"}},
+                {"name": f"{username3}", "user": {"token": f"{token3}"}},
+            ],
+        }
+
+        mock_input.return_value = 1
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        result = helpers.utils.select_context_id(kubeconfig_yaml)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        assert result == 1
+
+    @patch("builtins.input")
+    def test_select_context_id_implicit(self, mock_input):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        token = str(uuid.uuid4())
+
+        kubeconfig_yaml = {
+            "apiVersion": "v1",
+            "clusters": [
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context}-cluster",
+                }
+            ],
+            "contexts": [
+                {
+                    "context": {"cluster": f"{context}-cluster", "user": f"{username}"},
+                    "name": f"{context}",
+                }
+            ],
+            "current-context": f"{context}",
+            "kind": "Config",
+            "preferences": {},
+            "users": [{"name": f"{username}", "user": {"token": f"{token}"}}],
+        }
+
+        mock_input.return_value = 100
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        result = helpers.utils.select_context_id(kubeconfig_yaml)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        assert result == 0
+
 
 if __name__ == "__main__":
 
