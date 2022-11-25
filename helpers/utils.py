@@ -320,6 +320,7 @@ def execute_kubectl_cmd(
     """
     logging.debug(cmd)
     # kubeconfig = get_kube_config()
+    result = None
     try:
         out = subprocess.check_output(cmd, shell=True)
         result = out.decode("utf-8") if out else None

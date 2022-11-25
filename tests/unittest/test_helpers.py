@@ -1,6 +1,7 @@
 import base64
 import logging
 import os
+import random
 import unittest
 import uuid
 from unittest.mock import patch
@@ -40,21 +41,24 @@ class TestProperties(UnittestWithTmpFolder):
 
     def test_read_property_file_extra_java_options(self):
         test_id = str(uuid.uuid4())
+        app_name = str(uuid.uuid4())
         test_config_w = dict()
         contents_java_options = (
             f'-Dscala.shell.histfile = "{test_id} -Da=A -Db=B -Dc=C"'
         )
         test_config_w["spark.driver.extraJavaOptions"] = contents_java_options
+        test_config_w["spark.app.name"] = app_name
         with helpers.utils.UmaskNamedTemporaryFile(
             mode="w", prefix="spark-client-snap-unittest-", suffix=".test"
         ) as t:
-            helpers.utils.write_property_file(t.file, test_config_w)
+            helpers.utils.write_property_file(t.file, test_config_w, log=True)
             t.flush()
             test_config_r = helpers.utils.read_property_file(t.name)
             assert (
                 test_config_r.get("spark.driver.extraJavaOptions")
                 == contents_java_options
             )
+            assert test_config_r.get("spark.app.name") == app_name
 
     def test_parse_options(self):
         test_id = str(uuid.uuid4())
@@ -196,6 +200,20 @@ class TestProperties(UnittestWithTmpFolder):
             overrides.get(helpers.constants.OPTION_SPARK_DRIVER_EXTRA_JAVA_OPTIONS)
             == f"-Dscala.shell.histfile={test_id} -Dkubeconfig={kubeconfig} -Dcontext={context}"
         )
+
+    @patch("sys.exit")
+    def test_parse_conf_overrides_invalid(self, mock_sys_exit):
+        mock_sys_exit.return_value = 0
+
+        conf_list = [
+            "spark.kubernetes.namespace",
+            "spark.kubernetes.authenticate.driver.serviceAccountName",
+        ]
+
+        overrides = helpers.utils.parse_conf_overrides(conf_list)
+
+        mock_sys_exit.assert_any_call(helpers.constants.EXIT_CODE_BAD_CONF_ARG)
+        assert len(overrides.keys()) == 0
 
     @patch("helpers.utils.subprocess.check_output")
     def test_autodetect_kubernetes_master(self, mock_subprocess):
@@ -874,6 +892,261 @@ class TestProperties(UnittestWithTmpFolder):
             os.environ["SNAP"] = env_snap
 
         assert result == 0
+
+    @patch("sys.exit")
+    def test_execute_kubectl_cmd_exit_code_on_error(self, mock_sys_exit):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        cmd = str(uuid.uuid4())
+        exit_code = random.randint(-1000, 0)
+
+        mock_sys_exit.return_value = 0
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        result = helpers.utils.execute_kubectl_cmd(cmd, exit_code, True)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        mock_sys_exit.assert_any_call(exit_code)
+
+        assert result is None
+
+    @patch("builtins.input")
+    def test_select_context_id_invalid_input(self, mock_input):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username1 = str(uuid.uuid4())
+        context1 = str(uuid.uuid4())
+        token1 = str(uuid.uuid4())
+        username2 = str(uuid.uuid4())
+        context2 = str(uuid.uuid4())
+        token2 = str(uuid.uuid4())
+        username3 = str(uuid.uuid4())
+        context3 = str(uuid.uuid4())
+        token3 = str(uuid.uuid4())
+
+        kubeconfig_yaml = {
+            "apiVersion": "v1",
+            "clusters": [
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context1}-cluster",
+                },
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context2}-cluster",
+                },
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context3}-cluster",
+                },
+            ],
+            "contexts": [
+                {
+                    "context": {
+                        "cluster": f"{context1}-cluster",
+                        "user": f"{username1}",
+                    },
+                    "name": f"{context1}",
+                },
+                {
+                    "context": {
+                        "cluster": f"{context2}-cluster",
+                        "user": f"{username2}",
+                    },
+                    "name": f"{context2}",
+                },
+                {
+                    "context": {
+                        "cluster": f"{context3}-cluster",
+                        "user": f"{username3}",
+                    },
+                    "name": f"{context3}",
+                },
+            ],
+            "current-context": f"{context2}",
+            "kind": "Config",
+            "preferences": {},
+            "users": [
+                {"name": f"{username1}", "user": {"token": f"{token1}"}},
+                {"name": f"{username2}", "user": {"token": f"{token2}"}},
+                {"name": f"{username3}", "user": {"token": f"{token3}"}},
+            ],
+        }
+
+        mock_input.side_effect = [test_id, context1, -1, 100000, 1]
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        result = helpers.utils.select_context_id(kubeconfig_yaml)
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        assert result == 1
+
+    @patch("builtins.input")
+    @patch("helpers.utils.yaml.safe_load")
+    @patch("builtins.open")
+    @patch("helpers.utils.pwd.getpwuid")
+    @patch("helpers.utils.os.getuid")
+    def test_get_defaults_from_kubeconfig_invalid_current_context(
+        self,
+        mock_os_get_uid,
+        mock_pwd_getpwuid,
+        mock_open,
+        mock_yaml_safe_load,
+        mock_input,
+    ):
+        # mock logic
+        test_id = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        kubeconfig = str(uuid.uuid4())
+        context = str(uuid.uuid4())
+        invalid_context = str(uuid.uuid4())
+        token = str(uuid.uuid4())
+
+        mock_os_get_uid.return_value = 100
+        mock_pwd_getpwuid.return_value = [
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+            str(uuid.uuid4()),
+        ]
+        mock_input.side_effect = [test_id, context, -1, 100000, 0]
+
+        mock_yaml_safe_load.return_value = {
+            "apiVersion": "v1",
+            "clusters": [
+                {
+                    "cluster": {
+                        "certificate-authority-data": f"{test_id}",
+                        "server": f"https://0.0.0.0:{test_id}",
+                    },
+                    "name": f"{context}-cluster",
+                }
+            ],
+            "contexts": [
+                {
+                    "context": {"cluster": f"{context}-cluster", "user": f"{username}"},
+                    "name": f"{context}",
+                }
+            ],
+            "current-context": f"{invalid_context}",
+            "kind": "Config",
+            "preferences": {},
+            "users": [{"name": f"{username}", "user": {"token": f"{token}"}}],
+        }
+
+        # test logic
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        with patch("builtins.open", mock_open(read_data="test")):
+            result = helpers.utils.get_defaults_from_kubeconfig(
+                kubeconfig, invalid_context
+            )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+        assert result["context"] == context
+        assert result["namespace"] == "default"
+        assert result["cert"] == test_id
+        assert result["config"] == kubeconfig
+        assert result["user"] == "spark"
+
+    def test_get_static_defaults_conf_file(self):
+        test_id = str(uuid.uuid4())
+
+        env_snap = os.environ.get("SNAP")
+        os.environ["SNAP"] = test_id
+
+        assert (
+            helpers.utils.get_static_defaults_conf_file()
+            == f"{test_id}/conf/spark-defaults.conf"
+        )
+
+        if env_snap:
+            os.environ["SNAP"] = env_snap
+
+    def test_get_dynamic_defaults_conf_file(self):
+        test_id = str(uuid.uuid4())
+
+        env_snap_user_data = os.environ.get("SNAP_USER_DATA")
+        os.environ["SNAP_USER_DATA"] = test_id
+
+        assert (
+            helpers.utils.get_dynamic_defaults_conf_file()
+            == f"{test_id}/spark-defaults.conf"
+        )
+
+        if env_snap_user_data:
+            os.environ["SNAP_USER_DATA"] = env_snap_user_data
+
+    def test_get_env_defaults_conf_file(self):
+        test_id = str(uuid.uuid4())
+
+        env_snap_user_data = os.environ.get("SNAP_SPARK_ENV_CONF")
+        os.environ["SNAP_SPARK_ENV_CONF"] = test_id
+
+        assert helpers.utils.get_env_defaults_conf_file() == f"{test_id}"
+
+        if env_snap_user_data:
+            os.environ["SNAP_SPARK_ENV_CONF"] = env_snap_user_data
+
+    def test_reconstruct_submit_args(self):
+        arg0 = str(uuid.uuid4())
+        arg1 = str(uuid.uuid4())
+        arg2 = str(uuid.uuid4())
+        conf_k1 = str(uuid.uuid4())
+        conf_v1 = str(uuid.uuid4())
+        conf_k2 = str(uuid.uuid4())
+        conf_v2 = str(uuid.uuid4())
+
+        conf = dict()
+        conf[conf_k1] = conf_v1
+        conf[conf_k2] = conf_v2
+
+        result = helpers.utils.reconstruct_submit_args([arg0, arg1, arg2], conf)
+
+        assert result[0] == f" --conf {conf_k1}={conf_v1} --conf {conf_k2}={conf_v2}"
+        assert result[1] == arg0
+        assert result[2] == arg1
+        assert result[3] == arg2
+
+    @patch("builtins.print")
+    def test_print_properties(self, mock_print):
+        k1 = str(uuid.uuid4())
+        v1 = str(uuid.uuid4())
+        k2 = str(uuid.uuid4())
+        v2 = str(uuid.uuid4())
+        conf = dict()
+        conf[k1] = v1
+        conf[k2] = v2
+
+        mock_print.return_value = 0
+
+        helpers.utils.print_properties(conf)
+
+        mock_print.assert_any_call(f"{k1}={v1}")
+        mock_print.assert_any_call(f"{k2}={v2}")
 
 
 if __name__ == "__main__":
