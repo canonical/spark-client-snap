@@ -46,22 +46,29 @@ packages = []
 
 [tool.poetry.dependencies]
 python = ">3.8,<4.0"
-lightkube = ">=0.11"
 
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-tox = ">3.21.4"
-codespell = "^2.1.0"
+[tool.poetry.group.fmt.dependencies]
 black = ">=21.12b0"
+isort = ">=5.10"
+
+[tool.poetry.group.lint.dependencies]
+codespell = "^2.1.0"
 flake8 = ">=4.0.1"
 Flake8-pyproject = ">=1.1.0"
-isort = ">=5.10"
+mypy = ">=0.910"
+
+[tool.poetry.group.unit.dependencies]
+tox = ">3.21.4"
 mypy = ">=0.910"
 pytest-cov = ">=3.0"
 pytest = ">=6.2"
 
+[tool.poetry.group.integration.dependencies]
+tox = ">3.21.4"
+mypy = ">=0.910"
+pytest-cov = ">=3.0"
+pytest = ">=6.2"
+lightkube = ">=0.11"
 
 [build-system]
 requires = ["poetry-core"]
