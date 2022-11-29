@@ -9,7 +9,7 @@ from typing import List, Callable, Optional, Dict, Any, Union
 import yaml
 
 from helpers_new.domain import ServiceAccount, Defaults, PropertyFile
-from helpers_new.exceptions import NoAccountFound, FormatError
+from helpers_new.exceptions import NoAccountFound, FormatError, NoResourceFound
 from helpers_new.utils import WithLogging, umask_named_temporary_file, parse_yaml_shell_output
 
 
@@ -89,6 +89,55 @@ class KubeInterface(WithLogging):
 
         return parse_yaml_shell_output(base_cmd) if (output is None) or (output == "yaml") \
             else subprocess.check_output(base_cmd, shell=True, stderr=None).decode("utf-8")
+
+    def get_service_accounts(self, namespace: Optional[str] = None, labels: Optional[List[str]] = None) \
+            -> List[Dict[str, Any]]:
+        cmd = "get serviceaccount"
+
+        if labels is not None and len(labels) > 0:
+            cmd += ' '.join([f" -l {label}" for label in labels])
+
+        namespace = " -A" if namespace is None else f" -n {namespace}"
+
+        all_service_accounts_raw = self.exec(cmd + namespace)
+
+        if isinstance(all_service_accounts_raw, str):
+            raise ValueError("Malformed output")
+
+        return all_service_accounts_raw["items"]
+
+    def get_secret(self, secret_name: str, namespace: str) -> Dict[str, Any]:
+        try:
+            secret = self.exec(
+                f"get secret {secret_name} --ignore-not-found", namespace=namespace
+            )
+        except Exception:
+            raise NoResourceFound(secret_name)
+
+        if secret is None or len(secret) == 0:
+            raise NoResourceFound(secret_name)
+
+        result = dict()
+        for k, v in secret["data"].items():
+            # k1 = k.replace(".", "\\.")
+            # value = self.kube_interface.exec(f"get secret {secret_name}", output=f"jsonpath='{{.data.{k1}}}'")
+            result[k] = base64.b64decode(v).decode("utf-8")
+
+        secret["data"] = result
+        return secret
+
+    def set_label(self, resource_type: str, resource_name: str, label: str, namespace: str):
+        self.exec(
+            f"label {resource_type} {resource_name} {label}",
+            namespace=namespace,
+        )
+
+    def create(self, resource_type: str, resource_name: str, namespace: str, **extra_args):
+        formatted_extra_args = " ".join([f"--{k}={v}" for k, v in extra_args.items()])
+        self.exec(f"create {resource_type} {resource_name} {formatted_extra_args}", namespace=namespace, output="name")
+
+    def delete(self, resource_type: str, resource_name: str, namespace: str):
+        self.exec(f"delete {resource_type} {resource_name} --ignore-not-found", namespace=namespace, output="name")
 
     @classmethod
     def autodetect(
@@ -181,12 +230,10 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
     PRIMARY_LABEL = "app.kubernetes.io/spark-client-primary"
 
     def all(self) -> List['ServiceAccount']:
-        all_service_accounts_raw = self.kube_interface.exec(
-            f"get serviceaccount -l {self.SPARK_MANAGER_LABEL}=spark-client -A"
+        service_accounts = self.kube_interface.get_service_accounts(
+            labels=[f"{self.SPARK_MANAGER_LABEL}=spark-client"]
         )
-        if isinstance(all_service_accounts_raw, str):
-            raise ValueError("Malformed output")
-        return [self._build_service_account_from_raw(raw["metadata"]) for raw in all_service_accounts_raw["items"]]
+        return [self._build_service_account_from_raw(raw["metadata"]) for raw in service_accounts]
 
     @staticmethod
     def _get_secret_name(name):
@@ -196,22 +243,11 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         secret_name = self._get_secret_name(name)
 
         try:
-            secret = self.kube_interface.exec(f"get secret {secret_name} --ignore-not-found", namespace=namespace)
+            secret = self.kube_interface.get_secret(secret_name, namespace=namespace)["data"]
         except Exception:
             return PropertyFile.empty()
 
-        if secret is None or len(secret) == 0:
-            return PropertyFile.empty()
-
-        keys = secret["data"].keys() if secret.get("data") else []
-
-        result = dict()
-        for k in keys:
-            k1 = k.replace(".", "\\.")
-            value = self.kube_interface.exec(f"get secret {secret_name}", output=f"jsonpath='{{.data.{k1}}}'")
-            result[k] = base64.b64decode(value).decode("utf-8")
-
-        return PropertyFile(result)
+        return PropertyFile(secret)
 
     def _build_service_account_from_raw(self, metadata: Dict[str, Any]):
         name = metadata["name"]
@@ -232,24 +268,20 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         primary_account = self.get_primary()
 
         if primary_account is not None:
-            self.kube_interface.exec(
-                f"label serviceaccount {primary_account.name} {self.PRIMARY_LABEL}-",
-                namespace=primary_account.namespace,
+            self.kube_interface.set_label(
+                "serviceaccount", primary_account.name, f"{self.PRIMARY_LABEL}-", primary_account.namespace
             )
-            self.kube_interface.exec(
-                f"label rolebinding {primary_account.name}-role {self.PRIMARY_LABEL}-",
-                namespace=primary_account.namespace
+            self.kube_interface.set_label(
+                "rolebinding", f"{primary_account.name}-role", f"{self.PRIMARY_LABEL}-", primary_account.namespace
             )
 
         service_account = self.get(account_id)
 
-        self.kube_interface.exec(
-            f"label serviceaccount {service_account.name} {self.PRIMARY_LABEL}=True",
-            namespace=service_account.namespace
+        self.kube_interface.set_label(
+            "serviceaccount", service_account.name, f"{self.PRIMARY_LABEL}=True", service_account.namespace
         )
-        self.kube_interface.exec(
-            f"label rolebinding {service_account.name}-role {self.PRIMARY_LABEL}=True",
-            namespace=service_account.namespace
+        self.kube_interface.set_label(
+            "rolebinding", f"{service_account.name}-role", f"{self.PRIMARY_LABEL}=True", service_account.namespace
         )
 
         return account_id
@@ -258,21 +290,20 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         rolebindingname = service_account.name + "-role"
         roleaccess = "view"
 
-        self.kube_interface.exec(
-            f"create serviceaccount {service_account.name}",
-            namespace=service_account.namespace
+        self.kube_interface.create(
+            "serviceaccount", service_account.name, namespace=service_account.namespace
         )
-        self.kube_interface.exec(
-            f"create rolebinding {rolebindingname} --role={roleaccess} --serviceaccount={service_account.id}",
-            namespace=service_account.namespace
+        self.kube_interface.create(
+            "rolebinding", rolebindingname, namespace=service_account.namespace,
+            **{"role": roleaccess, "serviceaccount": service_account.id}
         )
 
-        self.kube_interface.exec(
-            f"label serviceaccount {service_account.name} {self.SPARK_MANAGER_LABEL}=spark-client",
+        self.kube_interface.set_label(
+            "serviceaccount", service_account.name, f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace
         )
-        self.kube_interface.exec(
-            f"label rolebinding {rolebindingname} {self.SPARK_MANAGER_LABEL}=spark-client",
+        self.kube_interface.set_label(
+            "rolebinding", rolebindingname, f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace
         )
 
@@ -288,8 +319,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         secret_name = self._get_secret_name(service_account.name)
 
         try:
-            self.kube_interface.exec(f"delete secret {secret_name} --ignore-not-found",
-                                     namespace=service_account.namespace, output='name')
+            self.kube_interface.delete(f"secret", secret_name, namespace=service_account.namespace)
         except Exception:
             pass
 
@@ -304,10 +334,9 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
             t.flush()
 
-            _ = self.kube_interface.exec(
-                f"create secret generic {secret_name} --from-env-file={t.name}",
-                namespace=service_account.namespace,
-                output="name"
+            self.kube_interface.create(
+                "secret generic", secret_name, namespace=service_account.namespace,
+                **{"from-env-file": str(t.name)},
             )
 
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:
@@ -328,12 +357,11 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
         rolebindingname = name + "-role"
 
-        self.kube_interface.exec(f"delete serviceaccount {name}", namespace=namespace, output="name")
-        self.kube_interface.exec(f"delete rolebinding {rolebindingname}", namespace=namespace, output="name")
+        self.kube_interface.delete("serviceaccount", name, namespace=namespace)
+        self.kube_interface.delete("rolebinding", rolebindingname, namespace=namespace)
 
         try:
-            self.kube_interface.exec(f"delete secret {self._get_secret_name(name)} --ignore-not-found",
-                                     namespace=namespace, output="name")
+            self.kube_interface.delete("secret", self._get_secret_name(name), namespace=namespace)
         except Exception:
             pass
 
