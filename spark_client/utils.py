@@ -6,9 +6,10 @@ import os
 import subprocess
 from copy import deepcopy as copy
 from functools import reduce
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 from tempfile import NamedTemporaryFile
-from typing import Callable, Union, Any, Literal, TypedDict, Mapping, Dict
+from typing import Any, Callable, Dict, Literal, Mapping, TypedDict, Union
+
 import yaml
 
 PathLike = Union[str, "os.PathLike[str]"]
@@ -53,7 +54,7 @@ class WithLogging:
         return getLogger(nameLogger)
 
     def logResult(
-            self, msg: Union[Callable[..., str], str], level: StrLevelTypes = "INFO"
+        self, msg: Union[Callable[..., str], str], level: StrLevelTypes = "INFO"
     ) -> Callable[..., Any]:
         """
         Return a decorator to allow logging of inputs/outputs.
@@ -91,9 +92,9 @@ def union(*dicts: dict) -> dict:
         merged = copy(dct)
         for k, v in merge_dct.items():
             if (
-                    k in dct
-                    and isinstance(dct[k], dict)
-                    and isinstance(merge_dct[k], Mapping)
+                k in dct
+                and isinstance(dct[k], dict)
+                and isinstance(merge_dct[k], Mapping)
             ):
                 merged[k] = __dict_merge(dct[k], merge_dct[k])
             else:
@@ -140,6 +141,8 @@ def create_dir_if_not_exists(directory: PathLike) -> PathLike:
 
 def parse_yaml_shell_output(cmd: str) -> Union[Dict[str, Any], str]:
     with io.StringIO() as buffer:
-        buffer.write(subprocess.check_output(cmd, shell=True, stderr=None).decode("utf-8"))
+        buffer.write(
+            subprocess.check_output(cmd, shell=True, stderr=None).decode("utf-8")
+        )
         buffer.seek(0)
         return yaml.safe_load(buffer)

@@ -2,13 +2,16 @@
 
 import argparse
 import logging
-
 from typing import Optional
 
 from spark_client.cli import defaults
-from spark_client.exceptions import NoAccountFound
 from spark_client.domain import ServiceAccount
-from spark_client.services import K8sServiceAccountRegistry, SparkInterface, KubeInterface
+from spark_client.exceptions import NoAccountFound
+from spark_client.services import (
+    K8sServiceAccountRegistry,
+    KubeInterface,
+    SparkInterface,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -42,7 +45,9 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = KubeInterface(defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd)
+    kube_interface = KubeInterface(
+        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+    )
 
     if args.master is not None:
         contexts_for_api_server = [
@@ -62,8 +67,11 @@ if __name__ == "__main__":
 
     registry = K8sServiceAccountRegistry(kube_interface.with_context(context))
 
-    service_account: Optional[ServiceAccount] = registry.get_primary() if args.username is None and args.namespace is None \
+    service_account: Optional[ServiceAccount] = (
+        registry.get_primary()
+        if args.username is None and args.namespace is None
         else registry.get(f"{args.namespace or 'default'}:{args.username or 'spark'}")
+    )
 
     if service_account is None:
         raise ValueError("Service account provided does not exist.")

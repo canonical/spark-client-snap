@@ -2,13 +2,12 @@ import io
 import os
 import re
 from dataclasses import dataclass
-from typing import Dict, Optional, Any, List, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 from spark_client.utils import WithLogging, union
 
 
 class PropertyFile(WithLogging):
-
     def __init__(self, props: Dict[str, Any]):
         self.props = props
 
@@ -45,7 +44,7 @@ class PropertyFile(WithLogging):
         return defaults
 
     @classmethod
-    def read(cls, filename: Optional[str]) -> 'PropertyFile':
+    def read(cls, filename: str) -> "PropertyFile":
         """Safely read properties in given file into a dictionary.
 
         Args:
@@ -56,7 +55,7 @@ class PropertyFile(WithLogging):
         except FileNotFoundError as e:
             raise e
 
-    def write(self, fp: io.TextIOWrapper) -> 'PropertyFile':
+    def write(self, fp: io.TextIOWrapper) -> "PropertyFile":
         """Write a given dictionary to provided file descriptor.
 
         Args:
@@ -67,7 +66,7 @@ class PropertyFile(WithLogging):
             fp.write(line + "\n")
         return self
 
-    def log(self, log_func: Optional[Callable[[str], None]] = None) -> 'PropertyFile':
+    def log(self, log_func: Optional[Callable[[str], None]] = None) -> "PropertyFile":
         """Print a given dictionary to screen."""
 
         printer = (lambda msg: self.logger.info(msg)) if log_func is None else log_func
@@ -94,7 +93,11 @@ class PropertyFile(WithLogging):
     @property
     def options(self) -> Dict[str, Dict]:
         """Extract properties which are known to be options-like requiring special parsing."""
-        return {k: self._parse_options(v) for k, v in self.props.items() if self._is_property_with_options(k)}
+        return {
+            k: self._parse_options(v)
+            for k, v in self.props.items()
+            if self._is_property_with_options(k)
+        }
 
     @staticmethod
     def _construct_options_string(options: Dict) -> str:
@@ -105,13 +108,13 @@ class PropertyFile(WithLogging):
         return result
 
     @classmethod
-    def empty(cls) -> 'PropertyFile':
+    def empty(cls) -> "PropertyFile":
         return PropertyFile(dict())
 
-    def __add__(self, other: 'PropertyFile'):
+    def __add__(self, other: "PropertyFile"):
         return self.union([other])
 
-    def union(self, others: List['PropertyFile']) -> 'PropertyFile':
+    def union(self, others: List["PropertyFile"]) -> "PropertyFile":
         all_together = [self] + others
 
         simple_properties = union(*[prop.props for prop in all_together])
@@ -123,7 +126,6 @@ class PropertyFile(WithLogging):
 
 
 class Defaults:
-
     def __init__(self, environ: Dict = dict(os.environ)):
         self.environ = environ if environ is not None else {}
 
@@ -139,9 +141,7 @@ class Defaults:
     @property
     def dynamic_conf_file(self) -> str:
         """Return dynamic config properties file generated during client setup."""
-        return (
-            f"{self.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
-        )
+        return f"{self.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
 
     @property
     def env_conf_file(self) -> Optional[str]:
@@ -173,7 +173,9 @@ class Defaults:
     @property
     def kubectl_cmd(self) -> str:
         """Return default kubectl command."""
-        return f"{self.environ['SNAP']}/kubectl" if "SNAP" in self.environ else "kubectl"
+        return (
+            f"{self.environ['SNAP']}/kubectl" if "SNAP" in self.environ else "kubectl"
+        )
 
     @property
     def spark_submit(self) -> str:
@@ -202,10 +204,12 @@ class ServiceAccount:
 
     @property
     def _k8s_configurations(self):
-        return PropertyFile({
-            "spark.kubernetes.authenticate.driver.serviceAccountName": self.name,
-            "spark.kubernetes.namespace": self.namespace
-        })
+        return PropertyFile(
+            {
+                "spark.kubernetes.authenticate.driver.serviceAccountName": self.name,
+                "spark.kubernetes.namespace": self.namespace,
+            }
+        )
 
     @property
     def configurations(self) -> PropertyFile:

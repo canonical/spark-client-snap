@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import logging
 from enum import Enum
-import json
 
 from spark_client.cli import defaults
-from spark_client.domain import ServiceAccount, PropertyFile
-from spark_client.services import K8sServiceAccountRegistry, parse_conf_overrides, KubeInterface
+from spark_client.domain import PropertyFile, ServiceAccount
+from spark_client.exceptions import NoAccountFound
+from spark_client.services import (
+    K8sServiceAccountRegistry,
+    KubeInterface,
+    parse_conf_overrides,
+)
 
 
 def build_service_account_from_args(args) -> ServiceAccount:
     return ServiceAccount(
-        name=args.username, namespace=args.namespace, api_server=registry.kube_interface.api_server,
-        primary=args.primary if hasattr(args, "primary") else False
+        name=args.username,
+        namespace=args.namespace,
+        api_server=registry.kube_interface.api_server,
+        primary=args.primary if hasattr(args, "primary") else False,
     )
 
 
@@ -111,7 +118,9 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = KubeInterface(defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd)
+    kube_interface = KubeInterface(
+        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+    )
 
     context = args.context or kube_interface.context_name
 
@@ -122,9 +131,11 @@ if __name__ == "__main__":
     if args.action == Actions.CREATE:
 
         service_account = build_service_account_from_args(args)
-        service_account.extra_confs = \
-            (PropertyFile.read(args.properties_file) if args.properties_file is not None else PropertyFile.empty()) + \
-            parse_conf_overrides(args.conf)
+        service_account.extra_confs = (
+            PropertyFile.read(args.properties_file)
+            if args.properties_file is not None
+            else PropertyFile.empty()
+        ) + parse_conf_overrides(args.conf)
 
         registry.create(service_account)
 
@@ -134,25 +145,45 @@ if __name__ == "__main__":
 
     elif args.action == Actions.UPDATE_CONF:
 
-        account_configuration = \
-            (PropertyFile.read(args.properties_file) if args.properties_file is not None else PropertyFile.empty()) + \
-            parse_conf_overrides(args.conf)
+        account_configuration = (
+            PropertyFile.read(args.properties_file)
+            if args.properties_file is not None
+            else PropertyFile.empty()
+        ) + parse_conf_overrides(args.conf)
 
-        registry.set_configurations(build_service_account_from_args(args).id, account_configuration)
+        registry.set_configurations(
+            build_service_account_from_args(args).id, account_configuration
+        )
 
     elif args.action == Actions.GET_CONF:
 
-        registry.get(build_service_account_from_args(args).id).configurations.log(print)
+        input_service_account = build_service_account_from_args(args)
+
+        maybe_service_account = registry.get(input_service_account.id)
+
+        if maybe_service_account is None:
+            raise NoAccountFound(input_service_account.id)
+
+        maybe_service_account.configurations.log(print)
 
     elif args.action == Actions.DELETE_CONF:
 
-        registry.set_configurations(build_service_account_from_args(args).id, PropertyFile.empty())
+        registry.set_configurations(
+            build_service_account_from_args(args).id, PropertyFile.empty()
+        )
 
     elif args.action == Actions.PRIMARY:
 
-        registry.get_primary().configurations.log(print)
+        maybe_service_account = registry.get_primary()
+
+        if maybe_service_account is None:
+            raise NoAccountFound()
+
+        maybe_service_account.configurations.log(print)
 
     elif args.action == Actions.LIST:
 
         for service_account in registry.all():
-            print(f"{service_account.id}\t{service_account.primary}\t{json.dumps(service_account.extra_confs.props)}")
+            print(
+                f"{service_account.id}\t{service_account.primary}\t{json.dumps(service_account.extra_confs.props)}"
+            )
