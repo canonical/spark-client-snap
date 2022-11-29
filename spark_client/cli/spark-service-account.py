@@ -5,9 +5,9 @@ import logging
 from enum import Enum
 import json
 
-from helpers_new.cli import defaults
-from helpers_new.domain import ServiceAccount, PropertyFile
-from helpers_new.services import K8sServiceAccountRegistry, parse_conf_overrides, KubeInterface
+from spark_client.cli import defaults
+from spark_client.domain import ServiceAccount, PropertyFile
+from spark_client.services import K8sServiceAccountRegistry, parse_conf_overrides, KubeInterface
 
 
 def build_service_account_from_args(args) -> ServiceAccount:

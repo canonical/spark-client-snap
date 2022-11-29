@@ -8,9 +8,9 @@ from typing import List, Callable, Optional, Dict, Any, Union
 
 import yaml
 
-from helpers_new.domain import ServiceAccount, Defaults, PropertyFile
-from helpers_new.exceptions import NoAccountFound, FormatError, NoResourceFound
-from helpers_new.utils import WithLogging, umask_named_temporary_file, parse_yaml_shell_output
+from spark_client.domain import ServiceAccount, Defaults, PropertyFile
+from spark_client.exceptions import NoAccountFound, FormatError, NoResourceFound
+from spark_client.utils import WithLogging, umask_named_temporary_file, parse_yaml_shell_output
 
 
 class KubeInterface(WithLogging):

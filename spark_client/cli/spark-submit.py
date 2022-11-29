@@ -5,10 +5,10 @@ import logging
 
 from typing import Optional
 
-from helpers_new.cli import defaults
-from helpers_new.exceptions import NoAccountFound
-from helpers_new.domain import ServiceAccount
-from helpers_new.services import K8sServiceAccountRegistry, SparkInterface, KubeInterface
+from spark_client.cli import defaults
+from spark_client.exceptions import NoAccountFound
+from spark_client.domain import ServiceAccount
+from spark_client.services import K8sServiceAccountRegistry, SparkInterface, KubeInterface
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

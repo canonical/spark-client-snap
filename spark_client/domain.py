@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Dict, Optional, Any, List, Callable
 
-from helpers_new.utils import WithLogging, union
+from spark_client.utils import WithLogging, union
 
 
 class PropertyFile(WithLogging):

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from helpers_new.domain import Defaults, ServiceAccount, PropertyFile
-from helpers_new.services import K8sServiceAccountRegistry, KubeInterface, AbstractServiceAccountRegistry
+from spark_client.domain import Defaults, ServiceAccount, PropertyFile
+from spark_client.services import K8sServiceAccountRegistry, KubeInterface, AbstractServiceAccountRegistry
 from tests import integration_test
 
 
