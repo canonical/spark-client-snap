@@ -207,9 +207,13 @@ def parse_conf_overrides(conf_args: List) -> Dict:
         for c in conf_args:
             try:
                 kv = c.split("=")
-                k = kv[0]
-                v = "=".join(kv[1:])
-                conf_overrides[k] = os.environ.get(v, v)
+                k = kv[0].strip()
+                if is_property_with_options(k):
+                    kv2 = c.split("=", 1)
+                    v = kv2[1].strip()
+                else:
+                    v = kv[1].strip()
+                conf_overrides[k] = os.path.expandvars(v)
             except IndexError:
                 logging.error(
                     "Configuration related arguments parsing error. Please check input arguments and try again."
@@ -316,6 +320,7 @@ def execute_kubectl_cmd(
     """
     logging.debug(cmd)
     # kubeconfig = get_kube_config()
+    result = None
     try:
         out = subprocess.check_output(cmd, shell=True)
         result = out.decode("utf-8") if out else None
