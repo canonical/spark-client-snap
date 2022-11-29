@@ -162,18 +162,30 @@ class Defaults:
         return "defaults"
 
     @property
+    def home_folder(self):
+        return self.environ.get("SNAP_REAL_HOME", self.environ["HOME"])
+
+    @property
     def kube_config(self) -> str:
         """Return default kubeconfig to use if not explicitly provided."""
-        return self.environ.get("KUBECONFIG", f"{self.environ['HOME']}/.kube/config")
+        return self.environ.get("KUBECONFIG", f"{self.home_folder}/.kube/config")
 
     @property
     def kubectl_cmd(self) -> str:
         """Return default kubectl command."""
-        return f"{self.environ['SNAP']}/kubectl"
+        return f"{self.environ['SNAP']}/kubectl" if "SNAP" in self.environ else "kubectl"
 
     @property
     def spark_submit(self) -> str:
-        return f"{self.environ['SPARK_HOME']}/bin/spark-submit"
+        return f"{self.environ['SNAP']}/bin/spark-submit"
+
+    @property
+    def spark_shell(self) -> str:
+        return f"{self.environ['SNAP']}/bin/spark-shell"
+
+    @property
+    def pyspark(self) -> str:
+        return f"{self.environ['SNAP']}/bin/spark-shell"
 
 
 @dataclass

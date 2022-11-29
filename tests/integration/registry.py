@@ -1,15 +1,21 @@
 from unittest import TestCase
 
-from spark_client.domain import Defaults, ServiceAccount, PropertyFile
-from spark_client.services import K8sServiceAccountRegistry, KubeInterface, AbstractServiceAccountRegistry
+from spark_client.domain import Defaults, PropertyFile, ServiceAccount
+from spark_client.services import (
+    AbstractServiceAccountRegistry,
+    K8sServiceAccountRegistry,
+    KubeInterface,
+)
 from tests import integration_test
 
 
 class TestRegistry(TestCase):
 
+    kube_interface: KubeInterface
+    defaults = Defaults()
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.defaults = Defaults()
         cls.kube_interface = KubeInterface(cls.defaults.kube_config)
 
     def get_registry(self) -> AbstractServiceAccountRegistry:
@@ -37,10 +43,11 @@ class TestRegistry(TestCase):
         self.assertEqual(len(registry.all()), 0)
 
         service_account = ServiceAccount(
-            "my-spark", "default",
+            "my-spark",
+            "default",
             self.kube_interface.api_server,
             primary=True,
-            extra_confs=PropertyFile({"my-key": "my-value"})
+            extra_confs=PropertyFile({"my-key": "my-value"}),
         )
 
         registry.create(service_account)
@@ -53,7 +60,9 @@ class TestRegistry(TestCase):
         self.assertEqual(service_account.name, retrieved_service_account.name)
         self.assertEqual(service_account.namespace, retrieved_service_account.namespace)
         self.assertEqual(service_account.primary, retrieved_service_account.primary)
-        self.assertEqual(service_account.extra_confs.props, retrieved_service_account.extra_confs.props)
+        self.assertEqual(
+            service_account.extra_confs.props,
+            retrieved_service_account.extra_confs.props,
+        )
 
         registry.delete(service_account.id)
-

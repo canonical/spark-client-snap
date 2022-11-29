@@ -219,12 +219,9 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
     def __init__(
             self,
-            kube_interface: KubeInterface,
-            defaults: Defaults = Defaults(),
+            kube_interface: KubeInterface
     ):
-        self.defaults = defaults
-        self.kube_interface = kube_interface if kube_interface is not None \
-            else KubeInterface(self.defaults.kube_config, kubectl_cmd=self.defaults.kubectl_cmd)
+        self.kube_interface = kube_interface
 
     SPARK_MANAGER_LABEL = "app.kubernetes.io/managed-by"
     PRIMARY_LABEL = "app.kubernetes.io/spark-client-primary"
@@ -483,8 +480,52 @@ class SparkInterface(WithLogging):
             self.logger.debug(submit_cmd)
             os.system(submit_cmd)
 
-    def spark_shell(self, cli_property: PropertyFile, extra_args: List[str]):
-        pass
+    def spark_shell(self, cli_property: Optional[PropertyFile], extra_args: List[str]):
+        with umask_named_temporary_file(
+                mode="w", prefix="spark-conf-", suffix=".conf"
+        ) as t:
+            self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-    def pyspark_shell(self, cli_property: PropertyFile, extra_args: List[str]):
-        pass
+            (
+                    self._read_properties_file(self.defaults.static_conf_file) +
+                    self.service_account.configurations +
+                    self._read_properties_file(self.defaults.env_conf_file) +
+                    self._read_properties_file(cli_property)
+            ).log().write(t.file)
+
+            t.flush()
+
+            submit_args = [
+                              f"--master k8s://{self.service_account.api_server}",
+                              f"--properties-file {t.name}",
+                          ] + extra_args
+
+            submit_cmd = f"{self.defaults.spark_shell} {' '.join(submit_args)}"
+
+            self.logger.debug(submit_cmd)
+            os.system(submit_cmd)
+
+    def pyspark_shell(self, cli_property: Optional[PropertyFile], extra_args: List[str]):
+        with umask_named_temporary_file(
+                mode="w", prefix="spark-conf-", suffix=".conf"
+        ) as t:
+            self.logger.debug(f"Spark props available for reference at {t.name}\n")
+
+            (
+                    self._read_properties_file(self.defaults.static_conf_file) +
+                    self.service_account.configurations +
+                    self._read_properties_file(self.defaults.env_conf_file) +
+                    self._read_properties_file(cli_property)
+            ).log().write(t.file)
+
+            t.flush()
+
+            submit_args = [
+                              f"--master k8s://{self.service_account.api_server}",
+                              f"--properties-file {t.name}",
+                          ] + extra_args
+
+            submit_cmd = f"{self.defaults.pyspark} {' '.join(submit_args)}"
+
+            self.logger.debug(submit_cmd)
+            os.system(submit_cmd)

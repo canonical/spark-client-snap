@@ -111,7 +111,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = KubeInterface(defaults.kube_config)
+    kube_interface = KubeInterface(defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd)
 
     context = args.context or kube_interface.context_name
 

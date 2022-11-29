@@ -19,12 +19,6 @@ if __name__ == "__main__":
         "--master", default=None, type=str, help="Kubernetes control plane uri."
     )
     parser.add_argument(
-        "--deploy-mode",
-        default="client",
-        type=str,
-        help="Deployment mode for job submission. Default is 'client'.",
-    )
-    parser.add_argument(
         "--properties-file",
         default=None,
         type=str,
@@ -66,7 +60,7 @@ if __name__ == "__main__":
 
     logging.info(f"Using K8s context: {context}")
 
-    registry = K8sServiceAccountRegistry(kube_interface) #.with_context(context))
+    registry = K8sServiceAccountRegistry(kube_interface.with_context(context))
 
     service_account: Optional[ServiceAccount] = registry.get_primary() if args.username is None and args.namespace is None \
         else registry.get(f"{args.namespace or 'default'}:{args.username or 'spark'}")
@@ -74,6 +68,6 @@ if __name__ == "__main__":
     if service_account is None:
         raise ValueError("Service account provided does not exist.")
 
-    SparkInterface(service_account=service_account, defaults=defaults).spark_submit(
-        args.deploy_mode, args.properties_file, extra_args
+    SparkInterface(service_account=service_account, defaults=defaults).spark_shell(
+        args.properties_file, extra_args
     )
