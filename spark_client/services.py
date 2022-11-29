@@ -18,24 +18,44 @@ from spark_client.utils import (
 
 
 class KubeInterface(WithLogging):
+    """Class for providing an interface for k8s API needed for the spark client."""
+
     def __init__(
         self,
         kube_config_file: Union[str, Dict[str, Any]],
         context_name: Optional[str] = None,
         kubectl_cmd: str = "kubectl",
     ):
+        """Initialise a KubeInterface class from a kube config file.
+
+        Args:
+            kube_config_file: kube config path
+            context_name: name of the context to be used
+            kubectl_cmd: path to the kubectl command to be used to interact with the K8s API
+        """
         self.kube_config_file = kube_config_file
         self._context_name = context_name
         self.kubectl_cmd = kubectl_cmd
 
     def with_context(self, context_name: str):
+        """Return a new KubeInterface object using a different context.
+
+        Args:
+            context_name: context to be used
+        """
         return KubeInterface(self.kube_config_file, context_name, self.kubectl_cmd)
 
     def with_kubectl_cmd(self, kubectl_cmd: str):
+        """Return a new KubeInterface object using a different kubectl command.
+
+        Args:
+            kubectl_cmd: path to the kubectl command to be used
+        """
         return KubeInterface(self.kube_config_file, self.context_name, kubectl_cmd)
 
     @cached_property
     def kube_config(self) -> Dict[str, Any]:
+        """Return the kube config file parsed as a dictionary"""
         if isinstance(self.kube_config_file, str):
             with open(self.kube_config_file, "r") as fid:
                 return yaml.safe_load(fid)
@@ -44,10 +64,12 @@ class KubeInterface(WithLogging):
 
     @cached_property
     def available_contexts(self) -> List[str]:
+        """Return the available contexts present in the kube config file."""
         return [context["name"] for context in self.kube_config["contexts"]]
 
     @cached_property
     def context_name(self) -> str:
+        """Return current context name."""
         return (
             self.kube_config["current-context"]
             if self._context_name is None
@@ -56,6 +78,7 @@ class KubeInterface(WithLogging):
 
     @cached_property
     def context(self) -> Dict[str, str]:
+        """Return current context."""
         return [
             context["context"]
             for context in self.kube_config["contexts"]
@@ -64,6 +87,7 @@ class KubeInterface(WithLogging):
 
     @cached_property
     def cluster(self) -> Dict:
+        """Return current cluster."""
         return [
             cluster["cluster"]
             for cluster in self.kube_config["clusters"]
@@ -72,14 +96,17 @@ class KubeInterface(WithLogging):
 
     @cached_property
     def api_server(self):
+        """Return current K8s api-server endpoint."""
         return self.cluster["server"]
 
     @cached_property
     def namespace(self):
+        """Return current namespace."""
         return self.context.get("namespace", "default")
 
     @cached_property
     def user(self):
+        """Return current admin user."""
         return self.context.get("user", "default")
 
     def exec(
@@ -89,6 +116,15 @@ class KubeInterface(WithLogging):
         context: Optional[str] = None,
         output: Optional[str] = None,
     ) -> Union[str, Dict[str, Any]]:
+        """Execute command provided as a string.
+
+        Args:
+            cmd: string command to be executed
+            namespace: namespace where the command will be executed
+            context: context to be used
+            output: format for the output of the command. If "yaml" is used, output is returned as a dictionary.
+        """
+
         base_cmd = f"{self.kubectl_cmd} --kubeconfig {self.kube_config_file} "
 
         if "--namespace" not in cmd or "-n" not in cmd:
@@ -111,6 +147,13 @@ class KubeInterface(WithLogging):
     def get_service_accounts(
         self, namespace: Optional[str] = None, labels: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
+        """Return a list of service accounts, represented as dictionary.
+
+        Args:
+            namespace: namespace where to list the service accounts. Default is to None, which will return all service
+                       account in all namespaces
+            labels: filter to be applied to retrieve service account which match certain labels.
+        """
         cmd = "get serviceaccount"
 
         if labels is not None and len(labels) > 0:
@@ -126,6 +169,13 @@ class KubeInterface(WithLogging):
         return all_service_accounts_raw["items"]
 
     def get_secret(self, secret_name: str, namespace: str) -> Dict[str, Any]:
+        """Return the data contained in the specified secret.
+
+        Args:
+            secret_name: name of the secret
+            namespace: namespace where the secret is contained
+        """
+
         try:
             secret = self.exec(
                 f"get secret {secret_name} --ignore-not-found", namespace=namespace
@@ -148,6 +198,14 @@ class KubeInterface(WithLogging):
     def set_label(
         self, resource_type: str, resource_name: str, label: str, namespace: str
     ):
+        """Set label to a specified resource (type and name).
+
+        Args:
+            resource_type: type of the resource to be labeled, e.g. service account, rolebindings, etc.
+            resource_name: name of the resource to be labeled
+            namespace: namespace where the resource is
+        """
+
         self.exec(
             f"label {resource_type} {resource_name} {label}",
             namespace=namespace,
@@ -156,6 +214,17 @@ class KubeInterface(WithLogging):
     def create(
         self, resource_type: str, resource_name: str, namespace: str, **extra_args
     ):
+        """Create a K8s resource.
+
+        Args:
+            resource_type: type of the resource to be created, e.g. service account, rolebindings, etc.
+            resource_name: name of the resource to be created
+            namespace: namespace where the resource is
+            extra_args: extra parameters that should be provided when creating the resource. Note that each parameter
+                        will be prepended with the -- in the cmd, e.g. {"role": "view"} will translate as
+                        --role view in the command
+        """
+
         formatted_extra_args = " ".join([f"--{k}={v}" for k, v in extra_args.items()])
         self.exec(
             f"create {resource_type} {resource_name} {formatted_extra_args}",
@@ -164,6 +233,13 @@ class KubeInterface(WithLogging):
         )
 
     def delete(self, resource_type: str, resource_name: str, namespace: str):
+        """Delete a K8s resource.
+
+        Args:
+            resource_type: type of the resource to be deleted, e.g. service account, rolebindings, etc.
+            resource_name: name of the resource to be deleted
+            namespace: namespace where the resource is
+        """
         self.exec(
             f"delete {resource_type} {resource_name} --ignore-not-found",
             namespace=namespace,
@@ -174,6 +250,13 @@ class KubeInterface(WithLogging):
     def autodetect(
         cls, context_name: Optional[str] = None, kubectl_cmd: str = "kubectl"
     ) -> "KubeInterface":
+        """
+        Return a KubeInterface object by auto-parsing the output of the kubectl command.
+
+        Args:
+            context_name: context to be used to export the cluster configuration
+            kubectl_cmd: path to the kubectl command to be used to interact with the K8s API
+        """
 
         cmd = kubectl_cmd
 
@@ -186,6 +269,8 @@ class KubeInterface(WithLogging):
 
 
 class AbstractServiceAccountRegistry(WithLogging, ABC):
+    """Abstract class for implementing service that manages spark ServiceAccount resources."""
+
     @abstractmethod
     def all(self) -> List["ServiceAccount"]:
         """Return all existing service accounts."""
@@ -193,22 +278,39 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
 
     @abstractmethod
     def create(self, service_account: ServiceAccount) -> str:
-        """Create a new service account and return ids associated id."""
+        """Create a new service account and return ids associated id.
+
+        Args:
+            service_account: ServiceAccount to be stored in the registry
+        """
         pass
 
     @abstractmethod
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:
-        """Create a new service account and return ids associated id."""
+        """Set a new service account configuration for the provided service account id.
+
+        Args:
+            account_id: account id for which configuration ought to be set
+            configurations: PropertyFile representing the new configuration to be stored
+        """
         pass
 
     @abstractmethod
     def delete(self, account_id: str) -> str:
-        """Create a new service account and return ids associated id."""
+        """Delete the service account associated with the provided id.
+
+        Args:
+            account_id: service account id to be deleted
+        """
         pass
 
     @abstractmethod
     def set_primary(self, account_id: str) -> str:
-        """Set the primary account to the one related to the provided account id."""
+        """Set the primary account to the one related to the provided account id.
+
+        Args:
+            account_id: account id to be elected as new primary account
+        """
         pass
 
     def _retrieve_account(self, condition: Callable[[ServiceAccount], bool]):
@@ -238,12 +340,18 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         return primary_accounts[0]
 
     def get_primary(self) -> Optional[ServiceAccount]:
+        """Return the primary service account. None is there is no primary service account."""
         try:
             return self._retrieve_account(lambda account: account.primary is True)
         except NoAccountFound:
             return None
 
     def get(self, account_id: str) -> Optional[ServiceAccount]:
+        """Return the service account associated with the provided account id. None if no account was found.
+
+        Args:
+            account_id: account id to be used for retrieving the service account.
+        """
         try:
             return self._retrieve_account(lambda account: account.id == account_id)
         except NoAccountFound:
@@ -251,6 +359,8 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
 
 
 class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
+    """Class implementing a ServiceAccountRegistry, based on K8s."""
+
     def __init__(self, kube_interface: KubeInterface):
         self.kube_interface = kube_interface
 
@@ -258,6 +368,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
     PRIMARY_LABEL = "app.kubernetes.io/spark-client-primary"
 
     def all(self) -> List["ServiceAccount"]:
+        """Return all existing service accounts."""
         service_accounts = self.kube_interface.get_service_accounts(
             labels=[f"{self.SPARK_MANAGER_LABEL}=spark-client"]
         )
@@ -298,6 +409,11 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         )
 
     def set_primary(self, account_id: str) -> str:
+        """Set the primary account to the one related to the provided account id.
+
+        Args:
+            account_id: account id to be elected as new primary account
+        """
 
         # Relabeling primary
         primary_account = self.get_primary()
@@ -337,6 +453,12 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         return account_id
 
     def create(self, service_account: ServiceAccount) -> str:
+        """Create a new service account and return ids associated id.
+
+        Args:
+            service_account: ServiceAccount to be stored in the registry
+        """
+
         rolebindingname = service_account.name + "-role"
         roleaccess = "view"
 
@@ -400,7 +522,13 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             )
 
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:
-        """Create a new service account and return ids associated id."""
+        """Set a new service account configuration for the provided service account id.
+
+        Args:
+            account_id: account id for which configuration ought to be set
+            configurations: PropertyFile representing the new configuration to be stored
+        """
+
         namespace, name = account_id.split(":")
 
         self._create_account_configuration(
@@ -415,7 +543,12 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         return account_id
 
     def delete(self, account_id: str) -> str:
-        """Create a new service account and return ids associated id."""
+        """Delete the service account associated with the provided id.
+
+        Args:
+            account_id: service account id to be deleted
+        """
+
         namespace, name = account_id.split(":")
 
         rolebindingname = name + "-role"
@@ -448,9 +581,16 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
             )
 
     def all(self) -> List["ServiceAccount"]:
+        """Return all existing service accounts."""
         return list(self.cache.values())
 
     def create(self, service_account: ServiceAccount) -> str:
+        """Create a new service account and return ids associated id.
+
+        Args:
+            service_account: ServiceAccount to be stored in the registry
+        """
+
         if (service_account.primary is True) and any(
             [account.primary for account in self.all()]
         ):
@@ -468,9 +608,19 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
         return service_account.id
 
     def delete(self, account_id: str) -> str:
+        """Delete the service account associated with the provided id.
+
+        Args:
+            account_id: service account id to be deleted
+        """
         return self.cache.pop(account_id).id
 
     def set_primary(self, account_id: str) -> str:
+        """Set the primary account to the one related to the provided account id.
+
+        Args:
+            account_id: account id to be elected as new primary account
+        """
         if account_id not in self.cache.keys():
             raise NoAccountFound(account_id)
 
@@ -487,6 +637,13 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
         return account_id
 
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:
+        """Set a new service account configuration for the provided service account id.
+
+        Args:
+            account_id: account id for which configuration ought to be set
+            configurations: PropertyFile representing the new configuration to be stored
+        """
+
         if account_id not in self.cache.keys():
             raise NoAccountFound(account_id)
 
@@ -526,7 +683,15 @@ class SparkDeployMode(str, Enum):
 
 
 class SparkInterface(WithLogging):
+    """Class for providing interfaces for spark commands."""
+
     def __init__(self, service_account: ServiceAccount, defaults: Defaults):
+        """Initialise spark for a given service account.
+
+        Args:
+            service_account: spark ServiceAccount to be used for executing spark on k8s
+            defaults: Defaults class containing relevant default settings.
+        """
         self.service_account = service_account
         self.defaults = defaults
 
@@ -544,6 +709,14 @@ class SparkInterface(WithLogging):
         cli_property: Optional[str],
         extra_args: List[str],
     ):
+        """Submit a spark job.
+
+        Args:
+            deploy_mode: "client" or "cluster" depending where the driver will run, locally or on the k8s cluster
+                         respectively
+            cli_property: property-file path provided via command line
+            extra_args: extra arguments provided to the spark submit command
+        """
         with umask_named_temporary_file(
             mode="w", prefix="spark-conf-", suffix=".conf"
         ) as t:
@@ -570,6 +743,13 @@ class SparkInterface(WithLogging):
             os.system(submit_cmd)
 
     def spark_shell(self, cli_property: Optional[str], extra_args: List[str]):
+        """Start an interactinve spark shell.
+
+        Args:
+            cli_property: property-file path provided via command line
+            extra_args: extra arguments provided to spark shell
+        """
+
         with umask_named_temporary_file(
             mode="w", prefix="spark-conf-", suffix=".conf"
         ) as t:
@@ -595,6 +775,13 @@ class SparkInterface(WithLogging):
             os.system(submit_cmd)
 
     def pyspark_shell(self, cli_property: Optional[str], extra_args: List[str]):
+        """Start an interactinve pyspark shell.
+
+        Args:
+            cli_property: property-file path provided via command line
+            extra_args: extra arguments provided to pyspark
+        """
+
         with umask_named_temporary_file(
             mode="w", prefix="spark-conf-", suffix=".conf"
         ) as t:

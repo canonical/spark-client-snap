@@ -8,10 +8,18 @@ from spark_client.utils import WithLogging, union
 
 
 class PropertyFile(WithLogging):
+    """Class for providing basic functionalities for IO properties files."""
+
     def __init__(self, props: Dict[str, Any]):
+        """Initialize a PropertyFile class with data provided by a dictionary.
+
+        Args:
+            props: input dictionary
+        """
         self.props = props
 
     def __len__(self):
+        """Return the size of the property dictionary, i.e. the number of configuration parameters."""
         return len(self.props)
 
     @classmethod
@@ -45,10 +53,10 @@ class PropertyFile(WithLogging):
 
     @classmethod
     def read(cls, filename: str) -> "PropertyFile":
-        """Safely read properties in given file into a dictionary.
+        """Read properties file and return a PropertyFile object.
 
         Args:
-            filename: file name to be read safely
+            filename: input filename
         """
         try:
             return PropertyFile(cls._read_property_file_unsafe(filename))
@@ -56,7 +64,7 @@ class PropertyFile(WithLogging):
             raise e
 
     def write(self, fp: io.TextIOWrapper) -> "PropertyFile":
-        """Write a given dictionary to provided file descriptor.
+        """Write out a property file to disk.
 
         Args:
             fp: file pointer to write to
@@ -67,7 +75,12 @@ class PropertyFile(WithLogging):
         return self
 
     def log(self, log_func: Optional[Callable[[str], None]] = None) -> "PropertyFile":
-        """Print a given dictionary to screen."""
+        """Print a given dictionary to screen.
+
+        Args:
+            log_func: callable to specify another custom printer function. Default uses the class logger with an
+                      INFO level.
+        """
 
         printer = (lambda msg: self.logger.info(msg)) if log_func is None else log_func
 
@@ -109,12 +122,18 @@ class PropertyFile(WithLogging):
 
     @classmethod
     def empty(cls) -> "PropertyFile":
+        """Return an empty property file object."""
         return PropertyFile(dict())
 
     def __add__(self, other: "PropertyFile"):
         return self.union([other])
 
     def union(self, others: List["PropertyFile"]) -> "PropertyFile":
+        """Merge multiple PropertyFile objects, with right to left priority.
+
+        Args:
+            others: List of Property file to be merged.
+        """
         all_together = [self] + others
 
         simple_properties = union(*[prop.props for prop in all_together])
@@ -126,11 +145,20 @@ class PropertyFile(WithLogging):
 
 
 class Defaults:
+    """Class containing all relevant defaults for the application."""
+
     def __init__(self, environ: Dict = dict(os.environ)):
+        """Initialize a Defaults class using the value contained in a dictionary
+
+        Args:
+            environ: dictionary representing the environment. Default uses the os.environ key-value pairs.
+        """
+
         self.environ = environ if environ is not None else {}
 
     @property
     def snap_folder(self) -> str:
+        """Return the SNAP folder"""
         return self.environ["SNAP"]
 
     @property
@@ -192,6 +220,8 @@ class Defaults:
 
 @dataclass
 class ServiceAccount:
+    """Class representing the spark ServiceAccount domain object."""
+
     name: str
     namespace: str
     api_server: str
@@ -200,6 +230,7 @@ class ServiceAccount:
 
     @property
     def id(self):
+        """Return the service account id, as a concatenation of namespace and username."""
         return f"{self.namespace}:{self.name}"
 
     @property
@@ -213,4 +244,5 @@ class ServiceAccount:
 
     @property
     def configurations(self) -> PropertyFile:
+        """Return the service account configuration, associated to a given spark service account."""
         return self.extra_confs + self._k8s_configurations
