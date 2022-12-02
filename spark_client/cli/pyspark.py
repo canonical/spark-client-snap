@@ -2,11 +2,11 @@
 
 import argparse
 import logging
+import re
 from typing import Optional
 
 from spark_client.cli import defaults
 from spark_client.domain import ServiceAccount
-from spark_client.exceptions import NoAccountFound
 from spark_client.services import (
     K8sServiceAccountRegistry,
     KubeInterface,
@@ -49,23 +49,11 @@ if __name__ == "__main__":
         defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
-    if args.master is not None:
-        contexts_for_api_server = [
-            context["name"]
-            for context in kube_interface.kube_config["contexts"]
-            if context["context"]["cluster"] == args.master
-        ]
-
-        if len(contexts_for_api_server) == 0:
-            raise NoAccountFound(args.master)
-    else:
-        contexts_for_api_server = kube_interface.available_contexts
-
-    context = contexts_for_api_server[0]
-
-    logging.info(f"Using K8s context: {context}")
-
-    registry = K8sServiceAccountRegistry(kube_interface.with_context(context))
+    registry = K8sServiceAccountRegistry(
+        kube_interface.select_by_master(re.compile("^k8s://").sub("", args.master))
+        if args.master is not None
+        else kube_interface
+    )
 
     service_account: Optional[ServiceAccount] = (
         registry.get_primary()
@@ -76,6 +64,8 @@ if __name__ == "__main__":
     if service_account is None:
         raise ValueError("Service account provided does not exist.")
 
-    SparkInterface(service_account=service_account, defaults=defaults).pyspark_shell(
-        args.properties_file, extra_args
-    )
+    SparkInterface(
+        service_account=service_account,
+        kube_interface=kube_interface,
+        defaults=defaults,
+    ).pyspark_shell(args.properties_file, extra_args)

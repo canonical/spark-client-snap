@@ -12,6 +12,7 @@ from spark_client.domain import Defaults, PropertyFile, ServiceAccount
 from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
 from spark_client.utils import (
     WithLogging,
+    environ,
     parse_yaml_shell_output,
     umask_named_temporary_file,
 )
@@ -266,6 +267,33 @@ class KubeInterface(WithLogging):
         config = parse_yaml_shell_output(f"{cmd} config view --minify -o yaml")
 
         return KubeInterface(config, context_name=context_name, kubectl_cmd=kubectl_cmd)
+
+    def select_by_master(self, master: str):
+        api_servers_clusters = {
+            cluster["name"]: cluster["cluster"]["server"]
+            for cluster in self.kube_config["clusters"]
+        }
+
+        self.logger.debug(f"Clusters API: {dict(api_servers_clusters)}")
+
+        contexts_for_api_server = [
+            _context["name"]
+            for _context in self.kube_config["contexts"]
+            if api_servers_clusters[_context["context"]["cluster"]] == master
+        ]
+
+        if len(contexts_for_api_server) == 0:
+            raise NoAccountFound(master)
+
+        self.logger.info(
+            f"Contexts on api server {master}: {', '.join(contexts_for_api_server)}"
+        )
+
+        return (
+            self
+            if self.context_name in contexts_for_api_server
+            else self.with_context(contexts_for_api_server[0])
+        )
 
 
 class AbstractServiceAccountRegistry(WithLogging, ABC):
@@ -685,7 +713,12 @@ class SparkDeployMode(str, Enum):
 class SparkInterface(WithLogging):
     """Class for providing interfaces for spark commands."""
 
-    def __init__(self, service_account: ServiceAccount, defaults: Defaults):
+    def __init__(
+        self,
+        service_account: ServiceAccount,
+        kube_interface: KubeInterface,
+        defaults: Defaults,
+    ):
         """Initialise spark for a given service account.
 
         Args:
@@ -693,6 +726,7 @@ class SparkInterface(WithLogging):
             defaults: Defaults class containing relevant default settings.
         """
         self.service_account = service_account
+        self.kube_interface = kube_interface
         self.defaults = defaults
 
     @staticmethod
@@ -740,7 +774,8 @@ class SparkInterface(WithLogging):
             submit_cmd = f"{self.defaults.spark_submit} {' '.join(submit_args)}"
 
             self.logger.debug(submit_cmd)
-            os.system(submit_cmd)
+            with environ(KUBECONFIG=self.kube_interface.kube_config_file):
+                os.system(submit_cmd)
 
     def spark_shell(self, cli_property: Optional[str], extra_args: List[str]):
         """Start an interactinve spark shell.
@@ -772,7 +807,9 @@ class SparkInterface(WithLogging):
             submit_cmd = f"{self.defaults.spark_shell} {' '.join(submit_args)}"
 
             self.logger.debug(submit_cmd)
-            os.system(submit_cmd)
+            with environ(KUBECONFIG=self.kube_interface.kube_config_file):
+                os.system(f"touch {self.defaults.scala_history_file}")
+                os.system(submit_cmd)
 
     def pyspark_shell(self, cli_property: Optional[str], extra_args: List[str]):
         """Start an interactinve pyspark shell.
@@ -804,4 +841,5 @@ class SparkInterface(WithLogging):
             submit_cmd = f"{self.defaults.pyspark} {' '.join(submit_args)}"
 
             self.logger.debug(submit_cmd)
-            os.system(submit_cmd)
+            with environ(KUBECONFIG=self.kube_interface.kube_config_file):
+                os.system(submit_cmd)

@@ -139,7 +139,7 @@ class PropertyFile(WithLogging):
         simple_properties = union(*[prop.props for prop in all_together])
         merged_options = {
             k: self._construct_options_string(v)
-            for k, v in union(*[prop.options for prop in all_together])
+            for k, v in union(*[prop.options for prop in all_together]).items()
         }
         return PropertyFile(union(*[simple_properties, merged_options]))
 
@@ -206,6 +206,10 @@ class Defaults:
         )
 
     @property
+    def scala_history_file(self):
+        return f"{self.home_folder}/.scala_history"
+
+    @property
     def spark_submit(self) -> str:
         return f"{self.environ['SNAP']}/bin/spark-submit"
 
@@ -215,7 +219,7 @@ class Defaults:
 
     @property
     def pyspark(self) -> str:
-        return f"{self.environ['SNAP']}/bin/spark-shell"
+        return f"{self.environ['SNAP']}/bin/pyspark"
 
 
 @dataclass
