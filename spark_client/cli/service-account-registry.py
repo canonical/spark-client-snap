@@ -82,10 +82,10 @@ if __name__ == "__main__":
     )
 
     #  subparser for service-account-cleanup
-    parser_account = subparsers.add_parser(str(Actions.DELETE.value))
+    parser_account = subparsers.add_parser(Actions.DELETE.value)
 
     #  subparser for sa-conf-create
-    parser_account = subparsers.add_parser(str(Actions.UPDATE_CONF.value))
+    parser_account = subparsers.add_parser(Actions.UPDATE_CONF.value)
     parser_account.add_argument(
         "--properties-file",
         default=None,
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     )
 
     #  subparser for sa-conf-get
-    parser_account = subparsers.add_parser(str(Actions.GET_CONF.value))
+    parser_account = subparsers.add_parser(Actions.GET_CONF.value)
     parser_account.add_argument(
         "--conf", action="append", type=str, help="Config property to retrieve."
     )
@@ -185,5 +185,7 @@ if __name__ == "__main__":
 
         for service_account in registry.all():
             print(
-                f"{service_account.id}\t{service_account.primary}\t{json.dumps(service_account.extra_confs.props)}"
+                str.expandtabs(
+                    f"{service_account.id}\t{service_account.primary}\t{json.dumps(service_account.extra_confs.props)}"
+                )
             )

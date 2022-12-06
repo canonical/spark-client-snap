@@ -177,7 +177,7 @@ class Defaults:
         return self.environ.get("SNAP_SPARK_ENV_CONF")
 
     @property
-    def snap_temp_dir(self) -> str:
+    def snap_temp_folder(self) -> str:
         """Return /tmp directory as seen by the snap, for user's reference."""
         return "/tmp/snap.spark-client"
 

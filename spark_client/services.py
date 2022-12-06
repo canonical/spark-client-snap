@@ -680,28 +680,29 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
 
 
 def parse_conf_overrides(
-    conf_args: List, environ: Dict = dict(os.environ)
+    conf_args: List, environ_vars: Dict = dict(os.environ)
 ) -> PropertyFile:
     """Parse --conf overrides passed to spark-submit
 
     Args:
         conf_args: list of all --conf 'k1=v1' type args passed to spark-submit.
             Note v1 expression itself could be containing '='
-        environ: dictionary with environment variables as key-value pairs
+        environ_vars: dictionary with environment variables as key-value pairs
     """
     conf_overrides = dict()
     if conf_args:
-        for c in conf_args:
-            try:
-                kv = c.split("=")
-                k = kv[0]
-                v = "=".join(kv[1:])
-                conf_overrides[k] = environ.get(v, v)
-            except IndexError:
-                raise FormatError(
-                    "Configuration related arguments parsing error. "
-                    "Please check input arguments and try again."
-                )
+        with environ(*os.environ.keys(), **environ_vars):
+            for c in conf_args:
+                try:
+                    kv = c.split("=")
+                    k = kv[0]
+                    v = "=".join(kv[1:])
+                    conf_overrides[k] = os.path.expandvars(v)
+                except IndexError:
+                    raise FormatError(
+                        "Configuration related arguments parsing error. "
+                        "Please check input arguments and try again."
+                    )
     return PropertyFile(conf_overrides)
 
 

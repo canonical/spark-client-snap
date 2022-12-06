@@ -172,9 +172,9 @@ def environ(*remove, **update):
     remove_after = frozenset(k for k in update if k not in env)
 
     try:
-        env.update(update)
         [env.pop(k, None) for k in remove]
+        env.update(update)
         yield
     finally:
-        env.update(update_after)
         [env.pop(k) for k in remove_after]
+        env.update(update_after)
