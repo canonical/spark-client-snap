@@ -13,41 +13,46 @@ plugs:
     interface: personal-files
     read:
     - $HOME/.kube/config
+    - $HOME/.scala_history
+    write:
+    - $HOME/.scala_history
 
 environment:
   JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
   PATH: $JAVA_HOME/bin:$PATH
 
 apps:
-  setup-spark-k8s:
-    command: ops/setup-spark-k8s.py
+  service-account-registry:
+    command: ops/cli/service-account-registry.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
         - home
         - dot-kube-config
-  spark-submit:
-    command: ops/spark-submit.py
+  submit:
+    command: ops/cli/spark-submit.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
         - home
         - dot-kube-config
-  spark-shell:
-    command: ops/spark-shell.py
+  shell:
+    command: ops/cli/spark-shell.py
+    environment:
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
         - network
         - network-bind
         - home
         - dot-kube-config
   pyspark:
-    command: ops/pyspark.py
+    command: ops/cli/pyspark.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages
+      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
         - network
         - network-bind
@@ -114,34 +119,29 @@ parts:
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
 
-  helper-scripts:
+  helper-package:
     plugin: python
     python-packages:
         - pyyaml
     build-packages:
         - curl
-    source: helpers
+    source: .
     source-type: local
     override-build: |
-      target_dir="${CRAFT_PART_INSTALL}/ops"
-      
-      rm -rf "${target_dir}"
-      mkdir -p "${target_dir}"
-      cp setup-spark-k8s.py "${target_dir}/"
-      chmod 755 "${target_dir}/setup-spark-k8s.py"
-      cp spark-submit.py "${target_dir}/"
-      chmod 755 "${target_dir}/spark-submit.py"
-      cp spark-shell.py "${target_dir}/"
-      chmod 755 "${target_dir}/spark-shell.py"
-      cp pyspark.py "${target_dir}/"
-      chmod 755 "${target_dir}/pyspark.py"
-      cp utils.py "${target_dir}/"
-      chmod 755 "${target_dir}/utils.py"
-      cp constants.py "${target_dir}/"
-      chmod 755 "${target_dir}/constants.py"
-      
+      target_dir="$CRAFT_PART_INSTALL/ops"
+
+      mkdir -p "$target_dir"
+      cp -r spark_client/cli "${target_dir}/."
+      chmod 755 -R "${target_dir}/cli"
+
+      package_dir="$CRAFT_PART_INSTALL/python"
+
+      mkdir -p "$package_dir"
+      cp -r spark_client "${package_dir}/."
+      chmod 755 -R "${package_dir}/spark_client"
+
       mkdir -p "$CRAFT_PART_INSTALL/conf"
-      cp spark-defaults.conf "$CRAFT_PART_INSTALL/conf/"
+      cp spark_client/resources/conf/* "$CRAFT_PART_INSTALL/conf/."
       
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl

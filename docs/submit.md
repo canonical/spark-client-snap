@@ -12,7 +12,7 @@ Here we are launching the Pi example bundled with Apache Spark.
 ```bash
 SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
         
-spark-client.spark-submit \
+spark-client.submit \
 --deploy-mode cluster \
 --class org.apache.spark.examples.SparkPi \
 local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100

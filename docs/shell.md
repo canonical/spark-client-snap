@@ -6,7 +6,7 @@ It's a useful tool to quickly validate your assumptions about Spark in Scala bef
 Great! Let us test out our spark-shell setup with the official Pi example from the Spark distribution.
 
 ```shell
-$ spark-client.spark-shell
+$ spark-client.shell --conf spark.driver.host={LOCALHOST_IP}
 ....
 ....
 Spark session available as 'spark'.
