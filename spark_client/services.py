@@ -654,7 +654,7 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
 
         if any([account.primary for account in self.all()]):
             self.logger.info("Switching primary account")
-            for account_id, account in self.cache.items():
+            for account_id_i, account in self.cache.items():
                 if account.primary is True:
                     self.logger.debug(
                         f"Setting primary of account {account.id} to False"
