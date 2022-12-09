@@ -66,3 +66,30 @@ class TestRegistry(TestCase):
         )
 
         registry.delete(service_account.id)
+
+    @integration_test
+    def registry_change_primary_account(self):
+        registry = self.get_registry()
+        self.assertEqual(len(registry.all()), 0)
+        sa1 = ServiceAccount(
+            "my-spark1",
+            "default",
+            self.kube_interface.api_server,
+            primary=True,
+            extra_confs=PropertyFile({"k1": "v1"}),
+        )
+        sa2 = ServiceAccount(
+            "my-spark2",
+            "default",
+            self.kube_interface.api_server,
+            primary=False,
+            extra_confs=PropertyFile({"k2": "v2"}),
+        )
+        registry.create(sa1)
+        registry.create(sa2)
+
+        self.assertEqual(registry.get_primary(), sa1)
+
+        registry.set_primary(sa2.id)
+
+        self.assertEqual(registry.get_primary(), sa2)
