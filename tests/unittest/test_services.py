@@ -6,7 +6,8 @@ from unittest.mock import patch
 
 import yaml
 
-from spark_client.services import KubeInterface, parse_conf_overrides
+from spark_client.services import KubeInterface, K8sServiceAccountRegistry, parse_conf_overrides
+from spark_client.domain import ServiceAccount, PropertyFile
 from tests import TestCase
 
 
@@ -629,6 +630,202 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = KubeInterface(kube_config_file=kubeconfig)
             self.assertEqual(k, k.select_by_master(f"https://0.0.0.0:{test_id}"))
+
+    @patch("spark_client.services.KubeInterface")
+    def test_k8s_registry_retrieve_account_configurations(self, mock_kube_interface):
+        data =  {"k":"v"}
+        mock_kube_interface.get_secret.return_value = {"data": data}
+        registry = K8sServiceAccountRegistry(mock_kube_interface)
+        self.assertEqual(registry._retrieve_account_configurations(str(uuid.uuid4()), str(uuid.uuid4())).props, data)
+
+
+    @patch("spark_client.services.KubeInterface")
+    def test_k8s_registry_retrieve_account_configurations(self, mock_kube_interface):
+        data =  {"k":"v"}
+        mock_kube_interface.get_secret.return_value = {"data": data}
+
+        name1 = str(uuid.uuid4())
+        namespace1 = str(uuid.uuid4())
+        labels11 = K8sServiceAccountRegistry.PRIMARY_LABEL
+        labels12 = str(uuid.uuid4())
+        name2 = str(uuid.uuid4())
+        namespace2 = str(uuid.uuid4())
+        labels21 = str(uuid.uuid4())
+        labels22 = str(uuid.uuid4())
+
+        sa1 = {"metadata": {"name": name1, "namespace": namespace1, "labels" : [labels11,labels12]}}
+        sa2 = {"metadata": {"name": name2, "namespace": namespace2, "labels" : [labels21,labels22]}}
+
+        mock_kube_interface.get_service_accounts.return_value = [sa1, sa2]
+        registry = K8sServiceAccountRegistry(mock_kube_interface)
+        output = registry.all()
+        self.assertEqual(output[0].name, name1)
+        self.assertEqual(output[0].namespace, namespace1)
+        self.assertEqual(output[0].primary, True)
+        self.assertEqual(output[1].name, name2)
+        self.assertEqual(output[1].namespace, namespace2)
+        self.assertEqual(output[1].primary, False)
+
+    @patch("spark_client.services.KubeInterface")
+    def test_k8s_registry_set_primary(self, mock_kube_interface):
+        data =  {"k":"v"}
+        mock_kube_interface.get_secret.return_value = {"data": data}
+
+        name1 = str(uuid.uuid4())
+        namespace1 = str(uuid.uuid4())
+        labels11 = K8sServiceAccountRegistry.PRIMARY_LABEL
+        labels12 = str(uuid.uuid4())
+        name2 = str(uuid.uuid4())
+        namespace2 = str(uuid.uuid4())
+        labels21 = str(uuid.uuid4())
+        labels22 = str(uuid.uuid4())
+
+        sa1 = {"metadata": {"name": name1, "namespace": namespace1, "labels" : [labels11,labels12]}}
+        sa2 = {"metadata": {"name": name2, "namespace": namespace2, "labels" : [labels21,labels22]}}
+
+        mock_kube_interface.get_service_accounts.return_value = [sa1, sa2]
+        mock_kube_interface.set_label.return_value = 0
+        registry = K8sServiceAccountRegistry(mock_kube_interface)
+        self.assertEqual(registry.set_primary(f"{namespace2}:{name2}"), f"{namespace2}:{name2}")
+
+        mock_kube_interface.set_label.assert_any_call(
+                "serviceaccount",
+                name1,
+                f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+                namespace1)
+
+        mock_kube_interface.set_label.assert_any_call(
+                "rolebinding",
+                f"{name1}-role",
+                f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+                namespace1,
+            )
+
+        mock_kube_interface.set_label.assert_any_call(
+            "serviceaccount",
+            name2,
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
+            namespace2,
+        )
+
+        mock_kube_interface.set_label.assert_any_call(
+            "rolebinding",
+            f"{name2}-role",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
+            namespace2,
+        )
+
+    @patch("spark_client.services.KubeInterface")
+    def test_k8s_registry_create(self, mock_kube_interface):
+        data =  {"k":"v"}
+        mock_kube_interface.get_secret.return_value = {"data": data}
+
+        name1 = str(uuid.uuid4())
+        namespace1 = str(uuid.uuid4())
+        labels11 = K8sServiceAccountRegistry.PRIMARY_LABEL
+        labels12 = str(uuid.uuid4())
+        name2 = str(uuid.uuid4())
+        namespace2 = str(uuid.uuid4())
+        labels21 = str(uuid.uuid4())
+        labels22 = str(uuid.uuid4())
+        name3 = str(uuid.uuid4())
+        namespace3 = str(uuid.uuid4())
+        labels31 = K8sServiceAccountRegistry.PRIMARY_LABEL
+        labels32 = str(uuid.uuid4())
+        api_server = str(uuid.uuid4())
+
+        sa1 = {"metadata": {"name": name1, "namespace": namespace1, "labels" : [labels11,labels12]}}
+        sa2 = {"metadata": {"name": name2, "namespace": namespace2, "labels" : [labels21,labels22]}}
+        sa3 = {"metadata": {"name": name3, "namespace": namespace3, "labels": [labels31, labels32]}}
+        sa3_obj = ServiceAccount(name = name3, namespace = namespace3, api_server=api_server, primary=True, extra_confs=PropertyFile(data))
+
+        mock_kube_interface.get_service_accounts.return_value = [sa1, sa2, sa3]
+        mock_kube_interface.set_label.return_value = 0
+        mock_kube_interface.create.return_value = 0
+
+        registry = K8sServiceAccountRegistry(mock_kube_interface)
+        self.assertEqual(registry.create(sa3_obj), sa3_obj.id)
+
+        mock_kube_interface.create.assert_any_call(
+            "serviceaccount", name3, namespace=namespace3
+        )
+
+        mock_kube_interface.create.assert_any_call(
+            "rolebinding",
+            f"{name3}-role",
+            namespace=namespace3,
+            **{"role": "view", "serviceaccount": sa3_obj.id})
+
+
+        for call in  mock_kube_interface.set_label.call_args_list:
+            print(call)
+
+        mock_kube_interface.set_label.assert_any_call(
+            "serviceaccount",
+            name3,
+            f"{K8sServiceAccountRegistry.SPARK_MANAGER_LABEL}=spark-client",
+            namespace=namespace3,)
+
+        mock_kube_interface.set_label.assert_any_call(
+            "rolebinding",
+            f"{name3}-role",
+            f"{K8sServiceAccountRegistry.SPARK_MANAGER_LABEL}=spark-client",
+            namespace=namespace3,
+        )
+
+        mock_kube_interface.set_label.assert_any_call(
+                "serviceaccount",
+                name1,
+                f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+                namespace1)
+
+        mock_kube_interface.set_label.assert_any_call(
+                "rolebinding",
+                f"{name1}-role",
+                f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+                namespace1,
+            )
+
+        mock_kube_interface.set_label.assert_any_call(
+            "serviceaccount",
+            name3,
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
+            namespace3,
+        )
+
+        mock_kube_interface.set_label.assert_any_call(
+            "rolebinding",
+            f"{name3}-role",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
+            namespace3,
+        )
+
+    @patch("spark_client.services.KubeInterface")
+    def test_k8s_registry_retrieve_account_configurations(self, mock_kube_interface):
+        data =  {"k":"v"}
+        mock_kube_interface.get_secret.return_value = {"data": data}
+
+        name1 = str(uuid.uuid4())
+        namespace1 = str(uuid.uuid4())
+        labels11 = K8sServiceAccountRegistry.PRIMARY_LABEL
+        labels12 = str(uuid.uuid4())
+        name2 = str(uuid.uuid4())
+        namespace2 = str(uuid.uuid4())
+        labels21 = str(uuid.uuid4())
+        labels22 = str(uuid.uuid4())
+
+        mock_kube_interface.delete.return_value = 0
+
+
+        registry = K8sServiceAccountRegistry(mock_kube_interface)
+
+        self.assertEqual(registry.delete(f"{namespace2}:{name2}"), f"{namespace2}:{name2}")
+        mock_kube_interface.delete.assert_any_call("serviceaccount", name2, namespace=namespace2)
+        mock_kube_interface.delete.assert_any_call("rolebinding", f"{name2}-role", namespace=namespace2)
+
+        mock_kube_interface.delete.assert_any_call(
+            "secret", f"spark-client-sa-conf-{name2}", namespace=namespace2
+        )
 
 
 if __name__ == "__main__":
