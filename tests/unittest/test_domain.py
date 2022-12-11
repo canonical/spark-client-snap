@@ -250,9 +250,16 @@ class TestDomain(TestCase):
 
         self.assertEqual(registry.get(f"{namespace}:{name3}"), sa3)
 
-        new_props = {"spark.dummy.property1": spark_dummy_property1, "spark.dummy.property2": spark_dummy_property2, "spark.dummy.property3": spark_dummy_property3}
-        self.assertEqual(sa2.id, registry.set_configurations(sa2.id, PropertyFile(props=new_props)))
+        new_props = {
+            "spark.dummy.property1": spark_dummy_property1,
+            "spark.dummy.property2": spark_dummy_property2,
+            "spark.dummy.property3": spark_dummy_property3,
+        }
+        self.assertEqual(
+            sa2.id, registry.set_configurations(sa2.id, PropertyFile(props=new_props))
+        )
         self.assertEqual(registry.get(sa2.id).extra_confs.props, new_props)
+
 
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level="DEBUG")
