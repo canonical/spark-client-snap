@@ -1,3 +1,4 @@
+import uuid
 from unittest import TestCase
 
 from spark_client.domain import Defaults, PropertyFile, ServiceAccount
@@ -7,7 +8,6 @@ from spark_client.services import (
     KubeInterface,
 )
 from tests import integration_test
-
 
 class TestRegistry(TestCase):
 
@@ -68,7 +68,7 @@ class TestRegistry(TestCase):
         registry.delete(service_account.id)
 
     @integration_test
-    def registry_change_primary_account(self):
+    def test_registry_change_primary_account(self):
         registry = self.get_registry()
         self.assertEqual(len(registry.all()), 0)
         sa1 = ServiceAccount(
@@ -88,8 +88,68 @@ class TestRegistry(TestCase):
         registry.create(sa1)
         registry.create(sa2)
 
-        self.assertEqual(registry.get_primary(), sa1)
+        self.assertEqual(registry.get_primary().id, sa1.id)
 
         registry.set_primary(sa2.id)
 
-        self.assertEqual(registry.get_primary(), sa2)
+        self.assertEqual(registry.get_primary().id, sa2.id)
+
+        registry.delete(sa1.id)
+        registry.delete(sa2.id)
+
+    @integration_test
+    def test_merge_configurations(self):
+        registry = self.get_registry()
+        self.assertEqual(len(registry.all()), 0)
+        k1 = str(uuid.uuid4())
+        v11 = str(uuid.uuid4())
+        v12 = str(uuid.uuid4())
+        v13 = str(uuid.uuid4())
+        k2 = "spark.driver.extraJavaOptions"
+        v21 = str(uuid.uuid4())
+        v22 = str(uuid.uuid4())
+        v23 = str(uuid.uuid4())
+
+        props1 = PropertyFile({
+            k1: v11,
+            k2: f"-Dscala.shell.histfile={v21}",
+            "key1": "value1"
+        })
+        props2 = PropertyFile({
+            k1: v12,
+            k2: f"-Dscala.shell.histfile={v22}",
+            "key2": "value2"
+        })
+        props3 = PropertyFile({
+            k1: v13,
+            k2: f"-Dscala.shell.histfile={v23}",
+            "key3": "value3"
+        })
+
+        merged_props = props1 + props2 + props3
+
+        expected_merged_props = PropertyFile({
+            k1: v13,
+            k2: f" -Dscala.shell.histfile={v23}",
+            "key1": "value1",
+            "key2": "value2",
+            "key3": "value3"
+
+        })
+
+        self.assertEqual(merged_props.props, expected_merged_props.props)
+
+    @integration_test
+    def test_kube_interface(self):
+        context = str(uuid.uuid4())
+        kubectl_cmd = str(uuid.uuid4())
+
+        k = self.kube_interface.autodetect()
+        self.assertEqual(k.context_name, "microk8s")
+        self.assertEqual(k.cluster.get("server"), "https://127.0.0.1:16443")
+        k2 = k.select_by_master("https://127.0.0.1:16443")
+        self.assertEqual(k2.context_name, "microk8s")
+        self.assertEqual(k.with_context(context).context_name, context)
+        self.assertEqual(k.with_kubectl_cmd(kubectl_cmd).kubectl_cmd, kubectl_cmd)
+
+
