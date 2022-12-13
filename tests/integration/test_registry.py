@@ -9,6 +9,7 @@ from spark_client.services import (
 )
 from tests import integration_test
 
+
 class TestRegistry(TestCase):
 
     kube_interface: KubeInterface
@@ -110,32 +111,27 @@ class TestRegistry(TestCase):
         v22 = str(uuid.uuid4())
         v23 = str(uuid.uuid4())
 
-        props1 = PropertyFile({
-            k1: v11,
-            k2: f"-Dscala.shell.histfile={v21}",
-            "key1": "value1"
-        })
-        props2 = PropertyFile({
-            k1: v12,
-            k2: f"-Dscala.shell.histfile={v22}",
-            "key2": "value2"
-        })
-        props3 = PropertyFile({
-            k1: v13,
-            k2: f"-Dscala.shell.histfile={v23}",
-            "key3": "value3"
-        })
+        props1 = PropertyFile(
+            {k1: v11, k2: f"-Dscala.shell.histfile={v21}", "key1": "value1"}
+        )
+        props2 = PropertyFile(
+            {k1: v12, k2: f"-Dscala.shell.histfile={v22}", "key2": "value2"}
+        )
+        props3 = PropertyFile(
+            {k1: v13, k2: f"-Dscala.shell.histfile={v23}", "key3": "value3"}
+        )
 
         merged_props = props1 + props2 + props3
 
-        expected_merged_props = PropertyFile({
-            k1: v13,
-            k2: f" -Dscala.shell.histfile={v23}",
-            "key1": "value1",
-            "key2": "value2",
-            "key3": "value3"
-
-        })
+        expected_merged_props = PropertyFile(
+            {
+                k1: v13,
+                k2: f" -Dscala.shell.histfile={v23}",
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3",
+            }
+        )
 
         self.assertEqual(merged_props.props, expected_merged_props.props)
 
@@ -151,5 +147,3 @@ class TestRegistry(TestCase):
         self.assertEqual(k2.context_name, "microk8s")
         self.assertEqual(k.with_context(context).context_name, context)
         self.assertEqual(k.with_kubectl_cmd(kubectl_cmd).kubectl_cmd, kubectl_cmd)
-
-
