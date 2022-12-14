@@ -275,7 +275,6 @@ class KubeInterface(WithLogging):
         }
 
         self.logger.debug(f"Clusters API: {dict(api_servers_clusters)}")
-        print(dict(api_servers_clusters))
         for _context in self.kube_config["contexts"]:
             print(_context["name"])
             print(_context["context"]["cluster"])
@@ -660,7 +659,7 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
 
         if any([account.primary for account in self.all()]):
             self.logger.info("Switching primary account")
-            for account_id_i, account in self.cache.items():
+            for account in self.cache.values():
                 if account.primary is True:
                     self.logger.debug(
                         f"Setting primary of account {account.id} to False"

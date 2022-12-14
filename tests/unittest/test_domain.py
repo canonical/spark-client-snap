@@ -10,6 +10,9 @@ from tests import TestCase
 
 class TestDomain(TestCase):
     def test_defaults(self):
+        """
+        Validates defaults passed in as environment.
+        """
         home_var = str(uuid.uuid4())
         snap_var = str(uuid.uuid4())
         snap_user_data_dir = str(uuid.uuid4())
@@ -46,6 +49,9 @@ class TestDomain(TestCase):
         self.assertEqual(defaults.pyspark, f"{snap_var}/bin/pyspark")
 
     def test_service_account(self):
+        """
+        Validates service account including defending namespace and account name against overrides.
+        """
         name = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
         name_incorrect = str(uuid.uuid4())
@@ -84,6 +90,9 @@ class TestDomain(TestCase):
         )
 
     def test_property_file_parse_options(self):
+        """
+        Validates parsing of properties and options in PropertyFile abstraction.
+        """
         name = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
 
@@ -108,6 +117,9 @@ class TestDomain(TestCase):
         assert options["c"] == "C"
 
     def test_property_file_construct_options_string(self):
+        """
+        Validates construction of options string.
+        """
         name = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
 
@@ -137,6 +149,9 @@ class TestDomain(TestCase):
         )
 
     def test_property_file_io(self):
+        """
+        Validates property file write and read.
+        """
         name = str(uuid.uuid4())
         namespace = str(uuid.uuid4())
 
@@ -174,18 +189,23 @@ class TestDomain(TestCase):
             assert test_config_r.props.get("spark.app.name") == app_name
 
     def test_property_file_log(self):
+        """
+        Validates property file logging function.
+        """
         k = str(uuid.uuid4())
         v = str(uuid.uuid4())
 
-        # mock logic
-        def my_log(contents: str):
-            self.assertEqual(contents, f"{k}={v}")
-
         # test logic
         conf = PropertyFile(props={k: v})
-        conf.log(my_log)
+        with self.assertLogs('spark_client.domain.PropertyFile', level='INFO') as cm:
+            conf.log()
+        self.assertEqual(cm.output, [f'INFO:spark_client.domain.PropertyFile:{k}={v}'])
+
 
     def test_in_memory_registry(self):
+        """
+        Validate in memory registry functionalities.
+        """
         name1 = str(uuid.uuid4())
         name2 = str(uuid.uuid4())
         name3 = str(uuid.uuid4())
