@@ -226,7 +226,9 @@ class KubeInterface(WithLogging):
                         --role view in the command
         """
 
-        formatted_extra_args = " ".join([f"--{k}={v}" for k, values in extra_args.items() for v in values])
+        formatted_extra_args = " ".join(
+            [f"--{k}={v}" for k, values in extra_args.items() for v in values]
+        )
         self.exec(
             f"create {resource_type} {resource_name} {formatted_extra_args}",
             namespace=namespace,
@@ -501,10 +503,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             "role",
             rolename,
             namespace=service_account.namespace,
-            **{
-                "resource": ["pods", "configmaps"],
-                "verb": ["create", "get", "watch"]
-            },
+            **{"resource": ["pods", "configmaps"], "verb": ["create", "get", "watch"]},
         )
         self.kube_interface.create(
             "rolebinding",

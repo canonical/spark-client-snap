@@ -813,10 +813,7 @@ class TestServices(TestCase):
             "role",
             f"{name3}-role",
             namespace=namespace3,
-            **{
-                "resource": ["pods", "configmaps"],
-                "verb": ["create", "get", "watch"]
-            },
+            **{"resource": ["pods", "configmaps"], "verb": ["create", "get", "watch"]},
         )
 
         mock_kube_interface.create.assert_any_call(
