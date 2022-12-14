@@ -197,10 +197,9 @@ class TestDomain(TestCase):
 
         # test logic
         conf = PropertyFile(props={k: v})
-        with self.assertLogs('spark_client.domain.PropertyFile', level='INFO') as cm:
+        with self.assertLogs("spark_client.domain.PropertyFile", level="INFO") as cm:
             conf.log()
-        self.assertEqual(cm.output, [f'INFO:spark_client.domain.PropertyFile:{k}={v}'])
-
+        self.assertEqual(cm.output, [f"INFO:spark_client.domain.PropertyFile:{k}={v}"])
 
     def test_in_memory_registry(self):
         """
