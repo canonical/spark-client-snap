@@ -226,7 +226,7 @@ class KubeInterface(WithLogging):
                         --role view in the command
         """
 
-        formatted_extra_args = " ".join([f"--{k}={v}" for k, v in extra_args.items()])
+        formatted_extra_args = " ".join([f"--{k}={v}" for k, values in extra_args.items() for v in values])
         self.exec(
             f"create {resource_type} {resource_name} {formatted_extra_args}",
             namespace=namespace,
@@ -460,7 +460,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             )
             self.kube_interface.set_label(
                 "rolebinding",
-                f"{primary_account.name}-role",
+                f"{primary_account.name}-role-binding",
                 f"{self.PRIMARY_LABEL}-",
                 primary_account.namespace,
             )
@@ -478,7 +478,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         )
         self.kube_interface.set_label(
             "rolebinding",
-            f"{service_account.name}-role",
+            f"{service_account.name}-role-binding",
             f"{self.PRIMARY_LABEL}=True",
             service_account.namespace,
         )
@@ -491,23 +491,37 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         Args:
             service_account: ServiceAccount to be stored in the registry
         """
-
-        rolebindingname = service_account.name + "-role"
-        roleaccess = "view"
+        rolename = service_account.name + "-role"
+        rolebindingname = service_account.name + "-role-binding"
 
         self.kube_interface.create(
             "serviceaccount", service_account.name, namespace=service_account.namespace
         )
         self.kube_interface.create(
+            "role",
+            rolename,
+            namespace=service_account.namespace,
+            **{
+                "resource": ["pods", "configmaps"],
+                "verb": ["create", "get", "watch"]
+            },
+        )
+        self.kube_interface.create(
             "rolebinding",
             rolebindingname,
             namespace=service_account.namespace,
-            **{"role": roleaccess, "serviceaccount": service_account.id},
+            **{"role": rolename, "serviceaccount": service_account.id},
         )
 
         self.kube_interface.set_label(
             "serviceaccount",
             service_account.name,
+            f"{self.SPARK_MANAGER_LABEL}=spark-client",
+            namespace=service_account.namespace,
+        )
+        self.kube_interface.set_label(
+            "role",
+            rolename,
             f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace,
         )
@@ -551,7 +565,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
                 "secret generic",
                 secret_name,
                 namespace=service_account.namespace,
-                **{"from-env-file": str(t.name)},
+                **{"from-env-file": [str(t.name)]},
             )
 
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:

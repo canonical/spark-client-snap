@@ -326,7 +326,7 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = KubeInterface(kube_config_file=kubeconfig)
             k.create(
-                resource_type, resource_name, namespace, **{"k1": "v1", "k2": "v2"}
+                resource_type, resource_name, namespace, **{"k1": ["v1"], "k2": ["v2"]}
             )
 
         mock_subprocess.assert_any_call(cmd_create, shell=True, stderr=None)
@@ -731,7 +731,7 @@ class TestServices(TestCase):
 
         mock_kube_interface.set_label.assert_any_call(
             "rolebinding",
-            f"{name1}-role",
+            f"{name1}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
             namespace1,
         )
@@ -745,7 +745,7 @@ class TestServices(TestCase):
 
         mock_kube_interface.set_label.assert_any_call(
             "rolebinding",
-            f"{name2}-role",
+            f"{name2}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
             namespace2,
         )
@@ -810,10 +810,20 @@ class TestServices(TestCase):
         )
 
         mock_kube_interface.create.assert_any_call(
-            "rolebinding",
+            "role",
             f"{name3}-role",
             namespace=namespace3,
-            **{"role": "view", "serviceaccount": sa3_obj.id},
+            **{
+                "resource": ["pods", "configmaps"],
+                "verb": ["create", "get", "watch"]
+            },
+        )
+
+        mock_kube_interface.create.assert_any_call(
+            "rolebinding",
+            f"{name3}-role-binding",
+            namespace=namespace3,
+            **{"role": f"{name3}-role", "serviceaccount": sa3_obj.id},
         )
 
         for call in mock_kube_interface.set_label.call_args_list:
@@ -828,7 +838,7 @@ class TestServices(TestCase):
 
         mock_kube_interface.set_label.assert_any_call(
             "rolebinding",
-            f"{name3}-role",
+            f"{name3}-role-binding",
             f"{K8sServiceAccountRegistry.SPARK_MANAGER_LABEL}=spark-client",
             namespace=namespace3,
         )
@@ -842,7 +852,7 @@ class TestServices(TestCase):
 
         mock_kube_interface.set_label.assert_any_call(
             "rolebinding",
-            f"{name1}-role",
+            f"{name1}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
             namespace1,
         )
@@ -856,7 +866,7 @@ class TestServices(TestCase):
 
         mock_kube_interface.set_label.assert_any_call(
             "rolebinding",
-            f"{name3}-role",
+            f"{name3}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
             namespace3,
         )
