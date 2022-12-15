@@ -471,7 +471,6 @@ class TestServices(TestCase):
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = KubeInterface(kube_config_file=kubeconfig)
-            print(cmd_get_sa)
             sa_list = k.get_service_accounts(namespace, labels)
             self.assertEqual(sa_list[0].get("metadata").get("name"), username)
             self.assertEqual(sa_list[0].get("metadata").get("namespace"), namespace)
@@ -815,9 +814,6 @@ class TestServices(TestCase):
             namespace=namespace3,
             **{"role": "view", "serviceaccount": sa3_obj.id},
         )
-
-        for call in mock_kube_interface.set_label.call_args_list:
-            print(call)
 
         mock_kube_interface.set_label.assert_any_call(
             "serviceaccount",

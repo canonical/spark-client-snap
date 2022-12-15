@@ -275,11 +275,6 @@ class KubeInterface(WithLogging):
         }
 
         self.logger.debug(f"Clusters API: {dict(api_servers_clusters)}")
-        for _context in self.kube_config["contexts"]:
-            print(_context["name"])
-            print(_context["context"]["cluster"])
-            print(api_servers_clusters[_context["context"]["cluster"]])
-        print(master)
 
         contexts_for_api_server = [
             _context["name"]
