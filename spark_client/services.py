@@ -503,13 +503,16 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             "role",
             rolename,
             namespace=service_account.namespace,
-            **{"resource": ["pods", "configmaps"], "verb": ["create", "get", "watch"]},
+            **{
+                "resource": ["pods", "pods/log", "configmaps", "services"],
+                "verb": ["create", "get", "list", "watch", "delete"],
+            },
         )
         self.kube_interface.create(
             "rolebinding",
             rolebindingname,
             namespace=service_account.namespace,
-            **{"role": rolename, "serviceaccount": service_account.id},
+            **{"role": [rolename], "serviceaccount": [service_account.id]},
         )
 
         self.kube_interface.set_label(
@@ -597,9 +600,11 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
         namespace, name = account_id.split(":")
 
-        rolebindingname = name + "-role"
+        rolename = name + "-role"
+        rolebindingname = name + "-role-binding"
 
         self.kube_interface.delete("serviceaccount", name, namespace=namespace)
+        self.kube_interface.delete("role", rolename, namespace=namespace)
         self.kube_interface.delete("rolebinding", rolebindingname, namespace=namespace)
 
         try:

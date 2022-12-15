@@ -805,6 +805,9 @@ class TestServices(TestCase):
         registry = K8sServiceAccountRegistry(mock_kube_interface)
         self.assertEqual(registry.create(sa3_obj), sa3_obj.id)
 
+        for call in mock_kube_interface.create.call_args_list:
+            print(call)
+
         mock_kube_interface.create.assert_any_call(
             "serviceaccount", name3, namespace=namespace3
         )
@@ -813,18 +816,18 @@ class TestServices(TestCase):
             "role",
             f"{name3}-role",
             namespace=namespace3,
-            **{"resource": ["pods", "configmaps"], "verb": ["create", "get", "watch"]},
+            **{
+                "resource": ["pods", "pods/log", "configmaps", "services"],
+                "verb": ["create", "get", "list", "watch", "delete"],
+            },
         )
 
         mock_kube_interface.create.assert_any_call(
             "rolebinding",
             f"{name3}-role-binding",
             namespace=namespace3,
-            **{"role": f"{name3}-role", "serviceaccount": sa3_obj.id},
+            **{"role": [f"{name3}-role"], "serviceaccount": [sa3_obj.id]},
         )
-
-        for call in mock_kube_interface.set_label.call_args_list:
-            print(call)
 
         mock_kube_interface.set_label.assert_any_call(
             "serviceaccount",
@@ -887,7 +890,10 @@ class TestServices(TestCase):
             "serviceaccount", name2, namespace=namespace2
         )
         mock_kube_interface.delete.assert_any_call(
-            "rolebinding", f"{name2}-role", namespace=namespace2
+            "role", f"{name2}-role", namespace=namespace2
+        )
+        mock_kube_interface.delete.assert_any_call(
+            "rolebinding", f"{name2}-role-binding", namespace=namespace2
         )
 
         mock_kube_interface.delete.assert_any_call(
