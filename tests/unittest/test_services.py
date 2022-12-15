@@ -314,7 +314,7 @@ class TestServices(TestCase):
 
         kubeconfig_yaml_str = yaml.dump(kubeconfig_yaml, sort_keys=False)
 
-        cmd_create = f"kubectl --kubeconfig {kubeconfig}  --namespace {namespace}  --context {context} create {resource_type} {resource_name} --k1=v1 --k2=v2 -o name "
+        cmd_create = f"kubectl --kubeconfig {kubeconfig}  --namespace {namespace}  --context {context} create {resource_type} {resource_name} --k1=v1 --k2=v21 --k2=v22 -o name "
         output_create_yaml = {}
         output_create = "0".encode("utf-8")
         values = {
@@ -326,7 +326,10 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = KubeInterface(kube_config_file=kubeconfig)
             k.create(
-                resource_type, resource_name, namespace, **{"k1": ["v1"], "k2": ["v2"]}
+                resource_type,
+                resource_name,
+                namespace,
+                **{"k1": "v1", "k2": ["v21", "v22"]},
             )
 
         mock_subprocess.assert_any_call(cmd_create, shell=True, stderr=None)
@@ -817,7 +820,7 @@ class TestServices(TestCase):
             f"{name3}-role",
             namespace=namespace3,
             **{
-                "resource": ["pods", "pods/log", "configmaps", "services"],
+                "resource": ["pods", "configmaps", "services"],
                 "verb": ["create", "get", "list", "watch", "delete"],
             },
         )
@@ -826,7 +829,7 @@ class TestServices(TestCase):
             "rolebinding",
             f"{name3}-role-binding",
             namespace=namespace3,
-            **{"role": [f"{name3}-role"], "serviceaccount": [sa3_obj.id]},
+            **{"role": f"{name3}-role", "serviceaccount": sa3_obj.id},
         )
 
         mock_kube_interface.set_label.assert_any_call(

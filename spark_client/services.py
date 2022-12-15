@@ -13,6 +13,7 @@ from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
 from spark_client.utils import (
     WithLogging,
     environ,
+    listify,
     parse_yaml_shell_output,
     umask_named_temporary_file,
 )
@@ -223,11 +224,13 @@ class KubeInterface(WithLogging):
             namespace: namespace where the resource is
             extra_args: extra parameters that should be provided when creating the resource. Note that each parameter
                         will be prepended with the -- in the cmd, e.g. {"role": "view"} will translate as
-                        --role view in the command
+                        --role=view in the command. List of parameter values against a parameter key are also accepted.
+                        e.g. {"resource" : ["pods", "configmaps"]} which would translate to something like
+                        --resource=pods --resource=configmaps
         """
 
         formatted_extra_args = " ".join(
-            [f"--{k}={v}" for k, values in extra_args.items() for v in values]
+            [f"--{k}={v}" for k, values in extra_args.items() for v in listify(values)]
         )
         self.exec(
             f"create {resource_type} {resource_name} {formatted_extra_args}",
@@ -504,7 +507,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             rolename,
             namespace=service_account.namespace,
             **{
-                "resource": ["pods", "pods/log", "configmaps", "services"],
+                "resource": ["pods", "configmaps", "services"],
                 "verb": ["create", "get", "list", "watch", "delete"],
             },
         )
@@ -512,7 +515,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             "rolebinding",
             rolebindingname,
             namespace=service_account.namespace,
-            **{"role": [rolename], "serviceaccount": [service_account.id]},
+            **{"role": rolename, "serviceaccount": service_account.id},
         )
 
         self.kube_interface.set_label(
@@ -567,7 +570,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
                 "secret generic",
                 secret_name,
                 namespace=service_account.namespace,
-                **{"from-env-file": [str(t.name)]},
+                **{"from-env-file": str(t.name)},
             )
 
     def set_configurations(self, account_id: str, configurations: PropertyFile) -> str:
