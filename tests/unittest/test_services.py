@@ -474,7 +474,6 @@ class TestServices(TestCase):
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = KubeInterface(kube_config_file=kubeconfig)
-            print(cmd_get_sa)
             sa_list = k.get_service_accounts(namespace, labels)
             self.assertEqual(sa_list[0].get("metadata").get("name"), username)
             self.assertEqual(sa_list[0].get("metadata").get("namespace"), namespace)
