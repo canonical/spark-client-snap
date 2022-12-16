@@ -9,7 +9,7 @@ from copy import deepcopy as copy
 from functools import reduce
 from logging import Logger, getLogger
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, Literal, Mapping, TypedDict, Union
+from typing import Any, Callable, Dict, List, Literal, Mapping, TypedDict, Union
 
 import yaml
 
@@ -178,3 +178,7 @@ def environ(*remove, **update):
     finally:
         [env.pop(k) for k in remove_after]
         env.update(update_after)
+
+
+def listify(value: Any) -> List[str]:
+    return [str(v) for v in value] if isinstance(value, list) else [str(value)]
