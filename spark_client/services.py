@@ -13,6 +13,7 @@ from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
 from spark_client.utils import (
     WithLogging,
     environ,
+    listify,
     parse_yaml_shell_output,
     umask_named_temporary_file,
 )
@@ -223,10 +224,14 @@ class KubeInterface(WithLogging):
             namespace: namespace where the resource is
             extra_args: extra parameters that should be provided when creating the resource. Note that each parameter
                         will be prepended with the -- in the cmd, e.g. {"role": "view"} will translate as
-                        --role view in the command
+                        --role=view in the command. List of parameter values against a parameter key are also accepted.
+                        e.g. {"resource" : ["pods", "configmaps"]} which would translate to something like
+                        --resource=pods --resource=configmaps
         """
 
-        formatted_extra_args = " ".join([f"--{k}={v}" for k, v in extra_args.items()])
+        formatted_extra_args = " ".join(
+            [f"--{k}={v}" for k, values in extra_args.items() for v in listify(values)]
+        )
         self.exec(
             f"create {resource_type} {resource_name} {formatted_extra_args}",
             namespace=namespace,
@@ -455,7 +460,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             )
             self.kube_interface.set_label(
                 "rolebinding",
-                f"{primary_account.name}-role",
+                f"{primary_account.name}-role-binding",
                 f"{self.PRIMARY_LABEL}-",
                 primary_account.namespace,
             )
@@ -473,7 +478,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         )
         self.kube_interface.set_label(
             "rolebinding",
-            f"{service_account.name}-role",
+            f"{service_account.name}-role-binding",
             f"{self.PRIMARY_LABEL}=True",
             service_account.namespace,
         )
@@ -486,23 +491,37 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         Args:
             service_account: ServiceAccount to be stored in the registry
         """
-
-        rolebindingname = service_account.name + "-role"
-        roleaccess = "view"
+        rolename = service_account.name + "-role"
+        rolebindingname = service_account.name + "-role-binding"
 
         self.kube_interface.create(
             "serviceaccount", service_account.name, namespace=service_account.namespace
         )
         self.kube_interface.create(
+            "role",
+            rolename,
+            namespace=service_account.namespace,
+            **{
+                "resource": ["pods", "configmaps", "services"],
+                "verb": ["create", "get", "list", "watch", "delete"],
+            },
+        )
+        self.kube_interface.create(
             "rolebinding",
             rolebindingname,
             namespace=service_account.namespace,
-            **{"role": roleaccess, "serviceaccount": service_account.id},
+            **{"role": rolename, "serviceaccount": service_account.id},
         )
 
         self.kube_interface.set_label(
             "serviceaccount",
             service_account.name,
+            f"{self.SPARK_MANAGER_LABEL}=spark-client",
+            namespace=service_account.namespace,
+        )
+        self.kube_interface.set_label(
+            "role",
+            rolename,
             f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace,
         )
@@ -579,9 +598,11 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
         namespace, name = account_id.split(":")
 
-        rolebindingname = name + "-role"
+        rolename = name + "-role"
+        rolebindingname = name + "-role-binding"
 
         self.kube_interface.delete("serviceaccount", name, namespace=namespace)
+        self.kube_interface.delete("role", rolename, namespace=namespace)
         self.kube_interface.delete("rolebinding", rolebindingname, namespace=namespace)
 
         try:
@@ -654,7 +675,7 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
 
         if any([account.primary for account in self.all()]):
             self.logger.info("Switching primary account")
-            for account_id, account in self.cache.items():
+            for account in self.cache.values():
                 if account.primary is True:
                     self.logger.debug(
                         f"Setting primary of account {account.id} to False"
