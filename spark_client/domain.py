@@ -41,14 +41,14 @@ class PropertyFile(WithLogging):
         defaults = dict()
         with open(name) as f:
             for line in f:
-                kv = list(filter(None, re.split("=| ", line.strip())))
-                k = kv[0].strip()
-                if cls._is_property_with_options(k):
-                    kv2 = line.split("=", 1)
-                    v = kv2[1].strip()
+                prop_assignment = list(filter(None, re.split("=| ", line.strip())))
+                prop_key = prop_assignment[0].strip()
+                if cls._is_property_with_options(prop_key):
+                    option_assignment = line.split("=", 1)
+                    value = option_assignment[1].strip()
                 else:
-                    v = kv[1].strip()
-                defaults[k] = os.path.expandvars(v)
+                    value = prop_assignment[1].strip()
+                defaults[prop_key] = os.path.expandvars(value)
         return defaults
 
     @classmethod
@@ -207,7 +207,7 @@ class Defaults:
 
     @property
     def scala_history_file(self):
-        return f"{self.home_folder}/.scala_history"
+        return f"{self.environ['SNAP_USER_DATA']}/.scala_history"
 
     @property
     def spark_submit(self) -> str:

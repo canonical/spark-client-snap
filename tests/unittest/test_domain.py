@@ -41,7 +41,7 @@ class TestDomain(TestCase):
         self.assertEqual(defaults.home_folder, f"{snap_real_home}")
         self.assertEqual(defaults.kube_config, f"{kubeconfig}")
         self.assertEqual(
-            defaults.scala_history_file, f"{snap_real_home}/.scala_history"
+            defaults.scala_history_file, f"{snap_user_data_dir}/.scala_history"
         )
         self.assertEqual(defaults.kubectl_cmd, f"{snap_var}/kubectl")
         self.assertEqual(defaults.spark_submit, f"{snap_var}/bin/spark-submit")
