@@ -20,7 +20,6 @@ test_example_job() {
   spark-client.submit \
     --username=ie-test \
     --log-level "DEBUG" \
-    --master $K8S_MASTER_URL \
     --deploy-mode cluster \
     --conf spark.kubernetes.driver.request.cores=100m \
     --conf spark.kubernetes.executor.request.cores=100m \
@@ -49,9 +48,16 @@ test_example_job() {
 
   spark-client.service-account-registry --username=ie-test delete
 
+  account_deleted=$(spark-client.service-account-registry --username=ie-test get-conf 2>&1 | grep -c NoAccountFound)
+
   if [ "${pi}" != "3.1" ]; then
       exit 1
   fi
+
+  if [ "${account_deleted}" == "0" ]; then
+      exit 1
+  fi
+
 }
 
 test_spark_shell() {

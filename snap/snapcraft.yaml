@@ -13,9 +13,6 @@ plugs:
     interface: personal-files
     read:
     - $HOME/.kube/config
-    - $HOME/.scala_history
-    write:
-    - $HOME/.scala_history
 
 environment:
   JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
