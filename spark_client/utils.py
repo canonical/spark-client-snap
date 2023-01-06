@@ -185,6 +185,12 @@ def listify(value: Any) -> List[str]:
 
 
 def parse_arguments_with(parsers=[], namespace=None):
+    """
+    Specify a chain of parsers to help parse the list of arguments to main
+
+    :param parsers: List of parsers to be applied.
+    :param namespace: Namespace to be used for parsing.
+    """
     import argparse
     from functools import reduce
 
@@ -194,6 +200,11 @@ def parse_arguments_with(parsers=[], namespace=None):
 
 
 def add_logging_arguments(parser):
+    """
+    Add logging argument parsing to the existing parser context
+
+    :param parser: Input parser to decorate with parsing support for logging args.
+    """
     parser.add_argument(
         "--log-level",
         choices=["INFO", "WARN", "ERROR", "DEBUG"],
@@ -205,6 +216,11 @@ def add_logging_arguments(parser):
 
 
 def custom_parser(parser):
+    """
+    Add Spark related argument parsing to the existing parser context
+
+    :param parser: Input parser to decorate with parsing support for Spark params.
+    """
     parser.add_argument(
         "--master", default=None, type=str, help="Kubernetes control plane uri."
     )
@@ -231,6 +247,11 @@ def custom_parser(parser):
 
 
 def add_deploy_arguments(parser):
+    """
+    Add deployment related argument parsing to the existing parser context
+
+    :param parser: Input parser to decorate with parsing support for deploy arguments.
+    """
     parser.add_argument(
         "--deploy-mode",
         default="client",
