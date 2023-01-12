@@ -8,7 +8,7 @@ env:
 on:
   push:
     branches:
-      - '*'
+      - '**'
       - '!main'
   schedule:
     - cron: '30 10 * * *'
