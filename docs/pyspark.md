@@ -5,7 +5,7 @@ Make sure python is installed on your system. Then, execute the following comman
 that ships with Apache Spark.
 
 ```bash
-$ spark-client.pyspark
+$ spark-client.pyspark --conf spark.driver.host={LOCALHOST_IP}
 ....
 ....
 Welcome to
