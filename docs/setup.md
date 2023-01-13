@@ -5,23 +5,23 @@ for Spark jobs.
 The spark-client snap comes with a setup utility which would be the starting point for the setup. You can
 run the following command to understand it's usage.
 ```bash
-spark-client.setup-spark-k8s --help
+spark-client.service-account-registry --help
 ```
 
 From the output you will notice that the setup utility supports the following actions.
-* ***service-account*** - Set up a service account in Kubernetes for use during Spark job submission
-* ***service-account-cleanup*** - Delete a service account and associated resources from Kubernetes
-* ***sa-conf-create*** - Create configuration entries associated with the specified service account in Kubernetes. Immutable once created.
-* ***sa-conf-get*** - Fetch configuration entries associated with the specified service account from Kubernetes
-* ***sa-conf-delete*** - Delete all configuration entries associated with the specified service account from Kubernetes
-* ***resources-primary-sa*** - List resources related to 'primary' service account used implicitly for spark-submit
+* ***create*** - Create a new service account in Kubernetes for use during Spark job submission
+* ***delete*** - Delete a service account and associated resources from Kubernetes
+* ***update-conf*** - Create configuration entries associated with the specified service account in Kubernetes. Immutable once created.
+* ***get-conf*** - Fetch configuration entries associated with the specified service account from Kubernetes
+* ***delete-conf*** - Delete all configuration entries associated with the specified service account from Kubernetes
+* ***get-primary*** - List resources related to 'primary' service account used implicitly for spark-submit
+* ***list*** - List all service accounts available to be used with Spark
 
 ```bash
-usage: setup-spark-k8s.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME]
-                          {service-account,service-account-cleanup,sa-conf-create,sa-conf-get,sa-conf-delete,resources-primary-sa} ...
+usage: service-account-registry.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME] {create,delete,update-conf,get-conf,delete-conf,get-primary,list} ...
 
 positional arguments:
-  {service-account,service-account-cleanup,sa-conf-create,sa-conf-get,sa-conf-delete,resources-primary-sa}
+  {create,delete,update-conf,get-conf,delete-conf,get-primary,list}
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -61,7 +61,7 @@ You might already have a functional Service Account. Or you can use this spark-c
 To get help regarding the usage of service account setup command within the snap, you can run the following command.
 
 ```bash
-spark-client.setup-spark-k8s service-account --help
+spark-client.service-account-registry create --help
 ```
 
 You will notice from the help output that the action takes following optional arguments
@@ -70,7 +70,7 @@ You will notice from the help output that the action takes following optional ar
 * ***conf*** - Values to add to and override the ones in specified properties-file param.
 
 ```bash
-usage: setup-spark-k8s.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
+usage: service-account-registry.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -84,7 +84,7 @@ with the service account that can serve as default while submitting jobs against
 of this feature would look like this.
 
 ```bash
-spark-client.setup-spark-k8s --username demouser --namespace demonamespace service-account --properties-file /home/demouser/conf/spark-defaults.conf --conf spark.app.name=demo-spark-app --conf spark.executor.instances=3
+spark-client.service-account-registry --username demouser --namespace demonamespace create --properties-file /home/demouser/conf/spark-defaults.conf --conf spark.app.name=demo-spark-app --conf spark.executor.instances=3
 ```
 
 The above command sets up a service account for user ```demonamespace:demouser``` for Spark job submission using configuration properties coming from the specified 
@@ -94,7 +94,7 @@ For [job submission](/docs/submit.md), this service account along with it's defa
 
 For example, assuming the properties file provided has configuration details to access data in S3, one could submit a job like
 ```bash
-spark-client.spark-submit  --username demouser --namespace demonamespace --deploy-mode cluster --conf spark.app.name=demo-spark-s3-app $S3_PATH_FOR_CODE_FILE
+spark-client.submit  --username demouser --namespace demonamespace --deploy-mode cluster --conf spark.app.name=demo-spark-s3-app $S3_PATH_FOR_CODE_FILE
 ```
 This would launch the spark job with configuration coming from the service account for user ```demonamespace:demouser``` but the app name would be ```demo-spark-s3-app```. 
 
