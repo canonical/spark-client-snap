@@ -1,0 +1,126 @@
+name: Create a release
+
+env:
+  BRANCH: ${{ github.ref_name }}
+  SNAP_VERSION: 3.3.1
+  VERSION: 0.0.0.20
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  checks:
+    name: Check build condition for Snap
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version:
+          - '3.9'
+          - '3.10'
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+      - id: setup-python
+        name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{matrix.python-version}}
+          architecture: x64
+      - id: code-checks
+        name: Make sure the code follows conventions and tests correctly
+        run: |
+          make checks
+
+  autorelease:
+    name: Release the package on github
+    needs: checks
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: true
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+      - id: setup-python
+        name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: '3.10'
+          architecture: x64
+      - id: build-package
+        name: Build package
+        run: |
+          make checks
+          poetry build
+      - name: Add version to environment vars
+        run: |
+          echo "PROJECT_VERSION=${{ env.VERSION }}" >> $GITHUB_ENV
+      - name: Check if tag version matches project version
+        run: |
+          TAG=$(git describe HEAD --tags --abbrev=0)
+          echo $TAG
+          echo $PROJECT_VERSION
+          if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
+      - name: Release Notes
+        uses: heinrichreimer/github-changelog-generator-action@v2.3
+        with:
+          token: ${{ secrets.SPARK_PKG_PUBLISH }}
+          output: ".github/RELEASE-TEMPLATE.md"
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPARK_PKG_PUBLISH }}
+        with:
+          body_path: ".github/RELEASE-TEMPLATE.md"
+          files: |
+            dist/spark_client-${{env.PROJECT_VERSION}}-py3-none-any.whl
+            dist/spark_client-${{env.PROJECT_VERSION}}.tar.gz
+
+  test:
+    name: Test Release
+    runs-on: ubuntu-latest
+    needs:
+      - autorelease
+      - checks
+    steps:
+      - id: check-package
+        name: Check tar.gz package
+        run: |
+          # check if release is now published and available
+          echo "Checking latest available Spark package release v${{env.VERSION}}."
+          STATUSCODE=$(curl --silent --head https://github.com/averma-canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}.tar.gz | head -n 1 | cut -d' ' -f2)
+          if  [[ ${STATUSCODE} -ne 200 ]] && [[ ${STATUSCODE} -ne 302 ]]; then exit 1; fi
+      - id: download-package
+        name: Download tar.gz package
+        run: |
+          # check if release is now published and available
+          echo "Downloading latest available Spark package release v${{env.VERSION}}."
+          wget https://github.com/averma-canonical/spark-client-snap/archive/refs/tags/v${{env.VERSION}}.tar.gz
+          tar -zxf v${{env.VERSION}}.tar.gz
+      - id: build-snap
+        name: Build snap
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/candidate
+          path: ./spark-client-snap-${{env.VERSION}}
+      - id: install-snap
+        name: Install snap file
+        run: |
+          cd ./spark-client-snap-${{env.VERSION}}
+          sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
+      - id: test-integration
+        name: Run Integration Tests
+        run: |
+          cd ./spark-client-snap-${{env.VERSION}}
+          make integration-tests
