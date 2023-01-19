@@ -1150,6 +1150,5 @@ class TestProperties(UnittestWithTmpFolder):
 
 
 if __name__ == "__main__":
-
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level="DEBUG")
     unittest.main()

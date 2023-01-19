@@ -35,7 +35,6 @@ class Actions(str, Enum):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--log-level", default="ERROR", type=str, help="Level for logging."
@@ -129,7 +128,6 @@ if __name__ == "__main__":
     registry = K8sServiceAccountRegistry(kube_interface.with_context(context))
 
     if args.action == Actions.CREATE:
-
         service_account = build_service_account_from_args(args)
         service_account.extra_confs = (
             PropertyFile.read(args.properties_file)
@@ -140,11 +138,9 @@ if __name__ == "__main__":
         registry.create(service_account)
 
     elif args.action == Actions.DELETE:
-
         registry.delete(build_service_account_from_args(args).id)
 
     elif args.action == Actions.UPDATE_CONF:
-
         account_configuration = (
             PropertyFile.read(args.properties_file)
             if args.properties_file is not None
@@ -156,7 +152,6 @@ if __name__ == "__main__":
         )
 
     elif args.action == Actions.GET_CONF:
-
         input_service_account = build_service_account_from_args(args)
 
         maybe_service_account = registry.get(input_service_account.id)
@@ -167,13 +162,11 @@ if __name__ == "__main__":
         maybe_service_account.configurations.log(print)
 
     elif args.action == Actions.DELETE_CONF:
-
         registry.set_configurations(
             build_service_account_from_args(args).id, PropertyFile.empty()
         )
 
     elif args.action == Actions.PRIMARY:
-
         maybe_service_account = registry.get_primary()
 
         if maybe_service_account is None:
@@ -182,7 +175,6 @@ if __name__ == "__main__":
         maybe_service_account.configurations.log(print)
 
     elif args.action == Actions.LIST:
-
         for service_account in registry.all():
             print(
                 str.expandtabs(
