@@ -3,7 +3,7 @@ name: Create a github release
 env:
   BRANCH: ${{ github.ref_name }}
   SNAP_VERSION: 3.3.1
-  VERSION: 0.0.0.20
+  VERSION: 0.0.0.21
 
 on:
   push:
@@ -72,11 +72,11 @@ jobs:
           echo $TAG
           echo $PROJECT_VERSION
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
-      - name: Release Notes
-        uses: heinrichreimer/github-changelog-generator-action@v2.3
-        with:
-          token: ${{ secrets.SPARK_PKG_PUBLISH }}
-          output: ".github/RELEASE-TEMPLATE.md"
+#      - name: Release Notes
+#        uses: heinrichreimer/github-changelog-generator-action@v2.3
+#        with:
+#          token: ${{ secrets.SPARK_PKG_PUBLISH }}
+#          output: ".github/RELEASE-TEMPLATE.md"
       - name: Create Github Release
         uses: softprops/action-gh-release@v1
         env:
@@ -94,7 +94,7 @@ jobs:
       - autorelease
       - checks
     steps:
-      - id: check-package
+      - id: check-tar-gz
         name: Check tar.gz package
         run: |
           # check if release is now published and available
@@ -102,25 +102,12 @@ jobs:
           STATUSCODE=$(curl --silent --head https://github.com/averma-canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}.tar.gz | head -n 1 | cut -d' ' -f2)
           if  [[ ${STATUSCODE} -ne 200 ]] && [[ ${STATUSCODE} -ne 302 ]]; then exit 1; fi
       - id: download-package
-        name: Download tar.gz package
+        name: Download wheel package
         run: |
           # check if release is now published and available
-          echo "Downloading latest available Spark package release v${{env.VERSION}}."
-          wget https://github.com/averma-canonical/spark-client-snap/archive/refs/tags/v${{env.VERSION}}.tar.gz
-          tar -zxf v${{env.VERSION}}.tar.gz
-      - id: build-snap
-        name: Build snap
-        uses: snapcore/action-build@v1
-        with:
-          snapcraft-channel: 7.x/candidate
-          path: ./spark-client-snap-${{env.VERSION}}
-      - id: install-snap
-        name: Install snap file
+          echo "Downloading latest available Spark wheel package release v${{env.VERSION}}."
+          wget https://github.com/averma-canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}-py3-none-any.whl --no-check-certificate
+      - id: install-package
+        name: Install wheel package file
         run: |
-          cd ./spark-client-snap-${{env.VERSION}}
-          sudo snap install spark-client_${{ env.SNAP_VERSION }}_amd64.snap --dangerous
-      - id: test-integration
-        name: Run Integration Tests
-        run: |
-          cd ./spark-client-snap-${{env.VERSION}}
-          make integration-tests
+          pip install ./spark_client-${{env.VERSION}}-py3-none-any.whl
