@@ -29,7 +29,6 @@ class TestServices(TestCase):
         )
 
     def test_kube_interface(self):
-
         # mock logic
         test_id = str(uuid.uuid4())
         username1 = str(uuid.uuid4())
