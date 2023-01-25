@@ -11,7 +11,6 @@ from tests import integration_test
 
 
 class TestRegistry(TestCase):
-
     kube_interface: KubeInterface
     defaults = Defaults()
 

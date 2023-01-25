@@ -1,0 +1,87 @@
+name: Detect upstream Spark updates
+
+env:
+  BRANCH: main
+
+on:
+  schedule:
+    - cron: '30 10 * * *'
+
+
+jobs:
+  check-spark:
+    name: Check if Spark update is available
+    runs-on: ubuntu-latest
+    outputs:
+      decision: ${{ steps.check-latest-spark-version.outputs.decision }}
+      version: ${{ steps.check-latest-spark-version.outputs.version }}
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+      - id: check-last-published-version
+        name: Read last published stable Spark version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./SPARK_VERSION
+      - id: check-latest-spark-version
+        name: Check latest stable Spark version available for download
+        run: |
+          LATEST_STABLE_SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
+          CURRENT_PUBLISHED_VERSION=${{ steps.check-last-published-version.outputs.content }}
+          LATEST_AVAILABLE_VERSION=${LATEST_STABLE_SPARK_VERSION:6}
+          STATUSCODE=$(curl --silent --head https://downloads.apache.org/spark/${LATEST_STABLE_SPARK_VERSION}/${LATEST_STABLE_SPARK_VERSION}-bin-hadoop3.tgz | head -n 1 | cut -d' ' -f2)
+          if  [[ ${LATEST_AVAILABLE_VERSION} != ${CURRENT_PUBLISHED_VERSION} ]] && [[ ${STATUSCODE} -eq 200 ]]
+            then 
+              echo "::set-output name=decision::1"
+              echo "New Spark version available....."
+            else
+              echo "::set-output name=decision::0"
+              echo "No updates to Spark detected!"
+          fi
+          echo "::set-output name=version::${LATEST_AVAILABLE_VERSION}"
+
+  modify-snap-version:
+    name: Modify snap version to be published for reviewers reference.
+    if: needs.check-spark.outputs.decision  ==  '1'
+    runs-on: ubuntu-latest
+    needs:
+      - check-spark
+    steps:
+      - id: checkout
+        name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
+      - name: Record the published Spark version in SPARK_VERSION file
+        uses: DamianReeves/write-file-action@master
+        with:
+          path: ./SPARK_VERSION
+          write-mode: overwrite
+          contents: |
+            ${{ needs.check-spark.outputs.version }}
+
+      - name: create pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.SPARK_PKG_PUBLISH }}
+          commit-message: Publish snap for new spark version
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: update-spark-snap
+          delete-branch: true
+          title: 'Update snap for new spark version'
+          body: |
+            Update client snap with new version of Apache Spark.
+          labels: |
+            automated pr
+          assignees: team-reviewers, deusebio, taurus, abhishek-verma
+          reviewers: team-reviewers, deusebio, taurus
+          team-reviewers: |
+            owners
+            maintainers
+          draft: false

@@ -34,10 +34,10 @@ follow_imports = "silent"
 
 [tool.poetry]
 name = "spark-client"
-version = "0.1.0"
+version = "0.0.0.21"
 description = "This project allow you to create a SNAP for interacting with a K8s cluster to submit Spark jobs or run spark shells interactively"
 authors = [
-    "Abhishek Averma <abhishek.verma@canonical.com>",
+    "Abhishek Verma <abhishek.verma@canonical.com>",
     "Enrico Deusebio <enrico.deusebio@canonical.com>"
 ]
 license = "MIT"
@@ -47,11 +47,16 @@ packages = []
 [tool.poetry.dependencies]
 python = ">3.8,<4.0"
 lightkube = ">=0.11"
-logging = "^0.4.9.6"
+
+[tool.poetry.group.fmt]
+optional = true
 
 [tool.poetry.group.fmt.dependencies]
 black = ">=21.12b0"
 isort = ">=5.10"
+
+[tool.poetry.group.lint]
+optional = true
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.1.0"
@@ -59,11 +64,17 @@ flake8 = ">=4.0.1"
 Flake8-pyproject = ">=1.1.0"
 mypy = ">=0.910"
 
+[tool.poetry.group.unit]
+optional = true
+
 [tool.poetry.group.unit.dependencies]
 tox = ">3.21.4"
 mypy = ">=0.910"
 pytest-cov = ">=3.0"
 pytest = ">=6.2"
+
+[tool.poetry.group.integration]
+optional = true
 
 [tool.poetry.group.integration.dependencies]
 tox = ">3.21.4"
