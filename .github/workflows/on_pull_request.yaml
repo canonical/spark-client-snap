@@ -1,0 +1,12 @@
+name: Verify PR and handoff to reviewer
+
+on:
+  pull_request:
+    types: [ assigned, opened, synchronize, reopened ]
+
+jobs:
+  build:
+    uses: ./.github/workflows/ci.yaml
+    with:
+      branch: ${{ github.head_ref }}
+
