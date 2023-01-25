@@ -3,7 +3,7 @@ name: Create a github release
 env:
   BRANCH: ${{ github.ref_name }}
   SNAP_VERSION: 3.3.1
-  VERSION: 0.0.0.21
+  VERSION: 0.0.1
 
 on:
   push:
@@ -99,14 +99,14 @@ jobs:
         run: |
           # check if release is now published and available
           echo "Checking latest available Spark package release v${{env.VERSION}}."
-          STATUSCODE=$(curl --silent --head https://github.com/averma-canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}.tar.gz | head -n 1 | cut -d' ' -f2)
+          STATUSCODE=$(curl --silent --head https://github.com/canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}.tar.gz | head -n 1 | cut -d' ' -f2)
           if  [[ ${STATUSCODE} -ne 200 ]] && [[ ${STATUSCODE} -ne 302 ]]; then exit 1; fi
       - id: download-package
         name: Download wheel package
         run: |
           # check if release is now published and available
           echo "Downloading latest available Spark wheel package release v${{env.VERSION}}."
-          wget https://github.com/averma-canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}-py3-none-any.whl --no-check-certificate
+          wget https://github.com/canonical/spark-client-snap/releases/download/v${{env.VERSION}}/spark_client-${{env.VERSION}}-py3-none-any.whl --no-check-certificate
       - id: install-package
         name: Install wheel package file
         run: |

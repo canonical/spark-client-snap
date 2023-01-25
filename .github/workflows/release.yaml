@@ -23,12 +23,12 @@ jobs:
       - name: Download built snap file
         uses: actions/download-artifact@v3
         with:
-          name: {{ jobs.build.outputs.snap-file }}
+          name: {{ needs.build.outputs.snap-file }}
           path: .
       - name: Publish built snap to Store
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
-          snap: {{ jobs.build.outputs.snap-file }}
+          snap: {{ needs.build.outputs.snap-file }}
           release: ${{ env.RELEASE }}
