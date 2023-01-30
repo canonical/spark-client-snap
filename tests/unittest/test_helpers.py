@@ -1103,13 +1103,13 @@ class TestProperties(UnittestWithTmpFolder):
     def test_get_env_defaults_conf_file(self):
         test_id = str(uuid.uuid4())
 
-        env_snap_user_data = os.environ.get("SNAP_SPARK_ENV_CONF")
-        os.environ["SNAP_SPARK_ENV_CONF"] = test_id
+        env_snap_user_data = os.environ.get("SPARK_CLIENT_ENV_CONF")
+        os.environ["SPARK_CLIENT_ENV_CONF"] = test_id
 
         assert helpers.utils.get_env_defaults_conf_file() == f"{test_id}"
 
         if env_snap_user_data:
-            os.environ["SNAP_SPARK_ENV_CONF"] = env_snap_user_data
+            os.environ["SPARK_CLIENT_ENV_CONF"] = env_snap_user_data
 
     def test_reconstruct_submit_args(self):
         arg0 = str(uuid.uuid4())

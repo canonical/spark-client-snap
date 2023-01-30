@@ -25,7 +25,7 @@ class TestDomain(TestCase):
                 "HOME": home_var,
                 "SNAP": snap_var,
                 "SNAP_USER_DATA": snap_user_data_dir,
-                "SNAP_SPARK_ENV_CONF": snap_spark_env_conf_file,
+                "SPARK_CLIENT_ENV_CONF": snap_spark_env_conf_file,
                 "SNAP_REAL_HOME": snap_real_home,
                 "KUBECONFIG": kubeconfig,
             }
