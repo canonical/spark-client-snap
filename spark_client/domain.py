@@ -159,22 +159,22 @@ class Defaults:
     @property
     def snap_folder(self) -> str:
         """Return the SNAP folder"""
-        return self.environ["SNAP"]
+        return self.environ.get("SNAP", self.environ.get("HOME"))
 
     @property
     def static_conf_file(self) -> str:
         """Return static config properties file packaged with the client snap."""
-        return f"{self.environ.get('SNAP')}/conf/spark-defaults.conf"
+        return f"{self.snap_folder}/conf/spark-defaults.conf"
 
     @property
     def dynamic_conf_file(self) -> str:
         """Return dynamic config properties file generated during client setup."""
-        return f"{self.environ.get('SNAP_USER_DATA')}/spark-defaults.conf"
+        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('HOME'))}/spark-defaults.conf"
 
     @property
     def env_conf_file(self) -> Optional[str]:
         """Return env var provided by user to point to the config properties file with conf overrides."""
-        return self.environ.get("SNAP_SPARK_ENV_CONF")
+        return self.environ.get("SPARK_CLIENT_ENV_CONF")
 
     @property
     def snap_temp_folder(self) -> str:
@@ -201,25 +201,23 @@ class Defaults:
     @property
     def kubectl_cmd(self) -> str:
         """Return default kubectl command."""
-        return (
-            f"{self.environ['SNAP']}/kubectl" if "SNAP" in self.environ else "kubectl"
-        )
+        return f"{self.snap_folder}/kubectl" if self.snap_folder else "kubectl"
 
     @property
     def scala_history_file(self):
-        return f"{self.environ['SNAP_USER_DATA']}/.scala_history"
+        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('HOME'))}/.scala_history"
 
     @property
     def spark_submit(self) -> str:
-        return f"{self.environ['SNAP']}/bin/spark-submit"
+        return f"{self.snap_folder}/bin/spark-submit"
 
     @property
     def spark_shell(self) -> str:
-        return f"{self.environ['SNAP']}/bin/spark-shell"
+        return f"{self.snap_folder}/bin/spark-shell"
 
     @property
     def pyspark(self) -> str:
-        return f"{self.environ['SNAP']}/bin/pyspark"
+        return f"{self.snap_folder}/bin/pyspark"
 
 
 @dataclass

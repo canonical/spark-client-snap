@@ -17,7 +17,7 @@ test_example_job() {
   PREVIOUS_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods | grep driver | tail -n 1 | cut -d' ' -f1)
 
   # run the sample pi job using spark-submit
-  spark-client.submit \
+  spark-client.spark-submit \
     --username=ie-test \
     --log-level "DEBUG" \
     --deploy-mode cluster \
@@ -71,7 +71,7 @@ test_spark_shell() {
   echo "val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)" >> test-spark-shell.scala
   echo "println(s\"Pi is roughly \${4.0 * count / (n - 1)}\")" >> test-spark-shell.scala
   echo "System.exit(0)" >> test-spark-shell.scala
-  echo -e "$(cat test-spark-shell.scala | spark-client.shell --username=ie-test --conf "spark.driver.host=${DRIVER_IP}")" > spark-shell.out
+  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=ie-test --conf "spark.driver.host=${DRIVER_IP}")" > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   spark-client.service-account-registry --username=ie-test delete

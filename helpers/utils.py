@@ -187,7 +187,7 @@ def get_dynamic_defaults_conf_file() -> str:
 
 def get_env_defaults_conf_file() -> Optional[str]:
     """Return env var provided by user to point to the config properties file with conf overrides."""
-    SPARK_ENV_DEFAULTS_FILE = os.environ.get("SNAP_SPARK_ENV_CONF")
+    SPARK_ENV_DEFAULTS_FILE = os.environ.get("SPARK_CLIENT_ENV_CONF")
     return SPARK_ENV_DEFAULTS_FILE
 
 
