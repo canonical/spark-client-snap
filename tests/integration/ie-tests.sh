@@ -5,7 +5,7 @@ setup_tests() {
 }
 
 test_example_job() {
-  spark-client.service-account-registry --username=ie-test create
+  spark-client.service-account-registry create --username=ie-test
 
   KUBE_CONFIG=/home/${USER}/.kube/config
 
@@ -46,9 +46,9 @@ test_example_job() {
   pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark Pi Job Output: \n ${pi}"
 
-  spark-client.service-account-registry --username=ie-test delete
+  spark-client.service-account-registry delete --username=ie-test
 
-  account_deleted=$(spark-client.service-account-registry --username=ie-test get-conf 2>&1 | grep -c NoAccountFound)
+  account_deleted=$(spark-client.service-account-registry get-conf --username=ie-test 2>&1 | grep -c NoAccountFound)
 
   if [ "${pi}" != "3.1" ]; then
       exit 1
@@ -61,7 +61,7 @@ test_example_job() {
 }
 
 test_spark_shell() {
-  spark-client.service-account-registry --username=ie-test create
+  spark-client.service-account-registry create --username=ie-test
 
   export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
 
@@ -74,7 +74,7 @@ test_spark_shell() {
   echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=ie-test --conf "spark.driver.host=${DRIVER_IP}")" > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
-  spark-client.service-account-registry --username=ie-test delete
+  spark-client.service-account-registry delete --username=ie-test
   rm spark-shell.out test-spark-shell.scala
   if [ "${pi}" != "3.1" ]; then
       exit 1
@@ -82,7 +82,7 @@ test_spark_shell() {
 }
 
 test_pyspark() {
-  spark-client.service-account-registry --username=ie-test create
+  spark-client.service-account-registry create --username=ie-test
 
   export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
 
@@ -105,7 +105,7 @@ test_pyspark() {
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
-  spark-client.service-account-registry --username=ie-test delete
+  spark-client.service-account-registry delete --username=ie-test
   rm test-pyspark.py pyspark.out
   if [ "${pi}" != "3.1" ]; then
       exit 1
