@@ -35,7 +35,7 @@ class Actions(str, Enum):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Spark Client Setup')
+    parser = argparse.ArgumentParser(description="Spark Client Setup")
     base_parser = argparse.ArgumentParser(add_help=False)
     base_parser.add_argument(
         "--log-level", default="ERROR", type=str, help="Level for logging."
@@ -82,10 +82,14 @@ if __name__ == "__main__":
     )
 
     #  subparser for service-account-cleanup
-    parser_account_cleanup = subparsers.add_parser(Actions.DELETE.value, parents=[base_parser])
+    parser_account_cleanup = subparsers.add_parser(
+        Actions.DELETE.value, parents=[base_parser]
+    )
 
     #  subparser for sa-conf-create
-    parser_conf_create = subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser])
+    parser_conf_create = subparsers.add_parser(
+        Actions.UPDATE_CONF.value, parents=[base_parser]
+    )
     parser_conf_create.add_argument(
         "--properties-file",
         default=None,
@@ -99,16 +103,22 @@ if __name__ == "__main__":
     )
 
     #  subparser for sa-conf-get
-    parser_conf_get = subparsers.add_parser(Actions.GET_CONF.value, parents=[base_parser])
+    parser_conf_get = subparsers.add_parser(
+        Actions.GET_CONF.value, parents=[base_parser]
+    )
     parser_conf_get.add_argument(
         "--conf", action="append", type=str, help="Config property to retrieve."
     )
 
     #  subparser for sa-conf-del
-    parser_conf_del = subparsers.add_parser(Actions.DELETE_CONF.value, parents=[base_parser])
+    parser_conf_del = subparsers.add_parser(
+        Actions.DELETE_CONF.value, parents=[base_parser]
+    )
 
     #  subparser for resources-primary-sa
-    parser_conf_primary_resources = subparsers.add_parser(Actions.PRIMARY.value, parents=[base_parser])
+    parser_conf_primary_resources = subparsers.add_parser(
+        Actions.PRIMARY.value, parents=[base_parser]
+    )
 
     #  subparser for list
     parser_conf_list = subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
