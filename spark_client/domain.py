@@ -157,14 +157,14 @@ class Defaults:
         self.environ = environ if environ is not None else {}
 
     @property
-    def snap_folder(self) -> str:
+    def spark_folder(self) -> str:
         """Return the SNAP folder"""
         return self.environ.get("SNAP", self.environ.get("HOME"))
 
     @property
     def static_conf_file(self) -> str:
         """Return static config properties file packaged with the client snap."""
-        return f"{self.snap_folder}/conf/spark-defaults.conf"
+        return f"{self.spark_folder}/conf/spark-defaults.conf"
 
     @property
     def dynamic_conf_file(self) -> str:
@@ -201,7 +201,7 @@ class Defaults:
     @property
     def kubectl_cmd(self) -> str:
         """Return default kubectl command."""
-        return f"{self.snap_folder}/kubectl" if self.snap_folder else "kubectl"
+        return f"{self.spark_folder}/kubectl" if self.spark_folder else "kubectl"
 
     @property
     def scala_history_file(self):
@@ -209,15 +209,15 @@ class Defaults:
 
     @property
     def spark_submit(self) -> str:
-        return f"{self.snap_folder}/bin/spark-submit"
+        return f"{self.spark_folder}/bin/spark-submit"
 
     @property
     def spark_shell(self) -> str:
-        return f"{self.snap_folder}/bin/spark-shell"
+        return f"{self.spark_folder}/bin/spark-shell"
 
     @property
     def pyspark(self) -> str:
-        return f"{self.snap_folder}/bin/pyspark"
+        return f"{self.spark_folder}/bin/pyspark"
 
 
 @dataclass

@@ -30,7 +30,7 @@ class TestDomain(TestCase):
                 "KUBECONFIG": kubeconfig,
             }
         )
-        self.assertEqual(defaults.snap_folder, snap_var)
+        self.assertEqual(defaults.spark_folder, snap_var)
         self.assertEqual(
             defaults.static_conf_file, f"{snap_var}/conf/spark-defaults.conf"
         )
