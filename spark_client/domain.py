@@ -159,7 +159,7 @@ class Defaults:
     @property
     def spark_folder(self) -> str:
         """Return the SNAP folder"""
-        return self.environ.get("SNAP", self.environ.get("HOME"))
+        return self.environ.get("SNAP", self.environ.get("SPARK_HOME"))
 
     @property
     def static_conf_file(self) -> str:
@@ -169,7 +169,7 @@ class Defaults:
     @property
     def dynamic_conf_file(self) -> str:
         """Return dynamic config properties file generated during client setup."""
-        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('HOME'))}/spark-defaults.conf"
+        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('SPARK_HOME'))}/spark-defaults.conf"
 
     @property
     def env_conf_file(self) -> Optional[str]:
