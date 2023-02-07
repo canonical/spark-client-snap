@@ -2,6 +2,11 @@
 We are working with Kubernetes distribution for Spark. So, to be able to work with Kubernetes, we need to do some setup
 for Spark jobs.
 
+To start things off, install the spark-client snap.
+```bash
+sudo snap install spark-client --edge
+```
+
 The spark-client snap comes with a setup utility which would be the starting point for the setup. You can
 run the following command to understand it's usage.
 ```bash
@@ -41,17 +46,6 @@ As you would have noticed, these commands can take following optional parameters
 * ***context*** - For multi cluster Kubernetes deployments, Kubernetes configuration file will have multiple context entries. This parameter specifies which context name to pick from the configuration.
 * ***namespace*** - Namespace for the service account to be used for the action. Default is 'default'.
 * ***username*** - Username for the service account to be used for the action. Default is 'spark'.
-
-#### Enabling Default Kubernetes Config File Access
-
-First of you will have to allow the snap to access default kubeconfig file ```$HOME/.kube/config``` by executing the following command.
-
-```bash
-sudo snap connect spark-client:dot-kube-config
-```
-
-The spark-client snap is a strictly confined snap. The above command grants the snap permission to read the afore-mentioned
-kubeconfig file from default location.
 
 #### Service Account Creation
 To submit Spark jobs to Kubernetes, we need a service account in Kubernetes. Service Account belongs to a Kubernetes namespace. 

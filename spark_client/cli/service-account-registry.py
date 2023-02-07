@@ -35,24 +35,25 @@ class Actions(str, Enum):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
+    parser = argparse.ArgumentParser(description="Spark Client Setup")
+    base_parser = argparse.ArgumentParser(add_help=False)
+    base_parser.add_argument(
         "--log-level", default="ERROR", type=str, help="Level for logging."
     )
-    parser.add_argument(
+    base_parser.add_argument(
         "--kubeconfig", default=None, help="Kubernetes configuration file"
     )
-    parser.add_argument(
+    base_parser.add_argument(
         "--context",
         default=None,
         help="Context name to use within the provided kubernetes configuration file",
     )
-    parser.add_argument(
+    base_parser.add_argument(
         "--namespace",
         default="default",
         help="Namespace for the service account. Default is 'default'.",
     )
-    parser.add_argument(
+    base_parser.add_argument(
         "--username",
         default="spark",
         help="Service account username. Default is 'spark'.",
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     subparsers.required = True
 
     #  subparser for service-account
-    parser_account = subparsers.add_parser(Actions.CREATE.value)
+    parser_account = subparsers.add_parser(Actions.CREATE.value, parents=[base_parser])
     parser_account.add_argument(
         "--primary",
         action="store_true",
@@ -81,16 +82,20 @@ if __name__ == "__main__":
     )
 
     #  subparser for service-account-cleanup
-    parser_account = subparsers.add_parser(Actions.DELETE.value)
+    parser_account_cleanup = subparsers.add_parser(
+        Actions.DELETE.value, parents=[base_parser]
+    )
 
     #  subparser for sa-conf-create
-    parser_account = subparsers.add_parser(Actions.UPDATE_CONF.value)
-    parser_account.add_argument(
+    parser_conf_create = subparsers.add_parser(
+        Actions.UPDATE_CONF.value, parents=[base_parser]
+    )
+    parser_conf_create.add_argument(
         "--properties-file",
         default=None,
         help="File with all configuration properties assignments.",
     )
-    parser_account.add_argument(
+    parser_conf_create.add_argument(
         "--conf",
         action="append",
         type=str,
@@ -98,18 +103,25 @@ if __name__ == "__main__":
     )
 
     #  subparser for sa-conf-get
-    parser_account = subparsers.add_parser(Actions.GET_CONF.value)
-    parser_account.add_argument(
+    parser_conf_get = subparsers.add_parser(
+        Actions.GET_CONF.value, parents=[base_parser]
+    )
+    parser_conf_get.add_argument(
         "--conf", action="append", type=str, help="Config property to retrieve."
     )
 
     #  subparser for sa-conf-del
-    parser_account = subparsers.add_parser(Actions.DELETE_CONF.value)
+    parser_conf_del = subparsers.add_parser(
+        Actions.DELETE_CONF.value, parents=[base_parser]
+    )
 
     #  subparser for resources-primary-sa
-    parser_account = subparsers.add_parser(Actions.PRIMARY.value)
+    parser_conf_primary_resources = subparsers.add_parser(
+        Actions.PRIMARY.value, parents=[base_parser]
+    )
 
-    parser_account = subparsers.add_parser(Actions.LIST.value)
+    #  subparser for list
+    parser_conf_list = subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
 
     args = parser.parse_args()
 

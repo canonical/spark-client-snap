@@ -28,7 +28,7 @@ apps:
         - network
         - home
         - dot-kube-config
-  submit:
+  spark-submit:
     command: ops/cli/spark-submit.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
@@ -37,7 +37,7 @@ apps:
         - network
         - home
         - dot-kube-config
-  shell:
+  spark-shell:
     command: ops/cli/spark-shell.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
