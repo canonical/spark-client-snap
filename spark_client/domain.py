@@ -169,7 +169,7 @@ class Defaults:
     @property
     def dynamic_conf_file(self) -> str:
         """Return dynamic config properties file generated during client setup."""
-        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('SPARK_HOME'))}/spark-defaults.conf"
+        return f"{self.environ.get('SNAP_USER_DATA', self.environ.get('HOME'))}/spark-defaults.conf"
 
     @property
     def env_conf_file(self) -> Optional[str]:
