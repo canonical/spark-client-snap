@@ -201,7 +201,7 @@ class Defaults:
     @property
     def kubectl_cmd(self) -> str:
         """Return default kubectl command."""
-        return f"{self.spark_folder}/kubectl" if self.spark_folder else "kubectl"
+        return f"{self.spark_folder}/kubectl" if "SNAP" in self.environ else "kubectl"
 
     @property
     def scala_history_file(self):
