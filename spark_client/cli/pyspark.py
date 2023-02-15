@@ -12,41 +12,20 @@ from spark_client.services import (
     KubeInterface,
     SparkInterface,
 )
+from spark_client.utils import parse_arguments_with, add_config_arguments, add_logging_arguments, \
+    base_spark_parser
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--log-level", default="ERROR", type=str, help="Level for logging."
-    )
-    parser.add_argument(
-        "--master", default=None, type=str, help="Kubernetes control plane uri."
-    )
-    parser.add_argument(
-        "--properties-file",
-        default=None,
-        type=str,
-        help="Spark default configuration properties file.",
-    )
-    parser.add_argument(
-        "--username",
-        default=None,
-        type=str,
-        help="Service account name to use other than primary.",
-    )
-    parser.add_argument(
-        "--namespace",
-        default=None,
-        type=str,
-        help="Namespace of service account name to use other than primary.",
-    )
-    args, extra_args = parser.parse_known_args()
+    args, extra_args = parse_arguments_with([
+        add_logging_arguments, base_spark_parser, add_config_arguments
+    ])
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
     kube_interface = KubeInterface(
-        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
     registry = K8sServiceAccountRegistry(

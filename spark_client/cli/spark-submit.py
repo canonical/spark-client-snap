@@ -14,13 +14,14 @@ from spark_client.services import (
 from spark_client.utils import (
     add_deploy_arguments,
     add_logging_arguments,
-    custom_parser,
+    add_config_arguments,
+    base_spark_parser,
     parse_arguments_with,
 )
 
 if __name__ == "__main__":
     args, extra_args = parse_arguments_with(
-        [add_logging_arguments, custom_parser, add_deploy_arguments]
+        [add_logging_arguments, base_spark_parser, add_deploy_arguments, add_config_arguments]
     )
 
     logging.basicConfig(
@@ -28,7 +29,7 @@ if __name__ == "__main__":
     )
 
     kube_interface = KubeInterface(
-        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
     registry = K8sServiceAccountRegistry(

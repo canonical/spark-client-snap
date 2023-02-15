@@ -13,19 +13,22 @@ from spark_client.services import (
 )
 from spark_client.utils import (
     add_logging_arguments,
-    custom_parser,
+    add_config_arguments,
+    base_spark_parser,
     parse_arguments_with,
 )
 
 if __name__ == "__main__":
-    args, extra_args = parse_arguments_with([add_logging_arguments, custom_parser])
+    args, extra_args = parse_arguments_with([
+        add_logging_arguments, base_spark_parser, add_config_arguments
+    ])
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
     kube_interface = KubeInterface(
-        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
     registry = K8sServiceAccountRegistry(

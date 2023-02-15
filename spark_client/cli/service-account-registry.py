@@ -13,6 +13,7 @@ from spark_client.services import (
     KubeInterface,
     parse_conf_overrides,
 )
+from spark_client.utils import add_config_arguments, add_logging_arguments, base_spark_parser
 
 
 def build_service_account_from_args(args) -> ServiceAccount:
@@ -36,49 +37,22 @@ class Actions(str, Enum):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Spark Client Setup")
-    base_parser = argparse.ArgumentParser(add_help=False)
-    base_parser.add_argument(
-        "--log-level", default="ERROR", type=str, help="Level for logging."
-    )
-    base_parser.add_argument(
-        "--kubeconfig", default=None, help="Kubernetes configuration file"
-    )
-    base_parser.add_argument(
-        "--context",
-        default=None,
-        help="Context name to use within the provided kubernetes configuration file",
-    )
-    base_parser.add_argument(
-        "--namespace",
-        default="default",
-        help="Namespace for the service account. Default is 'default'.",
-    )
-    base_parser.add_argument(
-        "--username",
-        default="spark",
-        help="Service account username. Default is 'spark'.",
+
+    base_parser = add_logging_arguments(
+        base_spark_parser(argparse.ArgumentParser(add_help=False))
     )
 
     subparsers = parser.add_subparsers(dest="action")
     subparsers.required = True
 
     #  subparser for service-account
-    parser_account = subparsers.add_parser(Actions.CREATE.value, parents=[base_parser])
+    parser_account = add_config_arguments(
+        subparsers.add_parser(Actions.CREATE.value, parents=[base_parser])
+    )
     parser_account.add_argument(
         "--primary",
         action="store_true",
         help="Boolean to mark the service account as primary.",
-    )
-    parser_account.add_argument(
-        "--properties-file",
-        default=None,
-        help="File with all configuration properties assignments.",
-    )
-    parser_account.add_argument(
-        "--conf",
-        action="append",
-        type=str,
-        help="Config properties to be added to the service account.",
     )
 
     #  subparser for service-account-cleanup
@@ -87,20 +61,9 @@ if __name__ == "__main__":
     )
 
     #  subparser for sa-conf-create
-    parser_conf_create = subparsers.add_parser(
+    parser_conf_create = add_config_arguments(subparsers.add_parser(
         Actions.UPDATE_CONF.value, parents=[base_parser]
-    )
-    parser_conf_create.add_argument(
-        "--properties-file",
-        default=None,
-        help="File with all configuration properties assignments.",
-    )
-    parser_conf_create.add_argument(
-        "--conf",
-        action="append",
-        type=str,
-        help="Config properties to be added to the service account.",
-    )
+    ))
 
     #  subparser for sa-conf-get
     parser_conf_get = subparsers.add_parser(
@@ -130,7 +93,7 @@ if __name__ == "__main__":
     )
 
     kube_interface = KubeInterface(
-        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
     context = args.context or kube_interface.context_name

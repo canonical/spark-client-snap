@@ -215,7 +215,7 @@ def add_logging_arguments(parser):
     return parser
 
 
-def custom_parser(parser):
+def base_spark_parser(parser):
     """
     Add Spark related argument parsing to the existing parser context
 
@@ -223,12 +223,6 @@ def custom_parser(parser):
     """
     parser.add_argument(
         "--master", default=None, type=str, help="Kubernetes control plane uri."
-    )
-    parser.add_argument(
-        "--properties-file",
-        default=None,
-        type=str,
-        help="Spark default configuration properties file.",
     )
     parser.add_argument(
         "--username",
@@ -242,7 +236,38 @@ def custom_parser(parser):
         type=str,
         help="Namespace of service account name to use other than primary.",
     )
+    parser.add_argument(
+        "--kubeconfig",
+        default=None,
+        type=str,
+        help="Kubernetes configuration file"
+    )
+    parser.add_argument(
+        "--context",
+        default=None,
+        type=str,
+        help="Kubernetes context to be used"
+    )
+    return parser
 
+def add_config_arguments(parser):
+    """
+    Add arguments to provide extra configurations for the spark properties
+
+    :param parser: Input parser to decorate with parsing support for deploy arguments.
+    """
+    parser.add_argument(
+        "--properties-file",
+        default=None,
+        type=str,
+        help="Spark default configuration properties file.",
+    )
+    parser.add_argument(
+        "--conf",
+        action="append",
+        type=str,
+        help="Config properties to be added to the service account.",
+    )
     return parser
 
 
