@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
 import logging
 import re
 from typing import Optional
@@ -12,13 +11,17 @@ from spark_client.services import (
     KubeInterface,
     SparkInterface,
 )
-from spark_client.utils import parse_arguments_with, add_config_arguments, add_logging_arguments, \
-    base_spark_parser
+from spark_client.utils import (
+    add_config_arguments,
+    add_logging_arguments,
+    base_spark_parser,
+    parse_arguments_with,
+)
 
 if __name__ == "__main__":
-    args, extra_args = parse_arguments_with([
-        add_logging_arguments, base_spark_parser, add_config_arguments
-    ])
+    args, extra_args = parse_arguments_with(
+        [add_logging_arguments, base_spark_parser, add_config_arguments]
+    )
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level

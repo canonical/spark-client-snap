@@ -13,7 +13,11 @@ from spark_client.services import (
     KubeInterface,
     parse_conf_overrides,
 )
-from spark_client.utils import add_config_arguments, add_logging_arguments, base_spark_parser
+from spark_client.utils import (
+    add_config_arguments,
+    add_logging_arguments,
+    base_spark_parser,
+)
 
 
 def build_service_account_from_args(args) -> ServiceAccount:
@@ -61,9 +65,9 @@ if __name__ == "__main__":
     )
 
     #  subparser for sa-conf-create
-    parser_conf_create = add_config_arguments(subparsers.add_parser(
-        Actions.UPDATE_CONF.value, parents=[base_parser]
-    ))
+    parser_conf_create = add_config_arguments(
+        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser])
+    )
 
     #  subparser for sa-conf-get
     parser_conf_get = subparsers.add_parser(

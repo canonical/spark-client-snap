@@ -12,16 +12,21 @@ from spark_client.services import (
     SparkInterface,
 )
 from spark_client.utils import (
+    add_config_arguments,
     add_deploy_arguments,
     add_logging_arguments,
-    add_config_arguments,
     base_spark_parser,
     parse_arguments_with,
 )
 
 if __name__ == "__main__":
     args, extra_args = parse_arguments_with(
-        [add_logging_arguments, base_spark_parser, add_deploy_arguments, add_config_arguments]
+        [
+            add_logging_arguments,
+            base_spark_parser,
+            add_deploy_arguments,
+            add_config_arguments,
+        ]
     )
 
     logging.basicConfig(

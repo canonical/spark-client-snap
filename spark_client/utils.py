@@ -237,18 +237,13 @@ def base_spark_parser(parser):
         help="Namespace of service account name to use other than primary.",
     )
     parser.add_argument(
-        "--kubeconfig",
-        default=None,
-        type=str,
-        help="Kubernetes configuration file"
+        "--kubeconfig", default=None, type=str, help="Kubernetes configuration file"
     )
     parser.add_argument(
-        "--context",
-        default=None,
-        type=str,
-        help="Kubernetes context to be used"
+        "--context", default=None, type=str, help="Kubernetes context to be used"
     )
     return parser
+
 
 def add_config_arguments(parser):
     """
