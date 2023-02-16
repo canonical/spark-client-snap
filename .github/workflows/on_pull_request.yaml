@@ -7,6 +7,3 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/ci.yaml
-    with:
-      branch: ${{ github.head_ref }}
-

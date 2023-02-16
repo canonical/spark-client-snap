@@ -2,10 +2,6 @@ name: Build snap and run tests
 
 on:
   workflow_call:
-    inputs:
-      branch:
-        required: true
-        type: string
     outputs:
       snap-file:
         description: "The snap output of build process."
@@ -25,8 +21,6 @@ jobs:
       - id: checkout
         name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.branch }}
       - id: setup-python
         name: Setup Python
         uses: actions/setup-python@v2.2.2
@@ -48,8 +42,6 @@ jobs:
       - id: checkout
         name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.branch }}
       - id: build-snap
         name: Build snap
         uses: snapcore/action-build@v1
@@ -81,8 +73,6 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.branch }}
 
       - name: Run Integration Tests
         run: |
