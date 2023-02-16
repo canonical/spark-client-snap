@@ -783,7 +783,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
-            ).log().write(t.file)
+            ).write(t.file)
 
             t.flush()
 
@@ -822,7 +822,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
-            ).log().write(t.file)
+            ).write(t.file)
 
             t.flush()
 
@@ -856,7 +856,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
-            ).log().write(t.file)
+            ).write(t.file)
 
             t.flush()
 
