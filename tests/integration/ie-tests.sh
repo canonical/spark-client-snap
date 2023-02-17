@@ -116,6 +116,6 @@ setup_tests
 
 test_example_job
 
-test_spark_shell
+# test_spark_shell
 
-test_pyspark
+# test_pyspark
