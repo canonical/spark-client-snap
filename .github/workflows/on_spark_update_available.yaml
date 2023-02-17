@@ -65,23 +65,12 @@ jobs:
 
       - name: create pull request
         id: cpr
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.SPARK_PKG_PUBLISH }}
-          commit-message: Publish snap for new spark version
-          committer: GitHub <noreply@github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          signoff: false
-          branch: update-spark-snap
-          delete-branch: true
-          title: 'Update snap for new spark version'
-          body: |
-            Update client snap with new version of Apache Spark.
-          labels: |
-            automated pr
-          assignees: team-reviewers, deusebio, taurus, abhishek-verma
-          reviewers: team-reviewers, deusebio, taurus
-          team-reviewers: |
-            owners
-            maintainers
-          draft: false
+        run: gh pr create \
+          --title 'Update snap for new spark version' \
+          --body 'Update client snap with new version of Apache Spark.' \
+          --base main
+          --assignee team-reviewers, deusebio, taurus, abhishek-verma \
+          --reviewer team-reviewers, deusebio, taurus \
+          --label 'automated pr'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
