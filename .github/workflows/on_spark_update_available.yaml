@@ -5,8 +5,7 @@ env:
 
 on:
   schedule:
-    - cron: '30 10 * * *'
-
+    - cron: '00 16 * * *'
 
 jobs:
   check-spark:
@@ -53,24 +52,30 @@ jobs:
       - id: checkout
         name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          ref: ${{ env.BRANCH }}
-      - name: Record the published Spark version in SPARK_VERSION file
-        uses: DamianReeves/write-file-action@master
-        with:
-          path: ./SPARK_VERSION
-          write-mode: overwrite
-          contents: |
-            ${{ needs.check-spark.outputs.version }}
-
+      - id: record_spark_latest_version
+        name: Record updated Spark version
+        run: |
+          git config user.email "abhishek.verma@canonical.com"
+          git config user.name "Abhishek Verma"
+          git checkout -b ${{ github.run_id }}-${{ github.run_attempt }}
+          echo -n ${{ needs.check-spark.outputs.version }} > ./SPARK_VERSION
+          git add ./SPARK_VERSION
+          git config author.name "GitHub <noreply@github.com>"
+          git config author.email "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+          git commit -m "Update Spark Snap"
+          git push --set-upstream origin ${{ github.run_id }}-${{ github.run_attempt }}
       - name: create pull request
         id: cpr
-        run: gh pr create \
-          --title "Update snap for new spark version" \
-          --body "Update client snap with new version of Apache Spark." \
-          --base main \
-          --assignee team-reviewers, deusebio, taurus-forever, averma-canonical \
-          --reviewer team-reviewers, deusebio, taurus-forever, averma-canonical \
+        run: gh pr create 
+          --title "Update snap for new spark version" 
+          --body "Update client snap with new version of Apache Spark." 
+          --base main 
+          --assignee deusebio
+          --assignee taurus-forever
+          --assignee averma-canonical
+          --reviewer deusebio
+          --reviewer taurus-forever
+          --reviewer averma-canonical 
           --label "automated pr"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
