@@ -72,15 +72,10 @@ jobs:
           echo $TAG
           echo $PROJECT_VERSION
           if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
-#      - name: Release Notes
-#        uses: heinrichreimer/github-changelog-generator-action@v2.3
-#        with:
-#          token: ${{ secrets.SPARK_PKG_PUBLISH }}
-#          output: ".github/RELEASE-TEMPLATE.md"
       - name: Create Github Release
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.SPARK_PKG_PUBLISH }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body_path: ".github/RELEASE-TEMPLATE.md"
           files: |
