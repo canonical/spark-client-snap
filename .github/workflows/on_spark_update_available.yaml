@@ -66,11 +66,11 @@ jobs:
       - name: create pull request
         id: cpr
         run: gh pr create \
-          --title 'Update snap for new spark version' \
-          --body 'Update client snap with new version of Apache Spark.' \
-          --base main
+          --title "Update snap for new spark version" \
+          --body "Update client snap with new version of Apache Spark." \
+          --base main \
           --assignee team-reviewers, deusebio, taurus-forever, averma-canonical \
           --reviewer team-reviewers, deusebio, taurus-forever, averma-canonical \
-          --label 'automated pr'
+          --label "automated pr"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
