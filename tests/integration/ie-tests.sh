@@ -10,7 +10,7 @@ test_example_job() {
   KUBE_CONFIG=/home/${USER}/.kube/config
 
   K8S_MASTER_URL=k8s://$(kubectl --kubeconfig=${KUBE_CONFIG} config view -o jsonpath="{.clusters[0]['cluster.server']}")
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.1.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.2.jar'
 
   echo $K8S_MASTER_URL
 
