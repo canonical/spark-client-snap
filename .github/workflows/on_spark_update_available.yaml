@@ -70,7 +70,7 @@ jobs:
           --body 'Update client snap with new version of Apache Spark.' \
           --base main
           --assignee team-reviewers, deusebio, taurus, abhishek-verma \
-          --reviewer team-reviewers, deusebio, taurus \
+          --reviewer team-reviewers, deusebio, taurus, abhishek-verma \
           --label 'automated pr'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
