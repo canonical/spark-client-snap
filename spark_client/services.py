@@ -817,13 +817,8 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            spark_driver_host = self.detect_host()
-
             conf = (
-                PropertyFile({"spark.driver.host": spark_driver_host})
-                if spark_driver_host
-                else PropertyFile({})
-                + self._read_properties_file(self.defaults.static_conf_file)
+                self._read_properties_file(self.defaults.static_conf_file)
                 + PropertyFile(
                     {
                         "spark.driver.extraJavaOptions": f"-Dscala.shell.histfile={self.defaults.scala_history_file}"
@@ -833,6 +828,8 @@ class SparkInterface(WithLogging):
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
             )
+
+            conf = self.add_optional_detected_driver_host(conf)
 
             if (
                 "spark.driver.host" not in conf.props
@@ -870,17 +867,14 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            spark_driver_host = self.detect_host()
-
             conf = (
-                PropertyFile({"spark.driver.host": spark_driver_host})
-                if spark_driver_host
-                else PropertyFile({})
-                + self._read_properties_file(self.defaults.static_conf_file)
+                self._read_properties_file(self.defaults.static_conf_file)
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
             )
+
+            conf = self.add_optional_detected_driver_host(conf)
 
             if (
                 "spark.driver.host" not in conf.props
@@ -903,6 +897,13 @@ class SparkInterface(WithLogging):
             self.logger.debug(submit_cmd)
             with environ(KUBECONFIG=self.kube_interface.kube_config_file):
                 os.system(submit_cmd)
+
+    def add_optional_detected_driver_host(self, conf: PropertyFile):
+        spark_driver_host = self.detect_host()
+        if spark_driver_host:
+            return PropertyFile({"spark.driver.host": spark_driver_host}) + conf
+        else:
+            return conf
 
     def check_driver_host_extra_conf(self) -> bool:
         args_including_conf, remaining_args = parse_arguments_with(
