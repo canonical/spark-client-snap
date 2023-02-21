@@ -3,7 +3,6 @@
 import errno
 import io
 import os
-import socket
 import subprocess
 from contextlib import contextmanager
 from copy import deepcopy as copy
@@ -274,49 +273,3 @@ def add_deploy_arguments(parser):
         help="Deployment mode for job submission. Default is 'client'.",
     )
     return parser
-
-
-def get_driver_host_conf() -> Any:
-    args_including_conf, remaining_args = parse_arguments_with(
-        [add_logging_arguments, custom_parser, add_conf_arguments]
-    )
-
-    if args_including_conf.conf:
-        conf_args = dict(
-            conf_entry.split("=", 1) for conf_entry in args_including_conf.conf
-        )
-    else:
-        conf_args = {}
-
-    if "spark.driver.host" not in conf_args:
-        spark_driver_host = detect_host()
-        if spark_driver_host is None:
-            raise ValueError(
-                "Please provide spark.driver.host spark configuration option to proceed....."
-            )
-        return spark_driver_host
-    else:
-        return None
-
-
-def detect_host() -> Any:
-    try:
-        host_py = socket.gethostbyname(socket.gethostname()).strip()
-    except Exception:
-        return None
-
-    try:
-        host_bash = (
-            subprocess.check_output(
-                "hostname -I | cut -d' ' -f1", shell=True, stderr=None
-            )
-            .decode("utf-8")
-            .strip()
-        )
-    except Exception:
-        return None
-
-    if host_py == host_bash:
-        return host_py
-    else:
-        return None

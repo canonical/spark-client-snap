@@ -1,5 +1,6 @@
 import base64
 import os
+import socket
 import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -12,8 +13,12 @@ from spark_client.domain import Defaults, PropertyFile, ServiceAccount
 from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
 from spark_client.utils import (
     WithLogging,
+    add_conf_arguments,
+    add_logging_arguments,
+    custom_parser,
     environ,
     listify,
+    parse_arguments_with,
     parse_yaml_shell_output,
     umask_named_temporary_file,
 )
@@ -812,18 +817,30 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            (
+            spark_driver_host = self.detect_host()
+
+            conf = (
                 self._read_properties_file(self.defaults.static_conf_file)
                 + PropertyFile(
                     {
                         "spark.driver.extraJavaOptions": f"-Dscala.shell.histfile={self.defaults.scala_history_file}"
                     }
                 )
+                + PropertyFile({"spark.driver.host": spark_driver_host})
+                if spark_driver_host
+                else PropertyFile({})
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
-            ).write(t.file)
+            )
 
+            if (
+                "spark.driver.host" not in conf.props
+                and not self.check_driver_host_extra_conf()
+            ):
+                raise ValueError("")
+
+            conf.write(t.file)
             t.flush()
 
             submit_args = [
@@ -851,13 +868,27 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            (
+            spark_driver_host = self.detect_host()
+
+            conf = (
                 self._read_properties_file(self.defaults.static_conf_file)
+                + PropertyFile({"spark.driver.host": spark_driver_host})
+                if spark_driver_host
+                else PropertyFile({})
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
-            ).write(t.file)
+            )
 
+            if (
+                "spark.driver.host" not in conf.props
+                and not self.check_driver_host_extra_conf()
+            ):
+                raise ValueError(
+                    "Please specify spark.driver.host configuration property"
+                )
+
+            conf.write(t.file)
             t.flush()
 
             submit_args = [
@@ -870,3 +901,39 @@ class SparkInterface(WithLogging):
             self.logger.debug(submit_cmd)
             with environ(KUBECONFIG=self.kube_interface.kube_config_file):
                 os.system(submit_cmd)
+
+    def check_driver_host_extra_conf(self) -> bool:
+        args_including_conf, remaining_args = parse_arguments_with(
+            [add_logging_arguments, custom_parser, add_conf_arguments]
+        )
+
+        if args_including_conf.conf:
+            conf_args = dict(
+                conf_entry.split("=", 1) for conf_entry in args_including_conf.conf
+            )
+        else:
+            conf_args = {}
+
+        return "spark.driver.host" in conf_args
+
+    def detect_host(self) -> Any:
+        try:
+            host_py = socket.gethostbyname(socket.gethostname()).strip()
+        except Exception:
+            return None
+
+        try:
+            host_bash = (
+                subprocess.check_output(
+                    "hostname -I | cut -d' ' -f1", shell=True, stderr=None
+                )
+                .decode("utf-8")
+                .strip()
+            )
+        except Exception:
+            return None
+
+        if host_py == host_bash:
+            return host_py
+        else:
+            return None
