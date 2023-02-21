@@ -63,15 +63,13 @@ test_example_job() {
 test_spark_shell() {
   spark-client.service-account-registry create --username=ie-test
 
-  export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
-
   echo "import scala.math.random" > test-spark-shell.scala
   echo "val slices = 10" >> test-spark-shell.scala
   echo "val n = math.min(100000L * slices, Int.MaxValue).toInt" >> test-spark-shell.scala
   echo "val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)" >> test-spark-shell.scala
   echo "println(s\"Pi is roughly \${4.0 * count / (n - 1)}\")" >> test-spark-shell.scala
   echo "System.exit(0)" >> test-spark-shell.scala
-  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=ie-test --conf "spark.driver.host=${DRIVER_IP}")" > spark-shell.out
+  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=ie-test)" > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   spark-client.service-account-registry delete --username=ie-test
@@ -83,8 +81,6 @@ test_spark_shell() {
 
 test_pyspark() {
   spark-client.service-account-registry create --username=ie-test
-
-  export DRIVER_IP=$(hostname -I | cut -d " " -f 1)
 
   echo "import sys" > test-pyspark.py
   echo "from random import random" >> test-pyspark.py
@@ -101,7 +97,7 @@ test_pyspark() {
   echo "     return x * x + y * y < 1 " >> test-pyspark.py
   echo "count = spark.sparkContext.parallelize(range(n), partitions).filter(f).count()" >> test-pyspark.py
   echo "print (\"Pi is roughly %f\" % (4.0 * count / n))" >> test-pyspark.py
-  echo -e "$(cat test-pyspark.py | spark-client.pyspark --username=ie-test --conf "spark.driver.host=${DRIVER_IP} --conf spark.executor.instances=2")" > pyspark.out
+  echo -e "$(cat test-pyspark.py | spark-client.pyspark --username=ie-test --conf spark.executor.instances=2)" > pyspark.out
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
