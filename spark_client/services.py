@@ -820,7 +820,9 @@ class SparkInterface(WithLogging):
             spark_driver_host = self.detect_host()
 
             conf = (
-                PropertyFile({"spark.driver.host": spark_driver_host}) if spark_driver_host else PropertyFile({})
+                PropertyFile({"spark.driver.host": spark_driver_host})
+                if spark_driver_host
+                else PropertyFile({})
                 + self._read_properties_file(self.defaults.static_conf_file)
                 + PropertyFile(
                     {
@@ -871,7 +873,9 @@ class SparkInterface(WithLogging):
             spark_driver_host = self.detect_host()
 
             conf = (
-                PropertyFile({"spark.driver.host": spark_driver_host}) if spark_driver_host else PropertyFile({})
+                PropertyFile({"spark.driver.host": spark_driver_host})
+                if spark_driver_host
+                else PropertyFile({})
                 + self._read_properties_file(self.defaults.static_conf_file)
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
