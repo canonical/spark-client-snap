@@ -838,7 +838,9 @@ class SparkInterface(WithLogging):
                 "spark.driver.host" not in conf.props
                 and not self.check_driver_host_extra_conf()
             ):
-                raise ValueError("")
+                raise ValueError(
+                    "Please specify spark.driver.host configuration property"
+                )
 
             conf.write(t.file)
             t.flush()
