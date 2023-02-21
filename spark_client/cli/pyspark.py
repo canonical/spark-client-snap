@@ -11,12 +11,11 @@ from spark_client.services import (
     KubeInterface,
     SparkInterface,
 )
-
 from spark_client.utils import (
     add_logging_arguments,
     custom_parser,
+    get_driver_host_conf,
     parse_arguments_with,
-    get_driver_host_conf
 )
 
 if __name__ == "__main__":
@@ -49,7 +48,9 @@ if __name__ == "__main__":
 
     detected_driver_host_to_add = get_driver_host_conf()
     if detected_driver_host_to_add:
-        extra_args_with_driver_host = extra_args_with_driver_host + [f"--conf spark.driver.host={detected_driver_host_to_add}"]
+        extra_args_with_driver_host = extra_args_with_driver_host + [
+            f"--conf spark.driver.host={detected_driver_host_to_add}"
+        ]
 
     SparkInterface(
         service_account=service_account,
