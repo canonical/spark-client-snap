@@ -11,10 +11,12 @@ from spark_client.services import (
     KubeInterface,
     SparkInterface,
 )
+
 from spark_client.utils import (
     add_logging_arguments,
     custom_parser,
     parse_arguments_with,
+    get_driver_host_conf
 )
 
 if __name__ == "__main__":
@@ -43,8 +45,14 @@ if __name__ == "__main__":
     if service_account is None:
         raise ValueError("Service account provided does not exist.")
 
+    extra_args_with_driver_host = extra_args
+
+    detected_driver_host_to_add = get_driver_host_conf()
+    if detected_driver_host_to_add:
+        extra_args_with_driver_host = extra_args_with_driver_host + [f"--conf spark.driver.host={detected_driver_host_to_add}"]
+
     SparkInterface(
         service_account=service_account,
         kube_interface=kube_interface,
         defaults=defaults,
-    ).spark_shell(args.properties_file, extra_args)
+    ).spark_shell(args.properties_file, extra_args_with_driver_host)

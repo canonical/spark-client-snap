@@ -2,8 +2,10 @@
 
 import errno
 import io
+import logging
 import os
 import subprocess
+import socket
 from contextlib import contextmanager
 from copy import deepcopy as copy
 from functools import reduce
@@ -198,6 +200,18 @@ def parse_arguments_with(parsers=[], namespace=None):
         lambda x, f: f(x), parsers, argparse.ArgumentParser()
     ).parse_known_args(namespace=namespace)
 
+def add_conf_arguments(parser):
+    """
+    Add conf argument parsing to the existing parsing context
+
+    :param parser: Input parser to decorate with parsing support for conf args.
+    """
+    parser.add_argument(
+        "--conf",
+        action="append",
+        type=str,
+    )
+    return parser
 
 def add_logging_arguments(parser):
     """
@@ -259,3 +273,39 @@ def add_deploy_arguments(parser):
         help="Deployment mode for job submission. Default is 'client'.",
     )
     return parser
+
+def get_driver_host_conf() -> str:
+    args_including_conf, remaining_args = parse_arguments_with([add_logging_arguments, custom_parser, add_conf_arguments])
+
+    if args_including_conf.conf:
+        conf_args = dict(conf_entry.split('=',1) for conf_entry in args_including_conf.conf)
+    else:
+        conf_args = {}
+
+    if "spark.driver.host" not in conf_args:
+        spark_driver_host = detect_host()
+        if spark_driver_host is None:
+            raise ValueError("Please provide spark.driver.host spark configuration option to proceed.....")
+        return spark_driver_host
+    else:
+        return None
+
+def detect_host() -> str:
+    try:
+        host_py = socket.gethostbyname(socket.gethostname()).strip()
+    except Exception:
+        return None
+
+
+    try:
+        host_bash = subprocess.check_output("hostname -I | cut -d' ' -f1", shell=True, stderr=None).decode("utf-8").strip()
+    except Exception:
+        return None
+
+    if host_py == host_bash:
+        return host_py
+    else:
+        return None
+
+
+
