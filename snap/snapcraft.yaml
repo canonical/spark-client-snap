@@ -20,7 +20,7 @@ environment:
 
 apps:
   service-account-registry:
-    command: ops/cli/service-account-registry.py
+    command: ops/cli/service_account_registry.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
@@ -29,7 +29,7 @@ apps:
         - home
         - dot-kube-config
   spark-submit:
-    command: ops/cli/spark-submit.py
+    command: ops/cli/spark_submit.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
@@ -38,7 +38,7 @@ apps:
         - home
         - dot-kube-config
   spark-shell:
-    command: ops/cli/spark-shell.py
+    command: ops/cli/spark_shell.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:

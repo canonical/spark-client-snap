@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import argparse
 import json
 import logging
+from argparse import ArgumentParser
 from enum import Enum
 
 from spark_client.cli import defaults
@@ -16,7 +16,9 @@ from spark_client.services import (
 from spark_client.utils import (
     add_config_arguments,
     add_logging_arguments,
-    base_spark_parser,
+    k8s_parser,
+    parse_arguments_with,
+    spark_user_parser,
 )
 
 
@@ -39,58 +41,62 @@ class Actions(str, Enum):
     LIST = "list"
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Spark Client Setup")
-
-    base_parser = add_logging_arguments(
-        base_spark_parser(argparse.ArgumentParser(add_help=False))
+def create_service_account_registry_parser(parser: ArgumentParser):
+    base_parser = parse_arguments_with(
+        [add_logging_arguments, k8s_parser],
+        ArgumentParser(add_help=False),
     )
 
     subparsers = parser.add_subparsers(dest="action")
     subparsers.required = True
 
     #  subparser for service-account
-    parser_account = add_config_arguments(
-        subparsers.add_parser(Actions.CREATE.value, parents=[base_parser])
-    )
-    parser_account.add_argument(
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.CREATE.value, parents=[base_parser]),
+    ).add_argument(
         "--primary",
         action="store_true",
         help="Boolean to mark the service account as primary.",
     )
 
     #  subparser for service-account-cleanup
-    parser_account_cleanup = subparsers.add_parser(
-        Actions.DELETE.value, parents=[base_parser]
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.DELETE.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-create
-    parser_conf_create = add_config_arguments(
-        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser])
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-get
-    parser_conf_get = subparsers.add_parser(
-        Actions.GET_CONF.value, parents=[base_parser]
-    )
-    parser_conf_get.add_argument(
-        "--conf", action="append", type=str, help="Config property to retrieve."
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.GET_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-del
-    parser_conf_del = subparsers.add_parser(
-        Actions.DELETE_CONF.value, parents=[base_parser]
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.DELETE_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for resources-primary-sa
-    parser_conf_primary_resources = subparsers.add_parser(
-        Actions.PRIMARY.value, parents=[base_parser]
-    )
+    subparsers.add_parser(Actions.PRIMARY.value, parents=[base_parser])
 
     #  subparser for list
-    parser_conf_list = subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
+    subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
 
-    args = parser.parse_args()
+    return parser
+
+
+if __name__ == "__main__":
+    args = create_service_account_registry_parser(
+        ArgumentParser(description="Spark Client Setup")
+    ).parse_args()
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
@@ -117,7 +123,9 @@ if __name__ == "__main__":
         registry.create(service_account)
 
     elif args.action == Actions.DELETE:
-        registry.delete(build_service_account_from_args(args).id)
+        user_id = build_service_account_from_args(args).id
+        print(user_id)
+        registry.delete(user_id)
 
     elif args.action == Actions.UPDATE_CONF:
         account_configuration = (

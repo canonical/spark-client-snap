@@ -14,14 +14,15 @@ from spark_client.services import (
 from spark_client.utils import (
     add_config_arguments,
     add_logging_arguments,
-    base_spark_parser,
+    k8s_parser,
     parse_arguments_with,
+    spark_user_parser,
 )
 
 if __name__ == "__main__":
     args, extra_args = parse_arguments_with(
-        [add_logging_arguments, base_spark_parser, add_config_arguments]
-    )
+        [add_logging_arguments, k8s_parser, spark_user_parser, add_config_arguments]
+    ).parse_known_args()
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
