@@ -820,15 +820,13 @@ class SparkInterface(WithLogging):
             spark_driver_host = self.detect_host()
 
             conf = (
-                self._read_properties_file(self.defaults.static_conf_file)
+                PropertyFile({"spark.driver.host": spark_driver_host}) if spark_driver_host else PropertyFile({})
+                + self._read_properties_file(self.defaults.static_conf_file)
                 + PropertyFile(
                     {
                         "spark.driver.extraJavaOptions": f"-Dscala.shell.histfile={self.defaults.scala_history_file}"
                     }
                 )
-                + PropertyFile({"spark.driver.host": spark_driver_host})
-                if spark_driver_host
-                else PropertyFile({})
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
@@ -873,10 +871,8 @@ class SparkInterface(WithLogging):
             spark_driver_host = self.detect_host()
 
             conf = (
-                self._read_properties_file(self.defaults.static_conf_file)
-                + PropertyFile({"spark.driver.host": spark_driver_host})
-                if spark_driver_host
-                else PropertyFile({})
+                PropertyFile({"spark.driver.host": spark_driver_host}) if spark_driver_host else PropertyFile({})
+                + self._read_properties_file(self.defaults.static_conf_file)
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
