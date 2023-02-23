@@ -8,9 +8,9 @@ from spark_client.cli.service_account_registry import (
 )
 from spark_client.utils import (
     add_config_arguments,
+    add_deploy_arguments,
     add_logging_arguments,
     k8s_parser,
-    add_deploy_arguments,
     parse_arguments_with,
     spark_user_parser,
 )
@@ -114,8 +114,6 @@ class TestArgumentParsingPySpark(TestCase):
         self.assertEqual(args.namespace, "ns")
         self.assertEqual(args.kubeconfig, "my-file")
         self.assertEqual(args.context, "my-context")
-
-
 
 
 class TestArgumentParsingServiceAccountRegistry(TestCase):
