@@ -296,8 +296,9 @@ def add_deploy_arguments(parser: ArgumentParser) -> ArgumentParser:
     """
     parser.add_argument(
         "--deploy-mode",
-        default="client",
+        default="cluster",
         type=str,
         help="Deployment mode for job submission. Default is 'client'.",
+        choices=["client", "cluster"]
     )
     return parser

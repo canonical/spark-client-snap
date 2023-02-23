@@ -10,6 +10,7 @@ from spark_client.utils import (
     add_config_arguments,
     add_logging_arguments,
     k8s_parser,
+    add_deploy_arguments,
     parse_arguments_with,
     spark_user_parser,
 )
@@ -18,7 +19,7 @@ from tests import TestCase
 
 class TestArgumentParsingPySpark(TestCase):
     def setUp(self) -> None:
-        self.parser = parse_arguments_with(
+        self.shell_parser = parse_arguments_with(
             [
                 add_logging_arguments,
                 k8s_parser,
@@ -27,23 +28,47 @@ class TestArgumentParsingPySpark(TestCase):
             ],
             argparse.ArgumentParser(exit_on_error=False),
         )
+        self.submit_parser = parse_arguments_with(
+            [
+                add_logging_arguments,
+                k8s_parser,
+                spark_user_parser,
+                add_deploy_arguments,
+                add_config_arguments,
+            ],
+            argparse.ArgumentParser(exit_on_error=False),
+        )
 
     def test_logging(self):
-        args, extra_args = self.parser.parse_known_args(["--log-level", "INFO"])
+        args, extra_args = self.shell_parser.parse_known_args(["--log-level", "INFO"])
         self.assertEqual(args.log_level, "INFO")
 
         self.assertRaises(
             argparse.ArgumentError,
-            lambda: self.parser.parse_known_args(["--log-level", "NON-EXISTING"]),
+            lambda: self.shell_parser.parse_known_args(["--log-level", "NON-EXISTING"]),
         )
 
-    def test_spark_defaults(self):
-        args, extra_args = self.parser.parse_known_args()
+    def test_base_config(self):
+        args, extra_args = self.shell_parser.parse_known_args(
+            [
+                "--conf",
+                "mykey=myvalue",
+                "--conf",
+                "mykey2=myvalue2",
+                "--properties-file",
+                "my-property-file",
+            ]
+        )
+        self.assertEqual(len(args.conf), 2)
+        self.assertEqual(args.properties_file, "my-property-file")
+
+    def test_shell_defaults(self):
+        args, extra_args = self.shell_parser.parse_known_args()
         self.assertEqual(args.namespace, "default")
         self.assertEqual(args.username, "spark")
 
-    def test_spark(self):
-        args, extra_args = self.parser.parse_known_args(
+    def test_shell(self):
+        args, extra_args = self.shell_parser.parse_known_args(
             [
                 "--master",
                 "my-master",
@@ -63,19 +88,34 @@ class TestArgumentParsingPySpark(TestCase):
         self.assertEqual(args.kubeconfig, "my-file")
         self.assertEqual(args.context, "my-context")
 
-    def test_spark_config(self):
-        args, extra_args = self.parser.parse_known_args(
+    def test_submit_defaults(self):
+        args, extra_args = self.submit_parser.parse_known_args()
+        self.assertEqual(args.namespace, "default")
+        self.assertEqual(args.username, "spark")
+        self.assertEqual(args.deploy_mode, "cluster")
+
+    def test_submit(self):
+        args, extra_args = self.submit_parser.parse_known_args(
             [
-                "--conf",
-                "mykey=myvalue",
-                "--conf",
-                "mykey2=myvalue2",
-                "--properties-file",
-                "my-property-file",
+                "--master",
+                "my-master",
+                "--username",
+                "spark2",
+                "--namespace",
+                "ns",
+                "--kubeconfig",
+                "my-file",
+                "--context",
+                "my-context",
             ]
         )
-        self.assertEqual(len(args.conf), 2)
-        self.assertEqual(args.properties_file, "my-property-file")
+        self.assertEqual(args.master, "my-master")
+        self.assertEqual(args.username, "spark2")
+        self.assertEqual(args.namespace, "ns")
+        self.assertEqual(args.kubeconfig, "my-file")
+        self.assertEqual(args.context, "my-context")
+
+
 
 
 class TestArgumentParsingServiceAccountRegistry(TestCase):
