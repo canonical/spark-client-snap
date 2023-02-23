@@ -58,4 +58,4 @@ if __name__ == "__main__":
         service_account=service_account,
         kube_interface=kube_interface,
         defaults=defaults,
-    ).spark_submit(args.deploy_mode, args.confs, args.properties_file, extra_args)
+    ).spark_submit(args.deploy_mode, args.conf, args.properties_file, extra_args)
