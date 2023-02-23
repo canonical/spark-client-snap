@@ -51,4 +51,4 @@ if __name__ == "__main__":
         service_account=service_account,
         kube_interface=kube_interface,
         defaults=defaults,
-    ).spark_shell(args.properties_file, extra_args)
+    ).spark_shell(args.confs, args.properties_file, extra_args)

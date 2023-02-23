@@ -2,7 +2,7 @@ import io
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from spark_client.utils import WithLogging, union
 
@@ -22,14 +22,25 @@ class PropertyFile(WithLogging):
         """Return the size of the property dictionary, i.e. the number of configuration parameters."""
         return len(self.props)
 
-    @classmethod
-    def _is_property_with_options(cls, key: str) -> bool:
+    @staticmethod
+    def _is_property_with_options(key: str) -> bool:
         """Check if a given property is known to be options-like requiring special parsing.
 
         Args:
             key: Property for which special options-like parsing decision has to be taken
         """
         return key in ["spark.driver.extraJavaOptions"]
+
+    @staticmethod
+    def parse_property_line(line: str) -> Tuple[str, str]:
+        prop_assignment = list(filter(None, re.split("=| ", line.strip())))
+        prop_key = prop_assignment[0].strip()
+        if PropertyFile._is_property_with_options(prop_key):
+            option_assignment = line.split("=", 1)
+            value = option_assignment[1].strip()
+        else:
+            value = prop_assignment[1].strip()
+        return prop_key, value
 
     @classmethod
     def _read_property_file_unsafe(cls, name: str) -> Dict:
@@ -41,14 +52,8 @@ class PropertyFile(WithLogging):
         defaults = dict()
         with open(name) as f:
             for line in f:
-                prop_assignment = list(filter(None, re.split("=| ", line.strip())))
-                prop_key = prop_assignment[0].strip()
-                if cls._is_property_with_options(prop_key):
-                    option_assignment = line.split("=", 1)
-                    value = option_assignment[1].strip()
-                else:
-                    value = prop_assignment[1].strip()
-                defaults[prop_key] = os.path.expandvars(value)
+                key, value = cls.parse_property_line(line)
+                defaults[key] = os.path.expandvars(value)
         return defaults
 
     @classmethod

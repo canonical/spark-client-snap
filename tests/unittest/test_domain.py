@@ -89,6 +89,16 @@ class TestDomain(TestCase):
             sa.configurations.props.get("spark.dummy.property2"), spark_dummy_property2
         )
 
+    def test_property_file_parsing_from_confs(self):
+        confs = ["key1=value1", "key2=value2"]
+
+        prop = PropertyFile(
+            dict(PropertyFile.parse_property_line(line) for line in confs)
+        )
+
+        self.assertEqual(len(prop.props), 2)
+        self.assertEqual(prop.props, {"key1": "value1", "key2": "value2"})
+
     def test_property_file_parse_options(self):
         """
         Validates parsing of properties and options in PropertyFile abstraction.
