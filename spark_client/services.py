@@ -759,9 +759,16 @@ class SparkInterface(WithLogging):
             else PropertyFile.empty()
         )
 
+    @staticmethod
+    def _generate_properties_file_from_arguments(confs: List[str]):
+        return PropertyFile(
+            dict(PropertyFile.parse_property_line(line) for line in confs)
+        )
+
     def spark_submit(
         self,
         deploy_mode: SparkDeployMode,
+        confs: List[str],
         cli_property: Optional[str],
         extra_args: List[str],
     ):
@@ -770,6 +777,7 @@ class SparkInterface(WithLogging):
         Args:
             deploy_mode: "client" or "cluster" depending where the driver will run, locally or on the k8s cluster
                          respectively
+            confs: list of extra configuration provided via command line
             cli_property: property-file path provided via command line
             extra_args: extra arguments provided to the spark submit command
         """
@@ -783,6 +791,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
+                + self._generate_properties_file_from_arguments(confs)
             ).write(t.file)
 
             t.flush()
@@ -799,10 +808,13 @@ class SparkInterface(WithLogging):
             with environ(KUBECONFIG=self.kube_interface.kube_config_file):
                 os.system(submit_cmd)
 
-    def spark_shell(self, cli_property: Optional[str], extra_args: List[str]):
+    def spark_shell(
+        self, confs: List[str], cli_property: Optional[str], extra_args: List[str]
+    ):
         """Start an interactinve spark shell.
 
         Args:
+            confs: list of extra configuration provided via command line
             cli_property: property-file path provided via command line
             extra_args: extra arguments provided to spark shell
         """
@@ -822,6 +834,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
+                + self._generate_properties_file_from_arguments(confs)
             ).write(t.file)
 
             t.flush()
@@ -838,10 +851,13 @@ class SparkInterface(WithLogging):
                 os.system(f"touch {self.defaults.scala_history_file}")
                 os.system(submit_cmd)
 
-    def pyspark_shell(self, cli_property: Optional[str], extra_args: List[str]):
+    def pyspark_shell(
+        self, confs: List[str], cli_property: Optional[str], extra_args: List[str]
+    ):
         """Start an interactinve pyspark shell.
 
         Args:
+            confs: list of extra configuration provided via command line
             cli_property: property-file path provided via command line
             extra_args: extra arguments provided to pyspark
         """
@@ -856,6 +872,7 @@ class SparkInterface(WithLogging):
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
+                + self._generate_properties_file_from_arguments(confs)
             ).write(t.file)
 
             t.flush()

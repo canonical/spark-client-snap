@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import argparse
 import json
 import logging
+from argparse import ArgumentParser
 from enum import Enum
 
 from spark_client.cli import defaults
@@ -12,6 +12,13 @@ from spark_client.services import (
     K8sServiceAccountRegistry,
     KubeInterface,
     parse_conf_overrides,
+)
+from spark_client.utils import (
+    add_config_arguments,
+    add_logging_arguments,
+    k8s_parser,
+    parse_arguments_with,
+    spark_user_parser,
 )
 
 
@@ -34,103 +41,69 @@ class Actions(str, Enum):
     LIST = "list"
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Spark Client Setup")
-    base_parser = argparse.ArgumentParser(add_help=False)
-    base_parser.add_argument(
-        "--log-level", default="ERROR", type=str, help="Level for logging."
-    )
-    base_parser.add_argument(
-        "--kubeconfig", default=None, help="Kubernetes configuration file"
-    )
-    base_parser.add_argument(
-        "--context",
-        default=None,
-        help="Context name to use within the provided kubernetes configuration file",
-    )
-    base_parser.add_argument(
-        "--namespace",
-        default="default",
-        help="Namespace for the service account. Default is 'default'.",
-    )
-    base_parser.add_argument(
-        "--username",
-        default="spark",
-        help="Service account username. Default is 'spark'.",
+def create_service_account_registry_parser(parser: ArgumentParser):
+    base_parser = parse_arguments_with(
+        [add_logging_arguments, k8s_parser],
+        ArgumentParser(add_help=False),
     )
 
     subparsers = parser.add_subparsers(dest="action")
     subparsers.required = True
 
     #  subparser for service-account
-    parser_account = subparsers.add_parser(Actions.CREATE.value, parents=[base_parser])
-    parser_account.add_argument(
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.CREATE.value, parents=[base_parser]),
+    ).add_argument(
         "--primary",
         action="store_true",
         help="Boolean to mark the service account as primary.",
     )
-    parser_account.add_argument(
-        "--properties-file",
-        default=None,
-        help="File with all configuration properties assignments.",
-    )
-    parser_account.add_argument(
-        "--conf",
-        action="append",
-        type=str,
-        help="Config properties to be added to the service account.",
-    )
 
     #  subparser for service-account-cleanup
-    parser_account_cleanup = subparsers.add_parser(
-        Actions.DELETE.value, parents=[base_parser]
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.DELETE.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-create
-    parser_conf_create = subparsers.add_parser(
-        Actions.UPDATE_CONF.value, parents=[base_parser]
-    )
-    parser_conf_create.add_argument(
-        "--properties-file",
-        default=None,
-        help="File with all configuration properties assignments.",
-    )
-    parser_conf_create.add_argument(
-        "--conf",
-        action="append",
-        type=str,
-        help="Config properties to be added to the service account.",
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-get
-    parser_conf_get = subparsers.add_parser(
-        Actions.GET_CONF.value, parents=[base_parser]
-    )
-    parser_conf_get.add_argument(
-        "--conf", action="append", type=str, help="Config property to retrieve."
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.GET_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-del
-    parser_conf_del = subparsers.add_parser(
-        Actions.DELETE_CONF.value, parents=[base_parser]
+    parse_arguments_with(
+        [spark_user_parser],
+        subparsers.add_parser(Actions.DELETE_CONF.value, parents=[base_parser]),
     )
 
     #  subparser for resources-primary-sa
-    parser_conf_primary_resources = subparsers.add_parser(
-        Actions.PRIMARY.value, parents=[base_parser]
-    )
+    subparsers.add_parser(Actions.PRIMARY.value, parents=[base_parser])
 
     #  subparser for list
-    parser_conf_list = subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
+    subparsers.add_parser(Actions.LIST.value, parents=[base_parser])
 
-    args = parser.parse_args()
+    return parser
+
+
+if __name__ == "__main__":
+    args = create_service_account_registry_parser(
+        ArgumentParser(description="Spark Client Setup")
+    ).parse_args()
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
     kube_interface = KubeInterface(
-        defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
+        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
     context = args.context or kube_interface.context_name
@@ -150,7 +123,9 @@ if __name__ == "__main__":
         registry.create(service_account)
 
     elif args.action == Actions.DELETE:
-        registry.delete(build_service_account_from_args(args).id)
+        user_id = build_service_account_from_args(args).id
+        print(user_id)
+        registry.delete(user_id)
 
     elif args.action == Actions.UPDATE_CONF:
         account_configuration = (

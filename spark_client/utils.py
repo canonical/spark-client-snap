@@ -4,12 +4,23 @@ import errno
 import io
 import os
 import subprocess
+from argparse import ArgumentParser
 from contextlib import contextmanager
 from copy import deepcopy as copy
 from functools import reduce
 from logging import Logger, getLogger
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, List, Literal, Mapping, TypedDict, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    TypedDict,
+    Union,
+)
 
 import yaml
 
@@ -184,22 +195,24 @@ def listify(value: Any) -> List[str]:
     return [str(v) for v in value] if isinstance(value, list) else [str(value)]
 
 
-def parse_arguments_with(parsers=[], namespace=None):
+def parse_arguments_with(
+    parsers: List[Callable[[ArgumentParser], ArgumentParser]],
+    base_parser: Optional[ArgumentParser] = None,
+):
     """
     Specify a chain of parsers to help parse the list of arguments to main
 
     :param parsers: List of parsers to be applied.
     :param namespace: Namespace to be used for parsing.
     """
-    import argparse
     from functools import reduce
 
     return reduce(
-        lambda x, f: f(x), parsers, argparse.ArgumentParser()
-    ).parse_known_args(namespace=namespace)
+        lambda x, f: f(x), parsers, base_parser if base_parser else ArgumentParser()
+    )
 
 
-def add_logging_arguments(parser):
+def add_logging_arguments(parser: ArgumentParser) -> ArgumentParser:
     """
     Add logging argument parsing to the existing parser context
 
@@ -208,16 +221,37 @@ def add_logging_arguments(parser):
     parser.add_argument(
         "--log-level",
         choices=["INFO", "WARN", "ERROR", "DEBUG"],
-        default="INFO",
+        default="ERROR",
         help="Set the log level of the logging",
     )
 
     return parser
 
 
-def custom_parser(parser):
+def spark_user_parser(parser: ArgumentParser) -> ArgumentParser:
     """
-    Add Spark related argument parsing to the existing parser context
+    Add Spark user related argument parsing to the existing parser context
+
+    :param parser: Input parser to decorate with parsing support for Spark params.
+    """
+    parser.add_argument(
+        "--username",
+        default="spark",
+        type=str,
+        help="Service account name to use other than primary.",
+    )
+    parser.add_argument(
+        "--namespace",
+        default="default",
+        type=str,
+        help="Namespace of service account name to use other than primary.",
+    )
+    return parser
+
+
+def k8s_parser(parser: ArgumentParser) -> ArgumentParser:
+    """
+    Add K8s related argument parsing to the existing parser context
 
     :param parser: Input parser to decorate with parsing support for Spark params.
     """
@@ -225,28 +259,36 @@ def custom_parser(parser):
         "--master", default=None, type=str, help="Kubernetes control plane uri."
     )
     parser.add_argument(
+        "--kubeconfig", default=None, type=str, help="Kubernetes configuration file"
+    )
+    parser.add_argument(
+        "--context", default=None, type=str, help="Kubernetes context to be used"
+    )
+    return parser
+
+
+def add_config_arguments(parser: ArgumentParser) -> ArgumentParser:
+    """
+    Add arguments to provide extra configurations for the spark properties
+
+    :param parser: Input parser to decorate with parsing support for deploy arguments.
+    """
+    parser.add_argument(
         "--properties-file",
         default=None,
         type=str,
         help="Spark default configuration properties file.",
     )
     parser.add_argument(
-        "--username",
-        default=None,
+        "--conf",
+        action="append",
         type=str,
-        help="Service account name to use other than primary.",
+        help="Config properties to be added to the service account.",
     )
-    parser.add_argument(
-        "--namespace",
-        default=None,
-        type=str,
-        help="Namespace of service account name to use other than primary.",
-    )
-
     return parser
 
 
-def add_deploy_arguments(parser):
+def add_deploy_arguments(parser: ArgumentParser) -> ArgumentParser:
     """
     Add deployment related argument parsing to the existing parser context
 
@@ -254,8 +296,9 @@ def add_deploy_arguments(parser):
     """
     parser.add_argument(
         "--deploy-mode",
-        default="client",
+        default="cluster",
         type=str,
         help="Deployment mode for job submission. Default is 'client'.",
+        choices=["client", "cluster"],
     )
     return parser

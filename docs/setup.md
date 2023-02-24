@@ -23,7 +23,7 @@ From the output you will notice that the setup utility supports the following ac
 * ***list*** - List all service accounts available to be used with Spark
 
 ```bash
-usage: service-account-registry.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME] {create,delete,update-conf,get-conf,delete-conf,get-primary,list} ...
+usage: service_account_registry.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME] {create,delete,update-conf,get-conf,delete-conf,get-primary,list} ...
 
 positional arguments:
   {create,delete,update-conf,get-conf,delete-conf,get-primary,list}
@@ -64,7 +64,7 @@ You will notice from the help output that the action takes following optional ar
 * ***conf*** - Values to add to and override the ones in specified properties-file param.
 
 ```bash
-usage: service-account-registry.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
+usage: service_account_registry.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
 
 optional arguments:
   -h, --help            show this help message and exit

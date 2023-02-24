@@ -69,7 +69,7 @@ $(setup_tag): $(pre_deps_tag) pyproject.toml
 	@echo "==Setting up package environment=="
 	poetry config virtualenvs.prefer-active-python true
 	poetry lock --no-update
-	poetry install --with unit
+	poetry install --with unit --no-cache
 	touch $(setup_tag)
 
 setup: $(setup_tag)
