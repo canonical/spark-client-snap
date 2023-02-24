@@ -921,22 +921,19 @@ class SparkInterface(WithLogging):
 
     def detect_host(self) -> Any:
         try:
-            host_py = socket.gethostbyname(socket.gethostname()).strip()
-        except Exception:
-            return None
-
-        try:
-            host_bash = (
-                subprocess.check_output(
-                    "hostname -I | cut -d' ' -f1", shell=True, stderr=None
-                )
-                .decode("utf-8")
-                .strip()
+            host = self.service_account.api_server.split(":")[1].split("/")[-1]
+            port = (
+                self.service_account.api_server.split(":")[2]
+                if len(self.service_account.api_server.split(":")) == 3
+                else "433"
             )
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((host, int(port)))
+            driver_host = s.getsockname()[0]
+            s.close()
+            return driver_host
         except Exception:
-            return None
-
-        if host_py == host_bash:
-            return host_py
-        else:
+            self.logger.debug(
+                f"Driver host autodetection failed for host={host}, port={port}."
+            )
             return None
