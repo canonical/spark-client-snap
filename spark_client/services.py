@@ -1,5 +1,6 @@
 import base64
 import os
+import socket
 import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -761,6 +762,9 @@ class SparkInterface(WithLogging):
 
     @staticmethod
     def _generate_properties_file_from_arguments(confs: List[str]):
+        if not confs:
+            return PropertyFile({})
+
         return PropertyFile(
             dict(PropertyFile.parse_property_line(line) for line in confs)
         )
@@ -824,7 +828,7 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            (
+            conf = (
                 self._read_properties_file(self.defaults.static_conf_file)
                 + PropertyFile(
                     {
@@ -835,7 +839,16 @@ class SparkInterface(WithLogging):
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
                 + self._generate_properties_file_from_arguments(confs)
-            ).write(t.file)
+            )
+
+            conf = self.prefix_optional_detected_driver_host(conf)
+
+            if "spark.driver.host" not in conf.props:
+                raise ValueError(
+                    "Please specify spark.driver.host configuration property"
+                )
+
+            conf.write(t.file)
 
             t.flush()
 
@@ -867,13 +880,22 @@ class SparkInterface(WithLogging):
         ) as t:
             self.logger.debug(f"Spark props available for reference at {t.name}\n")
 
-            (
+            conf = (
                 self._read_properties_file(self.defaults.static_conf_file)
                 + self.service_account.configurations
                 + self._read_properties_file(self.defaults.env_conf_file)
                 + self._read_properties_file(cli_property)
                 + self._generate_properties_file_from_arguments(confs)
-            ).write(t.file)
+            )
+
+            conf = self.prefix_optional_detected_driver_host(conf)
+
+            if "spark.driver.host" not in conf.props:
+                raise ValueError(
+                    "Please specify spark.driver.host configuration property"
+                )
+
+            conf.write(t.file)
 
             t.flush()
 
@@ -887,3 +909,29 @@ class SparkInterface(WithLogging):
             self.logger.debug(submit_cmd)
             with environ(KUBECONFIG=self.kube_interface.kube_config_file):
                 os.system(submit_cmd)
+
+    def prefix_optional_detected_driver_host(self, conf: PropertyFile):
+        spark_driver_host = self.detect_host()
+        if spark_driver_host:
+            return PropertyFile({"spark.driver.host": spark_driver_host}) + conf
+        else:
+            return conf
+
+    def detect_host(self) -> Any:
+        try:
+            host = self.service_account.api_server.split(":")[1].split("/")[-1]
+            port = (
+                self.service_account.api_server.split(":")[2]
+                if len(self.service_account.api_server.split(":")) == 3
+                else "433"
+            )
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((host, int(port)))
+            driver_host = s.getsockname()[0]
+            s.close()
+            return driver_host
+        except Exception:
+            self.logger.debug(
+                f"Driver host autodetection failed for host={host}, port={port}."
+            )
+            return None
