@@ -15,6 +15,7 @@ jobs:
   checks:
     name: Check build condition for snap
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:
@@ -42,7 +43,8 @@ jobs:
   autorelease:
     name: Release the package on github
     needs: checks
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: true
     steps:
@@ -85,6 +87,7 @@ jobs:
   test:
     name: Test Release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs:
       - autorelease
       - checks

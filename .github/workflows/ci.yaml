@@ -11,6 +11,7 @@ jobs:
   check:
     name: Check build condition for Snap
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:
@@ -34,6 +35,7 @@ jobs:
   build:
     name: Build Snap
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs:
       - check
     outputs:
@@ -56,8 +58,8 @@ jobs:
 
   test:
     name: Test Snap
-    timeout-minutes: 20
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs:
       - check
       - build
