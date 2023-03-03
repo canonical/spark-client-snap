@@ -15,6 +15,7 @@ jobs:
   publish:
     name: Publish Snap
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs:
       - build
     steps:
