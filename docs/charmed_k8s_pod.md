@@ -2,17 +2,11 @@
 
 ### Setup
 
-Assuming you have juju and charmed kubernetes already setup, let's discuss the steps to launch Spark jobs from within a pod in charmed kubernetes.
+After installing [Juju](https://juju.is/docs/olm/install-juju) and [Charmed Kubernetes](https://ubuntu.com/kubernetes/docs/install-manual) and [setting it up](https://ubuntu.com/kubernetes/docs/operations), let's discuss the steps to launch Spark jobs from within a pod in Charmed Kubernetes.
 
-First thing is to get the kubeconfig of the charmed kubernetes setup.
+First thing, we launch a pod using Canonical's Charmed Spark container image.
 
-```shell
-$ juju scp kubernetes-control-plane/0:config ~/.kube/config
-```
-
-Now we launch a pod using Canonical Data Plarform's OCI image for Apache Spark.
-
-Create a pod manifest ```shell-demo.yaml``` for use with charmed kubernetes, something like this
+Create a pod manifest ```shell-demo.yaml``` for use with Charmed Kubernetes, something like this
 
 ```yaml
 apiVersion: v1
@@ -41,7 +35,7 @@ after that, one logs in with
 $ kubectl exec --stdin --tty shell-demo -n spark-test-ns -- /bin/bash 
 ```
 
-Now from within the pod, lets create the kubeconfig for use with spark-client. ```KUBECONFIG_CONTENTS_FROM_CHARMED_KUBERNETES``` will come from the first step executed outside the charmed kubernetes cluster pod. 
+Now from within the pod, lets create the kubeconfig for use with spark-client. ```KUBECONFIG_CONTENTS_FROM_CHARMED_KUBERNETES``` will come from the first step executed outside the Charmed Kubernetes cluster pod. 
 
 ```shell
 $ mkdir ~/.kube
@@ -58,7 +52,7 @@ $ python3 -m spark_client.cli.service-account-registry create --username spark
 
 ### Spark Job Submission To Kubernetes Cluster
 
-Let's use the ```spark-submit``` script packaged within the OCI image to submit a ```Spark Pi``` job example to charmed kubernetes.
+Let's use the ```spark-submit``` script packaged within the Charmed Spark container image to submit a ```Spark Pi``` job example to Charmed Kubernetes.
 
 ```shell
 $ python3 -m spark_client.cli.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.3.2.jar 100
