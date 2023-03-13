@@ -4,8 +4,7 @@ setup_tests() {
   sudo snap connect spark-client:dot-kube-config
 }
 
-test_example_job() {
-  spark-client.service-account-registry create --username=ie-test
+run_example_job() {
 
   KUBE_CONFIG=/home/${USER}/.kube/config
 
@@ -16,9 +15,18 @@ test_example_job() {
 
   PREVIOUS_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods | grep driver | tail -n 1 | cut -d' ' -f1)
 
+  if [ "$#" -gt 1 ]
+  then
+      NAMESPACE=$1
+      USERNAME=$2
+  else
+      NAMESPACE=default
+      USERNAME=ie-test
+  fi
   # run the sample pi job using spark-submit
   spark-client.spark-submit \
-    --username=ie-test \
+    --username=${USERNAME} \
+    --namespace=${NAMESPACE} \
     --log-level "DEBUG" \
     --deploy-mode cluster \
     --conf spark.kubernetes.driver.request.cores=100m \
@@ -27,7 +35,7 @@ test_example_job() {
     local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 
   # kubectl --kubeconfig=${KUBE_CONFIG} get pods
-  DRIVER_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods | grep driver | tail -n 1 | cut -d' ' -f1)
+  DRIVER_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)
 
   if [[ "${DRIVER_JOB}" == "${PREVIOUS_JOB}" ]]
   then
@@ -46,13 +54,21 @@ test_example_job() {
   pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark Pi Job Output: \n ${pi}"
 
-  spark-client.service-account-registry delete --username=ie-test
-
-  account_deleted=$(spark-client.service-account-registry get-conf --username=ie-test 2>&1 | grep -c NoAccountFound)
-
   if [ "${pi}" != "3.1" ]; then
       exit 1
   fi
+
+}
+
+test_example_job() {
+  spark-client.service-account-registry delete --username=ie-test
+  spark-client.service-account-registry create --username=ie-test
+
+  run_example_job default ie-test
+
+  spark-client.service-account-registry delete --username=ie-test
+
+  account_deleted=$(spark-client.service-account-registry get-conf --username=ie-test 2>&1 | grep -c NotFound)
 
   if [ "${account_deleted}" == "0" ]; then
       exit 1
@@ -61,6 +77,7 @@ test_example_job() {
 }
 
 test_spark_shell() {
+  spark-client.service-account-registry delete --username=ie-test
   spark-client.service-account-registry create --username=ie-test
 
   echo "import scala.math.random" > test-spark-shell.scala
@@ -80,6 +97,7 @@ test_spark_shell() {
 }
 
 test_pyspark() {
+  spark-client.service-account-registry delete --username=ie-test
   spark-client.service-account-registry create --username=ie-test
 
   echo "import sys" > test-pyspark.py
@@ -108,6 +126,30 @@ test_pyspark() {
   fi
 }
 
+test_restricted_account() {
+  spark-client.service-account-registry delete --username=spark --namespace tests
+
+  kubectl delete namespace tests
+
+  kubectl create namespace tests
+
+  spark-client.service-account-registry create --context microk8s --username spark --namespace tests
+
+  kubectl config set-context spark-context --namespace=tests --cluster=prod --user=spark
+
+  run_example_job tests spark
+
+  spark-client.service-account-registry delete --username=spark --namespace tests
+
+  kubectl delete namespace tests
+
+  account_deleted=$(spark-client.service-account-registry get-conf --username=spark --namespace tests 2>&1 | grep -c NotFound)
+
+  if [ "${account_deleted}" == "0" ]; then
+      exit 1
+  fi
+}
+
 setup_tests
 
 test_example_job
@@ -115,3 +157,5 @@ test_example_job
 test_spark_shell
 
 test_pyspark
+
+test_restricted_account
