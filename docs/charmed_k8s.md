@@ -30,12 +30,12 @@ $ spark-client.spark-submit --username spark --class org.apache.spark.examples.S
 To work with a Spark shell, run the following command.
 
 ```shell
-$ spark-client.spark-shell --username hello
+$ spark-client.spark-shell --username spark
 ```
 ### PySpark Shell
 
 To launch a pyspark shell, run the following command.
 
 ```shell
-$ spark-client.pyspark --username hello
+$ spark-client.pyspark --username spark
 ```
