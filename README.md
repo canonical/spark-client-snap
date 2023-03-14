@@ -21,6 +21,8 @@ They can save you a lot of time and debugging effort for authoring Spark jobs in
 
 Check out the [How-Tos](/docs/howto.md) section for a list of useful commands that will make your life easy working with the Spark client. 
 
+If you already have a _**Charmed Kubernetes**_ setup, check out the sections for using _**spark-client**_ with [Charmed Kubernetes](/docs/charmed_k8s.md) as snap and [Charmed Kubernetes From Pod](/docs/charmed_k8s_pod.md) within the pod.
+
 ## Common Mistakes to Avoid
 Spark on Kubernetes is a complex environment with many moving parts. Sometimes, small mistakes can take a lot of time to debug and figure out.
 Please follow our list of [common mistakes](/docs/gotchas.md) to avoid while setting up and playing with Spark on Kubernetes.
