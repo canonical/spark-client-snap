@@ -15,14 +15,9 @@ run_example_job() {
 
   PREVIOUS_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods | grep driver | tail -n 1 | cut -d' ' -f1)
 
-  if [ "$#" -gt 1 ]
-  then
-      NAMESPACE=$1
-      USERNAME=$2
-  else
-      NAMESPACE=default
-      USERNAME=ie-test
-  fi
+  NAMESPACE=$1
+  USERNAME=$2
+
   # run the sample pi job using spark-submit
   spark-client.spark-submit \
     --username=${USERNAME} \
@@ -46,12 +41,12 @@ run_example_job() {
   echo -e "Inspecting logs for driver job: ${DRIVER_JOB}"
   # kubectl --kubeconfig=${KUBE_CONFIG} logs ${DRIVER_JOB}
 
-  EXECUTOR_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods | grep exec | tail -n 1 | cut -d' ' -f1)
+  EXECUTOR_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep exec | tail -n 1 | cut -d' ' -f1)
   echo -e "Inspecting state of executor job: ${EXECUTOR_JOB}"
   # kubectl --kubeconfig=${KUBE_CONFIG} describe pod ${EXECUTOR_JOB}
 
   # Check job output
-  pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods | tail -n 1 | cut -d' ' -f1)  | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  pi=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)  -n ${NAMESPACE} | grep 'Pi is roughly' | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark Pi Job Output: \n ${pi}"
 
   if [ "${pi}" != "3.1" ]; then
@@ -61,24 +56,12 @@ run_example_job() {
 }
 
 test_example_job() {
-  spark-client.service-account-registry delete --username=ie-test
-  spark-client.service-account-registry create --username=ie-test
-
-  run_example_job default ie-test
-
-  spark-client.service-account-registry delete --username=ie-test
-
-  account_deleted=$(spark-client.service-account-registry get-conf --username=ie-test 2>&1 | grep -c NotFound)
-
-  if [ "${account_deleted}" == "0" ]; then
-      exit 1
-  fi
-
+  run_example_job tests spark
 }
 
-test_spark_shell() {
-  spark-client.service-account-registry delete --username=ie-test
-  spark-client.service-account-registry create --username=ie-test
+run_spark_shell() {
+  NAMESPACE=$1
+  USERNAME=$2
 
   echo "import scala.math.random" > test-spark-shell.scala
   echo "val slices = 10" >> test-spark-shell.scala
@@ -86,19 +69,22 @@ test_spark_shell() {
   echo "val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)" >> test-spark-shell.scala
   echo "println(s\"Pi is roughly \${4.0 * count / (n - 1)}\")" >> test-spark-shell.scala
   echo "System.exit(0)" >> test-spark-shell.scala
-  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=ie-test)" > spark-shell.out
+  echo -e "$(cat test-spark-shell.scala | spark-client.spark-shell --username=${USERNAME} --namespace ${NAMESPACE})" > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
-  spark-client.service-account-registry delete --username=ie-test
   rm spark-shell.out test-spark-shell.scala
   if [ "${pi}" != "3.1" ]; then
       exit 1
   fi
 }
 
-test_pyspark() {
-  spark-client.service-account-registry delete --username=ie-test
-  spark-client.service-account-registry create --username=ie-test
+test_spark_shell() {
+  run_spark_shell tests spark
+}
+
+run_pyspark() {
+  NAMESPACE=$1
+  USERNAME=$2
 
   echo "import sys" > test-pyspark.py
   echo "from random import random" >> test-pyspark.py
@@ -115,47 +101,85 @@ test_pyspark() {
   echo "     return x * x + y * y < 1 " >> test-pyspark.py
   echo "count = spark.sparkContext.parallelize(range(n), partitions).filter(f).count()" >> test-pyspark.py
   echo "print (\"Pi is roughly %f\" % (4.0 * count / n))" >> test-pyspark.py
-  echo -e "$(cat test-pyspark.py | spark-client.pyspark --username=ie-test --conf spark.executor.instances=2)" > pyspark.out
+  echo -e "$(cat test-pyspark.py | spark-client.pyspark --username=${USERNAME} --namespace ${NAMESPACE} --conf spark.executor.instances=2)" > pyspark.out
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
-  spark-client.service-account-registry delete --username=ie-test
   rm test-pyspark.py pyspark.out
   if [ "${pi}" != "3.1" ]; then
       exit 1
   fi
 }
 
+test_pyspark() {
+  run_pyspark tests spark
+}
+
 test_restricted_account() {
-  spark-client.service-account-registry delete --username=spark --namespace tests
-
-  kubectl delete namespace tests
-
-  kubectl create namespace tests
-
-  spark-client.service-account-registry create --context microk8s --username spark --namespace tests
 
   kubectl config set-context spark-context --namespace=tests --cluster=prod --user=spark
 
   run_example_job tests spark
+}
 
-  spark-client.service-account-registry delete --username=spark --namespace tests
+setup_user() {
+  USERNAME=$1
+  NAMESPACE=$2
 
-  kubectl delete namespace tests
+  kubectl create namespace ${NAMESPACE}
 
-  account_deleted=$(spark-client.service-account-registry get-conf --username=spark --namespace tests 2>&1 | grep -c NotFound)
+  if [ "$#" -gt 2 ]
+  then
+    CONTEXT=$3
+    spark-client.service-account-registry create --context ${CONTEXT} --username ${USERNAME} --namespace ${NAMESPACE}
+  else
+    spark-client.service-account-registry create --username ${USERNAME} --namespace ${NAMESPACE}
+  fi
 
-  if [ "${account_deleted}" == "0" ]; then
+}
+
+setup_user_admin_context() {
+  setup_user spark tests
+}
+
+setup_user_restricted_context() {
+  setup_user spark tests microk8s
+}
+
+cleanup_user() {
+  EXIT_CODE=$1
+  USERNAME=$2
+  NAMESPACE=$3
+
+  spark-client.service-account-registry delete --username=${USERNAME} --namespace ${NAMESPACE}
+
+  account_not_found_counter=$(spark-client.service-account-registry get-conf --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c NotFound)
+
+  if [ "${account_not_found_counter}" == "0" ]; then
+      exit 2
+  fi
+
+  kubectl delete namespace ${NAMESPACE}
+
+  if [ "${EXIT_CODE}" != "0" ]; then
       exit 1
   fi
 }
 
+cleanup_user_success() {
+  cleanup_user 0 spark tests
+}
+
+cleanup_user_failure() {
+  cleanup_user 1 spark tests
+}
+
 setup_tests
 
-test_example_job
+(setup_user_admin_context && test_example_job && cleanup_user_success) || cleanup_user_failure
 
-test_spark_shell
+(setup_user_admin_context && test_spark_shell && cleanup_user_success) || cleanup_user_failure
 
-test_pyspark
+(setup_user_admin_context && test_pyspark && cleanup_user_success) || cleanup_user_failure
 
-test_restricted_account
+(setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
