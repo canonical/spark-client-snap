@@ -5,7 +5,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import cached_property
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
@@ -146,6 +146,28 @@ class KubeInterface(WithLogging):
                 "utf-8"
             )
         )
+
+    def get_service_account(
+        self, account_id: str, namespace: str = "default"
+    ) -> Dict[str, Any]:
+        """Return the  named service account entry.
+
+        Args:
+            namespace: namespace where to look for the service account. Default is 'default'
+        """
+
+        cmd = f"get serviceaccount {account_id} -n {namespace}"
+
+        service_account_raw = self.exec(cmd)
+
+        if isinstance(service_account_raw, str):
+            raise ValueError(
+                f"Error retrieving account id {account_id} in namespace {namespace}"
+            )
+
+        self.logger.warning(service_account_raw)
+
+        return service_account_raw
 
     def get_service_accounts(
         self, namespace: Optional[str] = None, labels: Optional[List[str]] = None
@@ -347,7 +369,8 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         """
         pass
 
-    def _retrieve_account(self, condition: Callable[[ServiceAccount], bool]):
+    def get_primary(self) -> Optional[ServiceAccount]:
+        """Return the primary service account. None is there is no primary service account."""
         all_accounts = self.all()
 
         if len(all_accounts) == 0:
@@ -356,11 +379,11 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
                 "Please create a primary service account first."
             )
         primary_accounts = [
-            account for account in all_accounts if condition(account) is True
+            account for account in all_accounts if account.primary is True
         ]
         if len(primary_accounts) == 0:
             raise NoAccountFound(
-                "There are no service account available. "
+                "There are no primary service account available. "
                 "Please create a service account first."
             )
 
@@ -373,23 +396,14 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
 
         return primary_accounts[0]
 
-    def get_primary(self) -> Optional[ServiceAccount]:
-        """Return the primary service account. None is there is no primary service account."""
-        try:
-            return self._retrieve_account(lambda account: account.primary is True)
-        except NoAccountFound:
-            return None
-
+    @abstractmethod
     def get(self, account_id: str) -> Optional[ServiceAccount]:
         """Return the service account associated with the provided account id. None if no account was found.
 
         Args:
             account_id: account id to be used for retrieving the service account.
         """
-        try:
-            return self._retrieve_account(lambda account: account.id == account_id)
-        except NoAccountFound:
-            return None
+        pass
 
 
 class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
@@ -615,6 +629,13 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
         return account_id
 
+    def get(self, account_id: str) -> Optional[ServiceAccount]:
+        namespace, username = account_id.split(":")
+        service_account_raw = self.kube_interface.get_service_account(
+            username, namespace
+        )
+        return self._build_service_account_from_raw(service_account_raw["metadata"])
+
 
 class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
     def __init__(self, cache: Dict[str, ServiceAccount]):
@@ -699,6 +720,9 @@ class InMemoryAccountRegistry(AbstractServiceAccountRegistry):
 
         self.cache[account_id].extra_confs = configurations
         return account_id
+
+    def get(self, account_id: str) -> Optional[ServiceAccount]:
+        return self.cache[account_id]
 
 
 def parse_conf_overrides(

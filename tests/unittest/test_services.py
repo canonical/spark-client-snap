@@ -717,6 +717,7 @@ class TestServices(TestCase):
         }
 
         mock_kube_interface.get_service_accounts.return_value = [sa1, sa2]
+        mock_kube_interface.get_service_account.return_value = sa2
         mock_kube_interface.set_label.return_value = 0
         registry = K8sServiceAccountRegistry(mock_kube_interface)
         self.assertEqual(
@@ -800,6 +801,7 @@ class TestServices(TestCase):
         )
 
         mock_kube_interface.get_service_accounts.return_value = [sa1, sa2, sa3]
+        mock_kube_interface.get_service_account.return_value = sa3
         mock_kube_interface.set_label.return_value = 0
         mock_kube_interface.create.return_value = 0
 

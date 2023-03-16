@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import json
 import logging
 from argparse import ArgumentParser
 from enum import Enum
@@ -163,8 +162,4 @@ if __name__ == "__main__":
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():
-            print(
-                str.expandtabs(
-                    f"{service_account.id}\t{service_account.primary}\t{json.dumps(service_account.extra_confs.props)}"
-                )
-            )
+            print(str.expandtabs(f"{service_account.id}\t{service_account.primary}"))
