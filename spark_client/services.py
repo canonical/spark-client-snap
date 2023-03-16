@@ -369,7 +369,8 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         """
         pass
 
-    def _retrieve_primary_account(self):
+    def get_primary(self) -> Optional[ServiceAccount]:
+        """Return the primary service account. None is there is no primary service account."""
         all_accounts = self.all()
 
         if len(all_accounts) == 0:
@@ -394,13 +395,6 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
             )
 
         return primary_accounts[0]
-
-    def get_primary(self) -> Optional[ServiceAccount]:
-        """Return the primary service account. None is there is no primary service account."""
-        try:
-            return self._retrieve_primary_account()
-        except NoAccountFound:
-            return None
 
     @abstractmethod
     def get(self, account_id: str) -> Optional[ServiceAccount]:
