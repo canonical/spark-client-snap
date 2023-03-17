@@ -1,9 +1,9 @@
-### Spark Job Submission To Kubernetes Cluster
+## Spark Job Submission To Kubernetes Cluster
 The spark-client snaps ships with the Apache Spark's spark-submit utility for Kubernetes distribution.
 
-To submit Spark jobs to a Kubernetes cluster using the spark-submit utility, please first follow the [setup](/docs/setup.md) instructions to create the Kubernetes service account.
+To submit Spark jobs to a Kubernetes cluster using the spark-submit utility, please first follow the [setup](/docs/tutorial/service_account_registry.md/setup.md) instructions to create the Kubernetes service account.
 
-#### Validating Setup with an Example Spark Job
+### Validating Setup with an Example Spark Job
 
 Once you have set up the service account successfully, please execute the following commands to test the validity of your setup.
 
@@ -18,7 +18,7 @@ spark-client.spark-submit \
 local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 ```
 
-#### Adding Big Data to the mix
+### Adding Big Data to the mix
 
 Once the setup is validated, it's time to test out with a real big data workload. Here we assume that 
 * the input data is placed in S3

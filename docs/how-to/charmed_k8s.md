@@ -1,15 +1,22 @@
-## Working with Charmed Kubernetes
+## Launch Jobs on Charmed Kubernetes
 
 ### Setup
 
-After installing [Juju](https://juju.is/docs/olm/install-juju) and [Charmed Kubernetes](https://ubuntu.com/kubernetes/docs/install-manual) and [setting it up](https://ubuntu.com/kubernetes/docs/operations), let's discuss the steps to launch Spark jobs against the Charmed Kubernetes setup.
+In order to setup a Charmed Kubernetes (if you don't already have one), 
+you need to first install [Juju](https://juju.is/docs/olm/install-juju). 
+After this, you can install a Charmed Kubernetes by following the install guide 
+[here](https://ubuntu.com/kubernetes/docs/install-manual) and how to set it up [here](https://ubuntu.com/kubernetes/docs/operations).
+
+Once the Charmed Kubernetes cluster is up and running, we can enable and run Spark jobs 
+as outline in the following.
 
 First thing is to set up the spark-client snap.
 
 ```shell
 $ sudo snap install spark-client
 ```
-Then we need to set up a service account for Spark job submission. Let's create a username ```spark``` in ```default``` namespace.
+Then we need to set up a service account for Spark job submission. 
+Let's create a username ```spark``` in ```default``` namespace.
 
 ```shell
 $ spark-client.service-account-registry create --username spark
