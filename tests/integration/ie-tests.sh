@@ -60,6 +60,8 @@ test_example_job() {
 }
 
 run_spark_shell() {
+  echo "run_spark_shell ${1} ${2}"
+
   NAMESPACE=$1
   USERNAME=$2
 
@@ -83,6 +85,8 @@ test_spark_shell() {
 }
 
 run_pyspark() {
+  echo "run_pyspark ${1} ${2}"
+
   NAMESPACE=$1
   USERNAME=$2
 
@@ -123,6 +127,8 @@ test_restricted_account() {
 }
 
 setup_user() {
+  echo "setup_user() ${1} ${2} ${3}"
+
   USERNAME=$1
   NAMESPACE=$2
 
@@ -153,7 +159,7 @@ cleanup_user() {
 
   spark-client.service-account-registry delete --username=${USERNAME} --namespace ${NAMESPACE}
 
-  account_not_found_counter=$(spark-client.service-account-registry get-conf --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c NotFound)
+  account_not_found_counter=$(spark-client.service-account-registry get-conf --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c '404 Not Found')
 
   if [ "${account_not_found_counter}" == "0" ]; then
       exit 2
@@ -167,10 +173,12 @@ cleanup_user() {
 }
 
 cleanup_user_success() {
+  echo "cleanup_user_success()......"
   cleanup_user 0 spark tests
 }
 
 cleanup_user_failure() {
+  echo "cleanup_user_failure()......"
   cleanup_user 1 spark tests
 }
 

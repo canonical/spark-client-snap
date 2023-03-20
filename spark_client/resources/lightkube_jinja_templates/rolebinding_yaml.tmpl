@@ -3,7 +3,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/managed-by: spark-client
-  name: {{username}}
+  name: {{resourcename}}
   namespace: {{namespace}}
 roleRef:
   apiGroup: rbac.authorization.k8s.io

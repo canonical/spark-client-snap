@@ -327,6 +327,7 @@ class TestServices(TestCase):
             k.create(
                 resource_type,
                 resource_name,
+                username,
                 namespace,
                 **{"k1": "v1", "k2": ["v21", "v22"]},
             )
@@ -812,12 +813,13 @@ class TestServices(TestCase):
             print(call)
 
         mock_kube_interface.create.assert_any_call(
-            "serviceaccount", name3, namespace=namespace3
+            "serviceaccount", name3, username=name3, namespace=namespace3
         )
 
         mock_kube_interface.create.assert_any_call(
             "role",
             f"{name3}-role",
+            username=name3,
             namespace=namespace3,
             **{
                 "resource": ["pods", "configmaps", "services"],
@@ -828,6 +830,7 @@ class TestServices(TestCase):
         mock_kube_interface.create.assert_any_call(
             "rolebinding",
             f"{name3}-role-binding",
+            username=name3,
             namespace=namespace3,
             **{"role": f"{name3}-role", "serviceaccount": sa3_obj.id},
         )

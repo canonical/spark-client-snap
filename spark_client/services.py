@@ -140,7 +140,12 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
 
     @abstractmethod
     def create(
-        self, resource_type: str, resource_name: str, namespace: str, **extra_args
+        self,
+        resource_type: str,
+        resource_name: str,
+        username: str,
+        namespace: str,
+        **extra_args,
     ):
         """Create a K8s resource.
 
@@ -251,13 +256,13 @@ class LightKube(AbstractKubeInterface):
 
         with io.StringIO() as buffer:
             codecs.dump_all_yaml(
-                list(
+                [
                     self.client.get(
                         res=LightKubeServiceAccount,
                         name=account_id,
                         namespace=namespace,
                     )
-                ),
+                ],
                 buffer,
             )
             buffer.seek(0)
@@ -284,12 +289,10 @@ class LightKube(AbstractKubeInterface):
 
         with io.StringIO() as buffer:
             codecs.dump_all_yaml(
-                list(
-                    self.client.list(
-                        res=LightKubeServiceAccount,
-                        namespace=namespace,
-                        labels=labels_to_pass,
-                    )
+                self.client.list(
+                    res=LightKubeServiceAccount,
+                    namespace=namespace,
+                    labels=labels_to_pass,
                 ),
                 buffer,
             )
@@ -306,9 +309,7 @@ class LightKube(AbstractKubeInterface):
 
         with io.StringIO() as buffer:
             codecs.dump_all_yaml(
-                list(
-                    self.client.get(res=Secret, namespace=namespace, name=secret_name)
-                ),
+                [self.client.get(res=Secret, namespace=namespace, name=secret_name)],
                 buffer,
             )
             buffer.seek(0)
@@ -362,7 +363,12 @@ class LightKube(AbstractKubeInterface):
         return props
 
     def create(
-        self, resource_type: str, resource_name: str, namespace: str, **extra_args
+        self,
+        resource_type: str,
+        resource_name: str,
+        username: str,
+        namespace: str,
+        **extra_args,
     ):
         """Create a K8s resource.
 
@@ -383,21 +389,36 @@ class LightKube(AbstractKubeInterface):
                 f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/serviceaccount_yaml.tmpl"
             ) as f:
                 res = codecs.load_all_yaml(
-                    f, context={"username": resource_name, "namespace": namespace}
+                    f,
+                    context={
+                        "username": username,
+                        "resourcename": resource_name,
+                        "namespace": namespace,
+                    },
                 ).__getitem__(0)
         elif resource_type == "role":
             with open(
                 f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/role_yaml.tmpl"
             ) as f:
                 res = codecs.load_all_yaml(
-                    f, context={"username": resource_name, "namespace": namespace}
+                    f,
+                    context={
+                        "username": username,
+                        "resourcename": resource_name,
+                        "namespace": namespace,
+                    },
                 ).__getitem__(0)
         elif resource_type == "rolebinding":
             with open(
                 f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/rolebinding_yaml.tmpl"
             ) as f:
                 res = codecs.load_all_yaml(
-                    f, context={"username": resource_name, "namespace": namespace}
+                    f,
+                    context={
+                        "username": username,
+                        "resourcename": resource_name,
+                        "namespace": namespace,
+                    },
                 ).__getitem__(0)
         elif resource_type == "secret" or resource_type == "secret generic":
             res = Secret.from_dict(
@@ -616,13 +637,19 @@ class KubeInterface(AbstractKubeInterface):
         )
 
     def create(
-        self, resource_type: str, resource_name: str, namespace: str, **extra_args
+        self,
+        resource_type: str,
+        resource_name: str,
+        username: str,
+        namespace: str,
+        **extra_args,
     ):
         """Create a K8s resource.
 
         Args:
             resource_type: type of the resource to be created, e.g. service account, rolebindings, etc.
             resource_name: name of the resource to be created
+            username: username associated with the resource
             namespace: namespace where the resource is
             extra_args: extra parameters that should be provided when creating the resource. Note that each parameter
                         will be prepended with the -- in the cmd, e.g. {"role": "view"} will translate as
@@ -892,11 +919,15 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         rolebindingname = service_account.name + "-role-binding"
 
         self.kube_interface.create(
-            "serviceaccount", service_account.name, namespace=service_account.namespace
+            "serviceaccount",
+            service_account.name,
+            username=service_account.name,
+            namespace=service_account.namespace,
         )
         self.kube_interface.create(
             "role",
             rolename,
+            username=service_account.name,
             namespace=service_account.namespace,
             **{
                 "resource": ["pods", "configmaps", "services"],
@@ -906,6 +937,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         self.kube_interface.create(
             "rolebinding",
             rolebindingname,
+            username=service_account.name,
             namespace=service_account.namespace,
             **{"role": rolename, "serviceaccount": service_account.id},
         )
@@ -961,6 +993,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             self.kube_interface.create(
                 "secret generic",
                 secret_name,
+                username=service_account.name,
                 namespace=service_account.namespace,
                 **{"from-env-file": str(t.name)},
             )
@@ -998,16 +1031,29 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         rolename = name + "-role"
         rolebindingname = name + "-role-binding"
 
-        self.kube_interface.delete("serviceaccount", name, namespace=namespace)
-        self.kube_interface.delete("role", rolename, namespace=namespace)
-        self.kube_interface.delete("rolebinding", rolebindingname, namespace=namespace)
+        try:
+            self.kube_interface.delete("serviceaccount", name, namespace=namespace)
+        except Exception as e:
+            self.logger.debug(e)
+
+        try:
+            self.kube_interface.delete("role", rolename, namespace=namespace)
+        except Exception as e:
+            self.logger.debug(e)
+
+        try:
+            self.kube_interface.delete(
+                "rolebinding", rolebindingname, namespace=namespace
+            )
+        except Exception as e:
+            self.logger.debug(e)
 
         try:
             self.kube_interface.delete(
                 "secret", self._get_secret_name(name), namespace=namespace
             )
-        except Exception:
-            pass
+        except Exception as e:
+            self.logger.debug(e)
 
         return account_id
 
