@@ -6,11 +6,7 @@ from typing import Optional
 
 from spark_client.cli import defaults
 from spark_client.domain import ServiceAccount
-from spark_client.services import (
-    K8sServiceAccountRegistry,
-    KubeInterface,
-    SparkInterface,
-)
+from spark_client.services import K8sServiceAccountRegistry, LightKube, SparkInterface
 from spark_client.utils import (
     add_config_arguments,
     add_deploy_arguments,
@@ -35,7 +31,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = KubeInterface(
+    kube_interface = LightKube(
         args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 

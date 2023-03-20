@@ -9,7 +9,7 @@ from spark_client.domain import PropertyFile, ServiceAccount
 from spark_client.exceptions import NoAccountFound
 from spark_client.services import (
     K8sServiceAccountRegistry,
-    KubeInterface,
+    LightKube,
     parse_conf_overrides,
 )
 from spark_client.utils import (
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = KubeInterface(
+    kube_interface = LightKube(
         args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
     )
 
@@ -158,7 +158,8 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound()
 
-        maybe_service_account.configurations.log(print)
+        # maybe_service_account.configurations.log(print)
+        print(maybe_service_account.id)
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():

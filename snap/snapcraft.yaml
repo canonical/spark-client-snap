@@ -22,7 +22,7 @@ apps:
   service-account-registry:
     command: ops/cli/service_account_registry.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
@@ -31,7 +31,7 @@ apps:
   spark-submit:
     command: ops/cli/spark_submit.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
@@ -40,7 +40,7 @@ apps:
   spark-shell:
     command: ops/cli/spark_shell.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
         - network
         - network-bind
@@ -49,7 +49,7 @@ apps:
   pyspark:
     command: ops/cli/pyspark.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
         - network
         - network-bind
@@ -120,11 +120,13 @@ parts:
     plugin: python
     python-packages:
         - pyyaml
+        - lightkube
     build-packages:
         - curl
     source: .
     source-type: local
     override-build: |
+      craftctl default
       target_dir="$CRAFT_PART_INSTALL/ops"
 
       mkdir -p "$target_dir"
