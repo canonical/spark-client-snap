@@ -720,22 +720,23 @@ class TestServices(TestCase):
         mock_kube_interface.get_service_accounts.return_value = [sa1, sa2]
         mock_kube_interface.get_service_account.return_value = sa2
         mock_kube_interface.set_label.return_value = 0
+        mock_kube_interface.remove_label.return_value = 0
         registry = K8sServiceAccountRegistry(mock_kube_interface)
         self.assertEqual(
             registry.set_primary(f"{namespace2}:{name2}"), f"{namespace2}:{name2}"
         )
 
-        mock_kube_interface.set_label.assert_any_call(
+        mock_kube_interface.remove_label.assert_any_call(
             "serviceaccount",
             name1,
-            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 
-        mock_kube_interface.set_label.assert_any_call(
+        mock_kube_interface.remove_label.assert_any_call(
             "rolebinding",
             f"{name1}-role-binding",
-            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 
@@ -804,6 +805,7 @@ class TestServices(TestCase):
         mock_kube_interface.get_service_accounts.return_value = [sa1, sa2, sa3]
         mock_kube_interface.get_service_account.return_value = sa3
         mock_kube_interface.set_label.return_value = 0
+        mock_kube_interface.remove_label.return_value = 0
         mock_kube_interface.create.return_value = 0
 
         registry = K8sServiceAccountRegistry(mock_kube_interface)
@@ -849,17 +851,17 @@ class TestServices(TestCase):
             namespace=namespace3,
         )
 
-        mock_kube_interface.set_label.assert_any_call(
+        mock_kube_interface.remove_label.assert_any_call(
             "serviceaccount",
             name1,
-            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 
-        mock_kube_interface.set_label.assert_any_call(
+        mock_kube_interface.remove_label.assert_any_call(
             "rolebinding",
             f"{name1}-role-binding",
-            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}-",
+            f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 

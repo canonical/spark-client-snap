@@ -13,6 +13,7 @@ from lightkube import Client, KubeConfig, codecs
 from lightkube.resources.core_v1 import Secret
 from lightkube.resources.core_v1 import ServiceAccount as LightKubeServiceAccount
 from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
+from lightkube.types import PatchType
 
 from spark_client.domain import Defaults, PropertyFile, ServiceAccount
 from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
@@ -133,6 +134,21 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
         Args:
             resource_type: type of the resource to be labeled, e.g. service account, rolebindings, etc.
             resource_name: name of the resource to be labeled
+            namespace: namespace where the resource is
+        """
+
+        pass
+
+    @abstractmethod
+    def remove_label(
+        self, resource_type: str, resource_name: str, label: str, namespace: str
+    ):
+        """Remove label to a specified resource (type and name).
+
+        Args:
+            resource_type: type of the resource to be labeled, e.g. service account, rolebindings, etc.
+            resource_name: name of the resource to be labeled
+            label: label to be removed
             namespace: namespace where the resource is
         """
 
@@ -332,6 +348,7 @@ class LightKube(AbstractKubeInterface):
             resource_name: name of the resource to be labeled
             namespace: namespace where the resource is
         """
+
         label_fragments = label.split("=")
         patch = {"metadata": {"labels": {label_fragments[0]: label_fragments[1]}}}
 
@@ -349,6 +366,50 @@ class LightKube(AbstractKubeInterface):
         elif resource_type == "rolebinding":
             self.client.patch(
                 res=RoleBinding, name=resource_name, namespace=namespace, obj=patch
+            )
+        else:
+            raise NotImplementedError(
+                f"Label setting for resource name {resource_type} not supported yet."
+            )
+
+    def remove_label(
+        self, resource_type: str, resource_name: str, label: str, namespace: str
+    ):
+        """Remove label to a specified resource (type and name).
+
+        Args:
+            resource_type: type of the resource to be labeled, e.g. service account, rolebindings, etc.
+            resource_name: name of the resource to be labeled
+            label: label to remove
+            namespace: namespace where the resource is
+        """
+        label_to_remove = f"/metadata/labels/{label.replace('/','~1')}"
+        self.logger.debug(f"Removing label {label_to_remove}")
+        patch = [{"op": "remove", "path": label_to_remove}]
+
+        if resource_type == "serviceaccount":
+            self.client.patch(
+                res=LightKubeServiceAccount,
+                name=resource_name,
+                namespace=namespace,
+                obj=patch,
+                patch_type=PatchType.JSON,
+            )
+        elif resource_type == "role":
+            self.client.patch(
+                res=Role,
+                name=resource_name,
+                namespace=namespace,
+                obj=patch,
+                patch_type=PatchType.JSON,
+            )
+        elif resource_type == "rolebinding":
+            self.client.patch(
+                res=RoleBinding,
+                name=resource_name,
+                namespace=namespace,
+                obj=patch,
+                patch_type=PatchType.JSON,
             )
         else:
             raise NotImplementedError(
@@ -630,9 +691,16 @@ class KubeInterface(AbstractKubeInterface):
             resource_name: name of the resource to be labeled
             namespace: namespace where the resource is
         """
-
         self.exec(
             f"label {resource_type} {resource_name} {label}",
+            namespace=namespace,
+        )
+
+    def remove_label(
+        self, resource_type: str, resource_name: str, label: str, namespace: str
+    ):
+        self.exec(
+            f"label {resource_type} {resource_name} {label}-",
             namespace=namespace,
         )
 
@@ -876,16 +944,16 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             primary_account = None
 
         if primary_account is not None:
-            self.kube_interface.set_label(
+            self.kube_interface.remove_label(
                 "serviceaccount",
                 primary_account.name,
-                f"{self.PRIMARY_LABEL}-",
+                f"{self.PRIMARY_LABEL}",
                 primary_account.namespace,
             )
-            self.kube_interface.set_label(
+            self.kube_interface.remove_label(
                 "rolebinding",
                 f"{primary_account.name}-role-binding",
-                f"{self.PRIMARY_LABEL}-",
+                f"{self.PRIMARY_LABEL}",
                 primary_account.namespace,
             )
 
