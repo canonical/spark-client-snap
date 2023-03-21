@@ -159,7 +159,7 @@ cleanup_user() {
 
   spark-client.service-account-registry delete --username=${USERNAME} --namespace ${NAMESPACE}
 
-  account_not_found_counter=$(spark-client.service-account-registry get-conf --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c '404 Not Found')
+  account_not_found_counter=$(spark-client.service-account-registry get-config --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c '404 Not Found')
 
   if [ "${account_not_found_counter}" == "0" ]; then
       exit 2

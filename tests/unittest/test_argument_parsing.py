@@ -151,24 +151,24 @@ class TestArgumentParsingServiceAccountRegistry(TestCase):
 
     def test_delete_conf(self):
         args = self.parser.parse_args(
-            ["delete-conf", "--username", "spark-2", "--namespace", "ns2"]
+            ["clear-config", "--username", "spark-2", "--namespace", "ns2"]
         )
 
-        self.assertEqual(args.action, "delete-conf")
+        self.assertEqual(args.action, "clear-config")
         self.assertEqual(args.username, "spark-2")
         self.assertEqual(args.namespace, "ns2")
 
     def test_get_conf(self):
-        args = self.parser.parse_args(["get-conf"])
+        args = self.parser.parse_args(["get-config"])
 
-        self.assertEqual(args.action, "get-conf")
+        self.assertEqual(args.action, "get-config")
         self.assertEqual(args.username, "spark")
         self.assertEqual(args.namespace, "default")
 
-    def test_update_conf(self):
+    def test_add_conf(self):
         args = self.parser.parse_args(
             [
-                "update-conf",
+                "add-config",
                 "--username",
                 "spark-3",
                 "--conf",
@@ -178,7 +178,7 @@ class TestArgumentParsingServiceAccountRegistry(TestCase):
             ]
         )
 
-        self.assertEqual(args.action, "update-conf")
+        self.assertEqual(args.action, "add-config")
         self.assertEqual(len(args.conf), 1)
         self.assertEqual(args.conf[0], "mykey=myvalue")
         self.assertEqual(args.username, "spark-3")

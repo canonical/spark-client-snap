@@ -33,9 +33,10 @@ def build_service_account_from_args(args) -> ServiceAccount:
 class Actions(str, Enum):
     CREATE = "create"
     DELETE = "delete"
-    UPDATE_CONF = "update-conf"
-    GET_CONF = "get-conf"
-    DELETE_CONF = "delete-conf"
+    ADD_CONFIG = "add-config"
+    REMOVE_CONFIG = "remove-config"
+    GET_CONFIG = "get-config"
+    CLEAR_CONFIG = "clear-config"
     PRIMARY = "get-primary"
     LIST = "list"
 
@@ -65,22 +66,28 @@ def create_service_account_registry_parser(parser: ArgumentParser):
         subparsers.add_parser(Actions.DELETE.value, parents=[base_parser]),
     )
 
-    #  subparser for sa-conf-create
+    #  subparser for add-config
     parse_arguments_with(
         [add_config_arguments, spark_user_parser],
-        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.ADD_CONFIG.value, parents=[base_parser]),
+    )
+
+    #  subparser for remove-config
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.REMOVE_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-get
     parse_arguments_with(
         [spark_user_parser],
-        subparsers.add_parser(Actions.GET_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.GET_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-del
     parse_arguments_with(
         [spark_user_parser],
-        subparsers.add_parser(Actions.DELETE_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.CLEAR_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for resources-primary-sa
@@ -124,7 +131,7 @@ if __name__ == "__main__":
         print(user_id)
         registry.delete(user_id)
 
-    elif args.action == Actions.UPDATE_CONF:
+    elif args.action == Actions.ADD_CONFIG:
         input_service_account = build_service_account_from_args(args)
 
         service_account_in_registry = registry.get(input_service_account.id)
@@ -144,7 +151,27 @@ if __name__ == "__main__":
 
         registry.set_configurations(input_service_account.id, account_configuration)
 
-    elif args.action == Actions.GET_CONF:
+    elif args.action == Actions.REMOVE_CONFIG:
+        input_service_account = build_service_account_from_args(args)
+
+        service_account_in_registry = registry.get(input_service_account.id)
+
+        if service_account_in_registry is None:
+            raise NoAccountFound(input_service_account.id)
+
+        current_props = service_account_in_registry.configurations.props
+
+        updated_props = (
+            {key: current_props[key] for key in current_props if key not in args.conf}
+            if args.conf
+            else current_props
+        )
+
+        registry.set_configurations(
+            input_service_account.id, PropertyFile(props=updated_props)
+        )
+
+    elif args.action == Actions.GET_CONFIG:
         input_service_account = build_service_account_from_args(args)
 
         maybe_service_account = registry.get(input_service_account.id)
@@ -154,7 +181,7 @@ if __name__ == "__main__":
 
         maybe_service_account.configurations.log(print)
 
-    elif args.action == Actions.DELETE_CONF:
+    elif args.action == Actions.CLEAR_CONFIG:
         registry.set_configurations(
             build_service_account_from_args(args).id, PropertyFile.empty()
         )

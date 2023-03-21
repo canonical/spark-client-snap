@@ -21,24 +21,32 @@ spark-client.service-account-registry list
 This shows a list of the service accounts available, providing extra-information about whether it is a primary account
 and its service account property flags.
 
-#### Update the Service Account Configuration
+#### Add more entries to Service Account Configuration
 
 ```bash
-spark-client.service-account-registry --username demouser --namespace demonamespace update-conf --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
+spark-client.service-account-registry --username demouser --namespace demonamespace add-config --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
 ```
 
-If the account ```demouser``` already exists, this will drop the existing configuration associated with the account.
+If the account ```demouser``` already exists, this will upsert into the existing configuration associated with the account.
+
+#### Remove entries from Service Account Configuration
+
+```bash
+spark-client.service-account-registry --username demouser --namespace demonamespace remove-config  --conf conf.key1.to.remove --conf conf.key2.to.remove
+```
+
+If the account ```demouser``` already exists, this will remove the specified keys from existing configuration associated with the account.
 
 #### Print configuration for a given Service Account 
 
 ```bash
-spark-client.service-account-registry --username demouser --namespace demonamespace get-conf
+spark-client.service-account-registry --username demouser --namespace demonamespace get-config
 ```
 
 #### Delete Service Account Configuration
 
 ```bash
-spark-client.service-account-registry --username demouser --namespace demonamespace delete-conf
+spark-client.service-account-registry --username demouser --namespace demonamespace clear-config
 ```
 
 #### Inspect Primary Service Account
