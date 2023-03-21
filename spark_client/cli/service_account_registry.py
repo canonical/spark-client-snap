@@ -127,15 +127,24 @@ if __name__ == "__main__":
         registry.delete(user_id)
 
     elif args.action == Actions.UPDATE_CONF:
-        account_configuration = (
-            PropertyFile.read(args.properties_file)
-            if args.properties_file is not None
-            else PropertyFile.empty()
-        ) + parse_conf_overrides(args.conf)
+        input_service_account = build_service_account_from_args(args)
 
-        registry.set_configurations(
-            build_service_account_from_args(args).id, account_configuration
+        service_account_in_registry = registry.get(input_service_account.id)
+
+        if service_account_in_registry is None:
+            raise NoAccountFound(input_service_account.id)
+
+        account_configuration = (
+            service_account_in_registry.configurations
+            + (
+                PropertyFile.read(args.properties_file)
+                if args.properties_file is not None
+                else PropertyFile.empty()
+            )
+            + parse_conf_overrides(args.conf)
         )
+
+        registry.set_configurations(input_service_account.id, account_configuration)
 
     elif args.action == Actions.GET_CONF:
         input_service_account = build_service_account_from_args(args)
