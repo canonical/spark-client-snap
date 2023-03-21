@@ -222,7 +222,6 @@ class LightKube(AbstractKubeInterface):
         self,
         kube_config_file: Union[str, Dict[str, Any]],
         context_name: Optional[str] = None,
-        kubectl_cmd="kubectl",
     ):
         """Initialise a KubeInterface class from a kube config file.
 
