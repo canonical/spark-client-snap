@@ -5,11 +5,16 @@ import uuid
 from unittest.mock import patch
 
 import yaml
+from lightkube.resources.core_v1 import Secret
+from lightkube.resources.core_v1 import ServiceAccount as LightKubeServiceAccount
+from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
+from lightkube.types import PatchType
 
 from spark_client.domain import PropertyFile, ServiceAccount
 from spark_client.services import (
     K8sServiceAccountRegistry,
     KubeInterface,
+    LightKube,
     parse_conf_overrides,
 )
 from tests import TestCase
@@ -127,6 +132,67 @@ class TestServices(TestCase):
         )
         self.assertEqual(current_cluster.get("server"), f"https://0.0.0.0:{test_id}-2")
 
+    def test_lightkube(self):
+        # mock logic
+        test_id = "test_id"
+        context1 = "context1"
+        username2 = "username2"
+        context2 = "context2"
+        context3 = "context3"
+
+        k = LightKube(
+            kube_config_file="./tests/unittest/resources/data/kubeconfig.yaml"
+        )
+
+        self.assertEqual(k.context_name, context2)
+        self.assertEqual(k.with_context(context3).context_name, context3)
+        self.assertEqual(
+            k.with_context(context3).context.get("cluster"), f"{context3}-cluster"
+        )
+        # self.assertEqual(k.kube_config, './tests/unittest/resources/data/kubeconfig.yaml')
+
+        self.assertTrue(context1 in k.available_contexts)
+        self.assertTrue(context2 in k.available_contexts)
+        self.assertTrue(context3 in k.available_contexts)
+        self.assertEqual(len(k.available_contexts), 3)
+
+        current_context = k.context
+        self.assertEqual(current_context.get("cluster"), f"{context2}-cluster")
+        self.assertEqual(current_context.get("user"), f"{username2}")
+
+        current_cluster = k.cluster
+        self.assertEqual(
+            current_cluster.get("certificate-authority-data"),
+            "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lVRytsZkhKL3B2Mk9RVGw0WktPbWFhWTdlb21Vd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0Z6RVZNQk1HQTFVRUF3d01NVEF1TVRVeUxqRTRNeTR4TUI0WERUSXpNREl4TURBNE1qTTBOMW9YRFRNegpNREl3TnpBNE1qTTBOMW93RnpFVk1CTUdBMVVFQXd3TU1UQXVNVFV5TGpFNE15NHhNSUlCSWpBTkJna3Foa2lHCjl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUExZklPZFZHTXp6YVd3QzVvWi9PQTJJZ3VFWHNrYVEyb2lwY0MKM1c5SlQrRzBha1BvSW15VndocnpDVnZNWXhtR1pYcnMzd21OQjdhM256NVBjZFFsSG9HZ0Vsc2hsalAvVDJ1VwpmTmxYYmFmMXdDWktRSUxycDErZEhXWE0rWVdna2xveExOUC9lOU10WW4rdnhaZExVZC9nZ084ODhZeTV1dHNjCjJ0by9waW5NUXBGY0U1S3pXUUFRajBMcVlBc1lpcTBJUmJEOXovOU9aYld3TGEwRk9VYWhUSXN2M2hocjFYMjIKSngrRnV6MGxIVldpMDRiMDVQYzVtUmwzREhRQ2gyNWhNTlgyUVdhRHhWRWVBQlNjU2NLYStsNElWci9rWkNyRgpSYWFVNUVxb01nSGlVcHdFUERtL3EyWVNKT3ZrUlNoSTZBVEJzR09QWkViVit3NFgrd0lEQVFBQm8xTXdVVEFkCkJnTlZIUTRFRmdRVTNPWkhyUmdIOWRHQzVCZmVkMkRiYXJxbjJmQXdId1lEVlIwakJCZ3dGb0FVM09aSHJSZ0gKOWRHQzVCZmVkMkRiYXJxbjJmQXdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBWjlxT2pnVm5iMXQxK1NZMm8vaTlVSXkzQ1RPRlBZN1lKcFgzdTVhVWFsdGN4NGRja011TDJ3azRKRmFnCmFrV28za29mdjJsTUFUcXNRbStnWm4wdVhUc0FFS2RpcnZiZ0ZlVU04YktYaGo1dkkyODVIcW1zMmd3QzMzWnUKL1p3NElZN1YyaVROOG1ocU9YTVdjMUhFL0xobEswcHp4Z25DNXFnUTd4eWZmNGNHOFNzQ2NOdHpaVjYvK2hqRgo2T3p3anZPYWEzYURTNXgvQ0hVL04zQnp1SnFLNTB1Njk2Z3V4RDRQNFptcEF3TlR4NUtsL1hDMFNiaW9iTzkvCjA2SzhoZTBEejREaWVoSE10bnQyVmcxTEJzZVk4RlR5RFVWSHFZTkF0eFdTYTl3Tm96V21TTGpQSnN1ajlvQjUKOTNxN081M0JZOUVrQkZsY0kwYWZtaUFObEE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+        )
+        self.assertEqual(current_cluster.get("server"), f"https://0.0.0.0:{test_id}-2")
+
+    @patch("lightkube.Client.get")
+    def test_lightkube_get_secret(self, mock_lightkube_client_get):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        secret_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        conf_key = str(uuid.uuid4())
+        conf_value = str(uuid.uuid4())
+
+        def side_effect(*args, **kwargs):
+            assert kwargs["name"] == secret_name
+            assert kwargs["namespace"] == namespace
+            return Secret.from_dict(
+                {
+                    "apiVersion": "v1",
+                    "kind": "Secret",
+                    "metadata": {"name": secret_name, "namespace": namespace},
+                    "data": {conf_key: base64.b64encode(conf_value.encode("utf-8"))},
+                }
+            )
+
+        mock_lightkube_client_get.side_effect = side_effect
+
+        k = LightKube(kube_config_file=kubeconfig)
+        secret_result = k.get_secret(secret_name, namespace)
+        self.assertEqual(conf_value, secret_result["data"][conf_key])
+
     @patch("helpers.utils.yaml.safe_load")
     @patch("builtins.open")
     @patch("helpers.utils.subprocess.check_output")
@@ -205,6 +271,153 @@ class TestServices(TestCase):
 
         mock_subprocess.assert_any_call(cmd_get_secret, shell=True, stderr=None)
 
+    @patch("lightkube.Client.patch")
+    def test_lightkube_set_label_service_account(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+        label = f"{label_key}={label_value}"
+
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.set_label("serviceaccount", resource_name, label, namespace)
+
+        patch = {"metadata": {"labels": {label_key: label_value}}}
+
+        mock_lightkube_client_patch.assert_any_call(
+            res=LightKubeServiceAccount,
+            name=resource_name,
+            namespace=namespace,
+            obj=patch,
+        )
+
+    @patch("lightkube.Client.patch")
+    def test_lightkube_set_label_role(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+        label = f"{label_key}={label_value}"
+
+        def side_effect(*args, **kwargs):
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+            assert kwargs["res"] == Role
+
+        mock_lightkube_client_patch.side_effect = side_effect
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.set_label("role", resource_name, label, namespace)
+
+    @patch("lightkube.Client.patch")
+    def test_lightkube_set_label_role_binding(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+        label = f"{label_key}={label_value}"
+
+        def side_effect(*args, **kwargs):
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+            assert kwargs["res"] == RoleBinding
+
+        mock_lightkube_client_patch.side_effect = side_effect
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.set_label("rolebinding", resource_name, label, namespace)
+
+    @patch("lightkube.Client.patch")
+    def test_lightkube_remove_label_service_account(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.remove_label("serviceaccount", resource_name, label_key, namespace)
+
+        patch = [
+            {"op": "remove", "path": f"/metadata/labels/{label_key.replace('/', '~1')}"}
+        ]
+
+        # for write_call in mock_lightkube_client_patch.call_args_list:
+        #     print('args: {}'.format(write_call[0]))
+        #     print('kwargs: {}'.format(write_call[1]))
+
+        mock_lightkube_client_patch.assert_any_call(
+            res=LightKubeServiceAccount,
+            name=resource_name,
+            namespace=namespace,
+            obj=patch,
+            patch_type=PatchType.JSON,
+        )
+
+    @patch("lightkube.Client.patch")
+    def test_lightkube_remove_label_role(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.remove_label("role", resource_name, label_key, namespace)
+
+        patch = [
+            {"op": "remove", "path": f"/metadata/labels/{label_key.replace('/', '~1')}"}
+        ]
+
+        # for write_call in mock_lightkube_client_patch.call_args_list:
+        #     print('args: {}'.format(write_call[0]))
+        #     print('kwargs: {}'.format(write_call[1]))
+
+        mock_lightkube_client_patch.assert_any_call(
+            res=Role,
+            name=resource_name,
+            namespace=namespace,
+            obj=patch,
+            patch_type=PatchType.JSON,
+        )
+
+    @patch("lightkube.Client.patch")
+    def test_lightkube_remove_label_role_binding(self, mock_lightkube_client_patch):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+
+        mock_lightkube_client_patch.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.remove_label("rolebinding", resource_name, label_key, namespace)
+
+        patch = [
+            {"op": "remove", "path": f"/metadata/labels/{label_key.replace('/', '~1')}"}
+        ]
+
+        # for write_call in mock_lightkube_client_patch.call_args_list:
+        #     print('args: {}'.format(write_call[0]))
+        #     print('kwargs: {}'.format(write_call[1]))
+
+        mock_lightkube_client_patch.assert_any_call(
+            res=RoleBinding,
+            name=resource_name,
+            namespace=namespace,
+            obj=patch,
+            patch_type=PatchType.JSON,
+        )
+
     @patch("helpers.utils.yaml.safe_load")
     @patch("builtins.open")
     @patch("helpers.utils.subprocess.check_output")
@@ -266,6 +479,271 @@ class TestServices(TestCase):
             k.set_label(resource_type, resource_name, label, namespace)
 
         mock_subprocess.assert_any_call(cmd_set_label, shell=True, stderr=None)
+
+    @patch("lightkube.codecs.load_all_yaml")
+    @patch("builtins.open")
+    @patch("lightkube.Client.create")
+    def test_lightkube_create_service_account(
+        self,
+        mock_lightkube_client_create,
+        mock_open,
+        mock_lightkube_codecs_load_all_yaml,
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+
+        kubeconfig_yaml_str = str(uuid.uuid4())
+        mock_created_resource = LightKubeServiceAccount.from_dict(
+            {
+                "apiVersion": "v1",
+                "kind": "ServiceAccount",
+                "metadata": {"name": resource_name, "labels": {label_key: label_value}},
+                "name": resource_name,
+                "namespace": namespace,
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            # assert kwargs['obj'] == mock_created_resource
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+
+        mock_lightkube_client_create.return_value = 0
+        mock_lightkube_client_create.side_effect = side_effect
+
+        mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
+
+        with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
+            k = LightKube(kube_config_file=kubeconfig)
+            k.create(
+                "serviceaccount",
+                resource_name,
+                username,
+                namespace,
+            )
+
+        mock_lightkube_client_create.assert_any_call(
+            obj=mock_created_resource, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.codecs.load_all_yaml")
+    @patch("builtins.open")
+    @patch("lightkube.Client.create")
+    def test_lightkube_create_role(
+        self,
+        mock_lightkube_client_create,
+        mock_open,
+        mock_lightkube_codecs_load_all_yaml,
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+
+        kubeconfig_yaml_str = str(uuid.uuid4())
+        mock_created_resource = Role.from_dict(
+            {
+                "apiVersion": "rbac.authorization.k8s.io/v1",
+                "kind": "Role",
+                "metadata": {"name": resource_name, "labels": {label_key: label_value}},
+                "name": resource_name,
+                "namespace": namespace,
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            # assert kwargs['obj'] == mock_created_resource
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+
+        mock_lightkube_client_create.return_value = 0
+        mock_lightkube_client_create.side_effect = side_effect
+
+        mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
+
+        with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
+            k = LightKube(kube_config_file=kubeconfig)
+            k.create(
+                "role",
+                resource_name,
+                username,
+                namespace,
+            )
+
+        mock_lightkube_client_create.assert_any_call(
+            obj=mock_created_resource, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.codecs.load_all_yaml")
+    @patch("builtins.open")
+    @patch("lightkube.Client.create")
+    def test_lightkube_create_rolebinding(
+        self,
+        mock_lightkube_client_create,
+        mock_open,
+        mock_lightkube_codecs_load_all_yaml,
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+
+        kubeconfig_yaml_str = str(uuid.uuid4())
+        mock_created_resource = RoleBinding.from_dict(
+            {
+                "apiVersion": "rbac.authorization.k8s.io/v1",
+                "kind": "RoleBinding",
+                "metadata": {"name": resource_name, "labels": {label_key: label_value}},
+                "name": resource_name,
+                "roleRef": resource_name,
+                "namespace": namespace,
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            # assert kwargs['obj'] == mock_created_resource
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+
+        mock_lightkube_client_create.return_value = 0
+        mock_lightkube_client_create.side_effect = side_effect
+
+        mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
+
+        with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
+            k = LightKube(kube_config_file=kubeconfig)
+            k.create(
+                "rolebinding",
+                resource_name,
+                username,
+                namespace,
+            )
+
+        mock_lightkube_client_create.assert_any_call(
+            obj=mock_created_resource, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.codecs.load_all_yaml")
+    @patch("builtins.open")
+    @patch("lightkube.Client.create")
+    def test_lightkube_create_secret(
+        self,
+        mock_lightkube_client_create,
+        mock_open,
+        mock_lightkube_codecs_load_all_yaml,
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        username = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+        label = f"{label_key}={label_value}"
+        kubeconfig_yaml_str = label
+        mock_created_resource = Secret.from_dict(
+            {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": {"name": resource_name, "namespace": namespace},
+                # "stringData": { label_key : base64.b64encode(label_value.encode("ascii")) },
+                "stringData": {},
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            # assert kwargs['obj'] == mock_created_resource
+            assert kwargs["name"] == resource_name
+            assert kwargs["namespace"] == namespace
+
+        mock_lightkube_client_create.return_value = 0
+        mock_lightkube_client_create.side_effect = side_effect
+
+        mock_lightkube_codecs_load_all_yaml.return_value = mock_created_resource
+
+        with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
+            k = LightKube(kube_config_file=kubeconfig)
+            k.create(
+                "secret generic",
+                resource_name,
+                username,
+                namespace,
+                **{"from-env-file": "dummy"},
+            )
+        # for write_call in mock_lightkube_client_create.call_args_list:
+        #     print('args: {}'.format(write_call[0]))
+        #     print('kwargs: {}'.format(write_call[1]))
+
+        mock_lightkube_client_create.assert_any_call(
+            obj=mock_created_resource, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.Client.delete")
+    def test_lightkube_delete_secret(self, mock_lightkube_client_delete):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+
+        mock_lightkube_client_delete.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.delete("secret", resource_name, namespace)
+
+        mock_lightkube_client_delete.assert_any_call(
+            res=Secret, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.Client.delete")
+    def test_lightkube_delete_service_account(self, mock_lightkube_client_delete):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+
+        mock_lightkube_client_delete.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.delete("serviceaccount", resource_name, namespace)
+
+        mock_lightkube_client_delete.assert_any_call(
+            res=LightKubeServiceAccount, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.Client.delete")
+    def test_lightkube_delete_role(self, mock_lightkube_client_delete):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+
+        mock_lightkube_client_delete.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.delete("role", resource_name, namespace)
+
+        mock_lightkube_client_delete.assert_any_call(
+            res=Role, name=resource_name, namespace=namespace
+        )
+
+    @patch("lightkube.Client.delete")
+    def test_lightkube_delete_role_binding(self, mock_lightkube_client_delete):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+
+        mock_lightkube_client_delete.return_value = 0
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.delete("rolebinding", resource_name, namespace)
+
+        mock_lightkube_client_delete.assert_any_call(
+            res=RoleBinding, name=resource_name, namespace=namespace
+        )
 
     @patch("helpers.utils.yaml.safe_load")
     @patch("builtins.open")
@@ -394,6 +872,61 @@ class TestServices(TestCase):
             k.delete(resource_type, resource_name, namespace)
 
         mock_subprocess.assert_any_call(cmd_delete, shell=True, stderr=None)
+
+    @patch("lightkube.codecs.dump_all_yaml")
+    @patch("lightkube.Client.list")
+    def test_lightkube_get_service_accounts(
+        self, mock_lightkube_client_list, mock_lightkube_codecs_dump_all_yaml
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        label_key = str(uuid.uuid4())
+        label_value = str(uuid.uuid4())
+        label = f"{label_key}={label_value}"
+        mock_service_account = LightKubeServiceAccount.from_dict(
+            {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": {"name": resource_name, "namespace": namespace},
+                "name": resource_name,
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            assert list(args[0]).__getitem__(0) == mock_service_account
+
+        mock_lightkube_client_list.return_value = [mock_service_account]
+        mock_lightkube_codecs_dump_all_yaml.side_effect = side_effect
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.get_service_accounts(labels=[label])
+
+    @patch("lightkube.codecs.dump_all_yaml")
+    @patch("lightkube.Client.get")
+    def test_lightkube_get_service_account(
+        self, mock_lightkube_client_get, mock_lightkube_codecs_dump_all_yaml
+    ):
+        kubeconfig = "./tests/unittest/resources/data/kubeconfig.yaml"
+        resource_name = str(uuid.uuid4())
+        namespace = str(uuid.uuid4())
+        mock_service_account = LightKubeServiceAccount.from_dict(
+            {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": {"name": resource_name, "namespace": namespace},
+                "name": resource_name,
+            }
+        )
+
+        def side_effect(*args, **kwargs):
+            assert args[0] == [mock_service_account]
+
+        mock_lightkube_client_get.return_value = mock_service_account
+        mock_lightkube_codecs_dump_all_yaml.side_effect = side_effect
+
+        k = LightKube(kube_config_file=kubeconfig)
+        k.get_service_account(resource_name)
 
     @patch("helpers.utils.yaml.safe_load")
     @patch("builtins.open")
