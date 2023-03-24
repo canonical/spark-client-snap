@@ -184,21 +184,21 @@ setup_test_pod() {
     then
         echo "testpod is Running now!"
         break
-    else
+    elif [ "${i}" -le "5" ]
+    then
         sleep 5
+    else
+        echo "testpod did not come up. Test Failed!"
+        exit 3
     fi
   done
 
   MY_KUBE_CONFIG=$(cat /home/${USER}/.kube/config)
   MY_SPARK_CONFIG=$(cat /home/${USER}/conf/spark-defaults.conf)
 
-  kubectl exec -it testpod -- /bin/bash -c 'mkdir /home/spark/.kube'
-  kubectl exec -it testpod -- env KCONFIG="$MY_KUBE_CONFIG" /bin/bash -c 'echo "$KCONFIG" > /home/spark/.kube/config'
-  kubectl exec -it testpod -- /bin/bash -c 'cat /home/spark/.kube/config'
-
-  kubectl exec -it testpod -- /bin/bash -c 'mkdir /home/spark/conf'
-  kubectl exec -it testpod -- env SCONFIG="$MY_SPARK_CONFIG" /bin/bash -c 'echo "$SCONFIG" > /home/spark/conf/spark-defaults.conf'
-  kubectl exec -it testpod -- /bin/bash -c 'cat /home/spark/conf/spark-defaults.conf'
+  kubectl exec testpod -- /bin/bash -c 'mkdir /home/spark/.kube'
+  kubectl exec testpod -- env KCONFIG="$MY_KUBE_CONFIG" /bin/bash -c 'echo "$KCONFIG" > /home/spark/.kube/config'
+  kubectl exec testpod -- /bin/bash -c 'cat /home/spark/.kube/config'
 }
 
 teardown_test_pod() {
@@ -213,7 +213,7 @@ run_example_job_in_pod() {
   NAMESPACE=$1
   USERNAME=$2
 
-  kubectl exec -it testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" \
+  kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" \
                   /bin/bash -c 'spark-client.spark-submit \
                   --username $UU --namespace $NN \
                   --conf spark.kubernetes.driver.request.cores=100m \
@@ -260,7 +260,7 @@ run_spark_shell_in_pod() {
 
   SPARK_SHELL_COMMANDS=$(cat ./test-spark-shell.scala)
 
-  echo -e "$(kubectl exec -it testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$SPARK_SHELL_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.spark-shell --username $UU --namespace $NN')" > spark-shell.out
+  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$SPARK_SHELL_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.spark-shell --username $UU --namespace $NN')" > spark-shell.out
 
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
@@ -298,7 +298,7 @@ run_pyspark_in_pod() {
 
   PYSPARK_COMMANDS=$(cat ./test-pyspark.py)
 
-  echo -e "$(kubectl exec -it testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$PYSPARK_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.pyspark --username $UU --namespace $NN')" > pyspark.out
+  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$PYSPARK_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.pyspark --username $UU --namespace $NN')" > pyspark.out
 
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "Pi is roughly" | tail -n 1 | rev | cut -d' ' -f1 | rev | cut -c 1-3)
