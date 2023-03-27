@@ -1,4 +1,4 @@
-# Requirements 
+# Minimum Requirements 
 
 - OS Ubuntu 22.04.
 - 1GB of HDD.

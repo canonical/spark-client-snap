@@ -11,7 +11,7 @@ them in a spirit similar to Apache Spark.
 
 Following is the hierarchy of configurations merged during spark-submit
 * **_SNAP Configuration_**: SNAP provided immutable defaults
-* **_Service Account Configuration_**: Set up time generated immutable defaults kept as a secret collection in Kubernetes. Valid across sessions and machines. Please refer to the [setup](/docs/tutorial/service_account_registry.md) section, specifically the part about ```service-account```. 
+* **_Service Account Configuration_**: Set up time generated immutable defaults kept as a secret collection in Kubernetes. Valid across sessions and machines. Please refer to the [setup](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) section, specifically the part about ```service-account```. 
 * **_Environment Configuration_**: Properties in file specified via environment variable (```$SPARK_CLIENT_ENV_CONF```) valid across spark-submit commands in a shell session.
 * **CLI Properties File**: Properties in file specified as a parameter (```--properties-file```) in spark-submit command
 * **CLI Configuration**: Properties specified as parameters (list of ```--conf```) in spark-submit command.

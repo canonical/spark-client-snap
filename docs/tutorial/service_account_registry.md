@@ -77,7 +77,7 @@ spark-client.service-account-registry --username demouser --namespace demonamesp
 The above command sets up a service account for user ```demonamespace:demouser``` for Spark job submission using configuration properties coming from the specified 
 properties file while overriding the configuration properties ```spark.app.name``` and ```spark.executor.instances```.
 
-For [job submission](/docs/tutorial/submit.mdsubmit.md), this service account along with it's default configuration properties can be used to submit a Spark job. 
+For [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), this service account along with it's default configuration properties can be used to submit a Spark job. 
 
 For example, assuming the properties file provided has configuration details to access data in S3, one could submit a job like
 ```bash
@@ -87,4 +87,4 @@ This would launch the spark job with configuration coming from the service accou
 
 **_Note:_** The command described above does not create a kubernetes namespace but needs it to be there. It does however create the requested username in the specified and existing namespace.
 
-During [job submission](/docs/tutorial/submit.mdsubmit.md), if the account is not specified, the account currently marked as ```primary``` is implicitly picked. An account can be marked as ```primary``` during creation.
+During [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), if the account is not specified, the account currently marked as ```primary``` is implicitly picked. An account can be marked as ```primary``` during creation.

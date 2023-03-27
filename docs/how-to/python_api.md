@@ -21,7 +21,7 @@ defaults = Defaults(dict(os.environ))  # General defaults
 kube_interface = KubeInterface(defaults.kube_config)
 ```
 
-Notat that if you want to override some of these settings,
+Note that if you want to override some of these settings,
 you can extend the `Default` class accordingly. 
 
 Alternatively you can also use auto-inference using the `kubectl` command via
@@ -62,7 +62,7 @@ from spark_client.services import K8sServiceAccountRegistry
 registry = K8sServiceAccountRegistry(kube_interface)
 ```
 
-Once this object is instanciated we can perform several operations, as outlined 
+Once this object is instantiated we can perform several operations, as outlined 
 in the sections below
 
 #### Create new Spark service accounts
@@ -175,12 +175,10 @@ And `ServiceAccount` properties can be updated using new "merged" properties
 via the API provided by the registry
 
 ```python
-registry.set_configurations(
-    service_account.id, PropertyFile({"my-key-2": "my-value-2"})
-)
+registry.set_configurations(service_account.id, merged_property)
 ```
 
-Alternatively, you can also store these properties into files
+Alternatively, you can also store these properties in files
 
 ```python
 with open("my-file", "w") as fid:

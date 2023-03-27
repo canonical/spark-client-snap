@@ -1,7 +1,8 @@
 ## Spark Job Submission To Kubernetes Cluster
-The spark-client snaps ships with the Apache Spark's spark-submit utility for Kubernetes distribution.
+The spark-client snap ships with the Apache Spark's spark-submit utility for Kubernetes distribution.
 
-To submit Spark jobs to a Kubernetes cluster using the spark-submit utility, please first follow the [setup](/docs/tutorial/service_account_registry.md/setup.md) instructions to create the Kubernetes service account.
+To submit Spark jobs to a Kubernetes cluster using the spark-submit utility, first follow the 
+[setup](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) instructions to create the Kubernetes service account.
 
 ### Validating Setup with an Example Spark Job
 

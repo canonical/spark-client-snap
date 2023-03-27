@@ -9,7 +9,7 @@ configure and manage them, to then used them for actual computation. We will als
 provide towards the end a list of tips and tricks of common problems you may face when using Spark on Kubernetes. 
 
 
-This tutorial has be splitted in the following sections:
+This tutorial has been splitted into the following sections:
 
 - Set up your environment with microK8s and the Spark Client snap.
 - Setup and manage Spark service accounts
@@ -18,7 +18,7 @@ This tutorial has be splitted in the following sections:
 - Perform a simple analysis using `pyspark` using Python
 - Review a list of common tips, tricks and issues you may face when using Spark on Kubernetes 
 
-While this tutorial intends to guide and teach you as you deploy Apache Spark, it will be most beneficial if you already have a familiarity with: 
+While this tutorial intends to guide and teach you to deploy Apache Spark using Charmed Spark, it will be most beneficial if you already have a familiarity with: 
 - Basic terminal commands.
 - Apache Spark concepts and Kubernetes basic knowledge.
 
