@@ -40,6 +40,8 @@ As you would have noticed, these commands can take following optional parameters
 * ***namespace*** - Namespace for the service account to be used for the action. Default is 'default'.
 * ***username*** - Username for the service account to be used for the action. Default is 'spark'.
 
+> **Note** Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
+
 ### Service Account Creation
 To submit Spark jobs to Kubernetes, we need a service account in Kubernetes. Service Account belongs to a Kubernetes namespace. 
 

@@ -19,6 +19,11 @@ spark-client.spark-submit \
 local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 ```
 
+> **Note** When running locally or on CI/CD pipelines, in case executor pods fail to schedule due to insufficient CPU resources, make 
+[fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests.
+
+
+
 ### Adding Big Data to the mix
 
 Once the setup is validated, it's time to test out with a real big data workload. Here we assume that 

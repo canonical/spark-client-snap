@@ -1,7 +1,7 @@
 ## Configuration Setup and Runtime behavior for Apache Spark client
 Apache Spark comes with a lots of configuration properties which can be set. The [list](https://spark.apache.org/docs/3.3.1/configuration.html#available-properties) is pretty extensible as well.
 
-Passing each and every configuration in command line is not tenable, so Apache Spark supports the use of properties 
+Passing each and every configuration in command line is cumbersome, so Apache Spark supports the use of properties 
 files where the user can place most of the configuration for reuse across submissions. 
 
 In addition, the user can still add or override more configuration values in this file in the command line.

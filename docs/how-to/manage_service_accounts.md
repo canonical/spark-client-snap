@@ -27,7 +27,8 @@ and its service account property flags.
 spark-client.service-account-registry --username demouser --namespace demonamespace update-conf --properties-file /home/demouser/conf/spark-overrides.conf  --conf spark.app.name=demo-spark-app-overrides
 ```
 
-If the account ```demouser``` already exists, this will drop the existing configuration associated with the account.
+This updates the service account settings with new configurations provided either as CLI arguments or via a 
+property file. If the account ```demouser``` already exists, this will drop the existing configuration associated with the account.
 
 ### Print configuration for a given Service Account 
 
@@ -35,11 +36,15 @@ If the account ```demouser``` already exists, this will drop the existing config
 spark-client.service-account-registry --username demouser --namespace demonamespace get-conf
 ```
 
+This command will print out to the screen the configuration for a given service account. 
+
 ### Delete Service Account Configuration
 
 ```bash
 spark-client.service-account-registry --username demouser --namespace demonamespace delete-conf
 ```
+
+This command will delete the configurations associated to a given service account. 
 
 ### Inspect Primary Service Account
 
@@ -47,8 +52,14 @@ spark-client.service-account-registry --username demouser --namespace demonamesp
 spark-client.service-account-registry get-primary
 ```
 
+This command will allow the user to find out which one is the primary account, providing information 
+about its configuration settings. 
+
 ### Cleanup a Service Account
 
 ```bash
 spark-client.service-account-registry --username demouser --namespace demonamespace delete
 ```
+
+This command will delete the service account together with the other resources created, e.g. 
+secrets, role, role-bindings, etc. 

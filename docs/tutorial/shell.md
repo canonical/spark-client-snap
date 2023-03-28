@@ -9,7 +9,7 @@ For interactive use cases, spark-client snap ships with Apache Spark's spark-she
 
 It's a useful tool to quickly validate your assumptions about Spark in Scala before finding out after an actual long running job failure.
 
-Great! Let us test out our spark-shell setup with the official Pi example from the Spark distribution.
+Great! Let us test out our spark-shell setup with a simple example.
 
 ```shell
 $ spark-client.spark-shell
@@ -27,16 +27,16 @@ Welcome to
 scala> import scala.math.random
 scala> val slices = 1000
 scala> val n = math.min(100000L * slices, Int.MaxValue).toInt
-scala> val count = spark.sparkContext.parallelize(1 until n, slices).map { i => val x = random * 2 - 1; val y = random * 2 - 1;  if (x*x + y*y <= 1) 1 else 0;}.reduce(_ + _)
-scala> println(s"Pi is roughly ${4.0 * count / (n - 1)}")
+scala> val squares_sum = spark.sparkContext.parallelize(1 until n, slices).map { i => i * i }.reduce(_ + _)
+scala> println(s"Sum of squares is ${squares_sum}")
 scala> :quit
 ```
 
 ### Interactive PySpark Shell
 For interactive use case using python shell, spark-client snap ships with Apache Spark's pyspark utility.
 
-Make sure python is installed on your system. Then, execute the following commands to validate your pyspark setup with the official Pi example
-that ships with Apache Spark.
+Make sure python is installed on your system. Then, execute the following commands to validate 
+that your pyspark setup is working.
 
 ```bash
 $ spark-client.pyspark
@@ -50,16 +50,13 @@ Welcome to
       /_/
 ....
 ....
->>> from random import random
 >>> from operator import add
 >>> partitions = 1000
 >>> n = 100000 * partitions
->>> def f(_: int) -> float:
-...     x = random() * 2 - 1
-...     y = random() * 2 - 1
-...     return 1 if x ** 2 + y ** 2 <= 1 else 0
+>>> def square(x: int) -> float:
+...     return x ** 2
 ...
->>> count = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
->>> print("Pi is roughly %f" % (4.0 * count / n))
+>>> squares_sum = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
+>>> print("Sum of squares is %f" % (squares_sum))
 >>> quit()
 ```
