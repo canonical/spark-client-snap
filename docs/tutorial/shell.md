@@ -56,7 +56,7 @@ Welcome to
 >>> def square(x: int) -> float:
 ...     return x ** 2
 ...
->>> squares_sum = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
+>>> squares_sum = spark.sparkContext.parallelize(range(1, n + 1), partitions).map(square).reduce(add)
 >>> print("Sum of squares is %f" % (squares_sum))
 >>> quit()
 ```
