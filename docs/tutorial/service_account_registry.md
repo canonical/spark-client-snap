@@ -1,11 +1,4 @@
-### Setup Apache Spark for your Kubernetes cluster
-We are working with Kubernetes distribution for Spark. So, to be able to work with Kubernetes, we need to do some setup
-for Spark jobs.
-
-To start things off, install the spark-client snap.
-```bash
-sudo snap install spark-client --edge
-```
+## Manage Spark Service Accounts
 
 The spark-client snap comes with a setup utility which would be the starting point for the setup. You can
 run the following command to understand it's usage.
@@ -47,7 +40,9 @@ As you would have noticed, these commands can take following optional parameters
 * ***namespace*** - Namespace for the service account to be used for the action. Default is 'default'.
 * ***username*** - Username for the service account to be used for the action. Default is 'spark'.
 
-#### Service Account Creation
+> **Note** Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
+
+### Service Account Creation
 To submit Spark jobs to Kubernetes, we need a service account in Kubernetes. Service Account belongs to a Kubernetes namespace. 
 
 You might already have a functional Service Account. Or you can use this spark-client snap to create a fresh one in a namespace of choice.
@@ -84,7 +79,7 @@ spark-client.service-account-registry --username demouser --namespace demonamesp
 The above command sets up a service account for user ```demonamespace:demouser``` for Spark job submission using configuration properties coming from the specified 
 properties file while overriding the configuration properties ```spark.app.name``` and ```spark.executor.instances```.
 
-For [job submission](/docs/submit.md), this service account along with it's default configuration properties can be used to submit a Spark job. 
+For [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), this service account along with it's default configuration properties can be used to submit a Spark job. 
 
 For example, assuming the properties file provided has configuration details to access data in S3, one could submit a job like
 ```bash
@@ -94,4 +89,4 @@ This would launch the spark job with configuration coming from the service accou
 
 **_Note:_** The command described above does not create a kubernetes namespace but needs it to be there. It does however create the requested username in the specified and existing namespace.
 
-During [job submission](/docs/submit.md), if the account is not specified, the account currently marked as ```primary``` is implicitly picked. An account can be marked as ```primary``` during creation.
+During [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), if the account is not specified, the account currently marked as ```primary``` is implicitly picked. An account can be marked as ```primary``` during creation.
