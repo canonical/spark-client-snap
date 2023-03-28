@@ -9,7 +9,7 @@ configure and manage them, to then used them for actual computation. We will als
 provide towards the end a list of tips and tricks of common problems you may face when using Spark on Kubernetes. 
 
 
-This tutorial has been splitted into the following sections:
+This tutorial has been split into the following sections:
 
 - Set up your environment with microK8s and the Spark Client snap.
 - Setup and manage Spark service accounts
