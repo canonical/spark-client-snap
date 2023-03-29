@@ -374,18 +374,15 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         all_accounts = self.all()
 
         if len(all_accounts) == 0:
-            raise NoAccountFound(
-                "There are no service account available. "
-                "Please create a primary service account first."
-            )
+            self.logger.warning("There are no service account available.")
+            return None
+
         primary_accounts = [
             account for account in all_accounts if account.primary is True
         ]
         if len(primary_accounts) == 0:
-            raise NoAccountFound(
-                "There are no primary service account available. "
-                "Please create a service account first."
-            )
+            self.logger.warning("There are no primary service account available.")
+            return None
 
         if len(primary_accounts) > 1:
             self.logger.warning(
