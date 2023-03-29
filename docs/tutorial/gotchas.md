@@ -1,5 +1,7 @@
 ## Common Gotchas
 
+In the following, we summarize some common tips, tricks and gotchas to run smoothly Apache Spark on kubernetes, even in small local environments
+
 * For spark-submit to work correctly, make sure DNS is enabled.
   * For example, if you are working with microk8s, please run ```microk8s enable dns``` before submitting the spark job
 * In case executor pods fail to schedule due to insufficient CPU resources, make [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests
