@@ -10,7 +10,8 @@ from lightkube.resources.core_v1 import ServiceAccount as LightKubeServiceAccoun
 from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
 from lightkube.types import PatchType
 
-from spark_client.domain import PropertyFile, ServiceAccount
+from spark_client.cli import defaults
+from spark_client.domain import KubernetesResourceType, PropertyFile, ServiceAccount
 from spark_client.services import (
     K8sServiceAccountRegistry,
     KubeInterface,
@@ -141,7 +142,8 @@ class TestServices(TestCase):
         context3 = "context3"
 
         k = LightKube(
-            kube_config_file="./tests/unittest/resources/data/kubeconfig.yaml"
+            kube_config_file="./tests/unittest/resources/data/kubeconfig.yaml",
+            defaults=defaults,
         )
 
         self.assertEqual(k.context_name, context2)
@@ -189,7 +191,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_get.side_effect = side_effect
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         secret_result = k.get_secret(secret_name, namespace)
         self.assertEqual(conf_value, secret_result["data"][conf_key])
 
@@ -282,7 +284,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.set_label("serviceaccount", resource_name, label, namespace)
 
         patch = {"metadata": {"labels": {label_key: label_value}}}
@@ -311,7 +313,7 @@ class TestServices(TestCase):
         mock_lightkube_client_patch.side_effect = side_effect
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.set_label("role", resource_name, label, namespace)
 
     @patch("lightkube.Client.patch")
@@ -331,7 +333,7 @@ class TestServices(TestCase):
         mock_lightkube_client_patch.side_effect = side_effect
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.set_label("rolebinding", resource_name, label, namespace)
 
     @patch("lightkube.Client.patch")
@@ -343,7 +345,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.remove_label("serviceaccount", resource_name, label_key, namespace)
 
         patch = [
@@ -371,7 +373,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.remove_label("role", resource_name, label_key, namespace)
 
         patch = [
@@ -399,7 +401,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_patch.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.remove_label("rolebinding", resource_name, label_key, namespace)
 
         patch = [
@@ -518,7 +520,7 @@ class TestServices(TestCase):
         mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
-            k = LightKube(kube_config_file=kubeconfig)
+            k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
                 "serviceaccount",
                 resource_name,
@@ -568,7 +570,7 @@ class TestServices(TestCase):
         mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
-            k = LightKube(kube_config_file=kubeconfig)
+            k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
                 "role",
                 resource_name,
@@ -619,7 +621,7 @@ class TestServices(TestCase):
         mock_lightkube_codecs_load_all_yaml.return_value = [mock_created_resource]
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
-            k = LightKube(kube_config_file=kubeconfig)
+            k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
                 "rolebinding",
                 resource_name,
@@ -669,7 +671,7 @@ class TestServices(TestCase):
         mock_lightkube_codecs_load_all_yaml.return_value = mock_created_resource
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
-            k = LightKube(kube_config_file=kubeconfig)
+            k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
                 "secret generic",
                 resource_name,
@@ -693,7 +695,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_delete.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.delete("secret", resource_name, namespace)
 
         mock_lightkube_client_delete.assert_any_call(
@@ -708,7 +710,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_delete.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.delete("serviceaccount", resource_name, namespace)
 
         mock_lightkube_client_delete.assert_any_call(
@@ -723,7 +725,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_delete.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig.strip(), defaults=defaults)
         k.delete("role", resource_name, namespace)
 
         mock_lightkube_client_delete.assert_any_call(
@@ -738,7 +740,7 @@ class TestServices(TestCase):
 
         mock_lightkube_client_delete.return_value = 0
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.delete("rolebinding", resource_name, namespace)
 
         mock_lightkube_client_delete.assert_any_call(
@@ -899,7 +901,7 @@ class TestServices(TestCase):
         mock_lightkube_client_list.return_value = [mock_service_account]
         mock_lightkube_codecs_dump_all_yaml.side_effect = side_effect
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.get_service_accounts(labels=[label])
 
     @patch("lightkube.codecs.dump_all_yaml")
@@ -925,7 +927,7 @@ class TestServices(TestCase):
         mock_lightkube_client_get.return_value = mock_service_account
         mock_lightkube_codecs_dump_all_yaml.side_effect = side_effect
 
-        k = LightKube(kube_config_file=kubeconfig)
+        k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
         k.get_service_account(resource_name)
 
     @patch("helpers.utils.yaml.safe_load")
@@ -1348,7 +1350,10 @@ class TestServices(TestCase):
             print(call)
 
         mock_kube_interface.create.assert_any_call(
-            "serviceaccount", name3, username=name3, namespace=namespace3
+            KubernetesResourceType.SERVICEACCOUNT,
+            name3,
+            username=name3,
+            namespace=namespace3,
         )
 
         mock_kube_interface.create.assert_any_call(
@@ -1363,7 +1368,7 @@ class TestServices(TestCase):
         )
 
         mock_kube_interface.create.assert_any_call(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             f"{name3}-role-binding",
             username=name3,
             namespace=namespace3,
@@ -1371,42 +1376,42 @@ class TestServices(TestCase):
         )
 
         mock_kube_interface.set_label.assert_any_call(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             name3,
             f"{K8sServiceAccountRegistry.SPARK_MANAGER_LABEL}=spark-client",
             namespace=namespace3,
         )
 
         mock_kube_interface.set_label.assert_any_call(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             f"{name3}-role-binding",
             f"{K8sServiceAccountRegistry.SPARK_MANAGER_LABEL}=spark-client",
             namespace=namespace3,
         )
 
         mock_kube_interface.remove_label.assert_any_call(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             name1,
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 
         mock_kube_interface.remove_label.assert_any_call(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             f"{name1}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}",
             namespace1,
         )
 
         mock_kube_interface.set_label.assert_any_call(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             name3,
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
             namespace3,
         )
 
         mock_kube_interface.set_label.assert_any_call(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             f"{name3}-role-binding",
             f"{K8sServiceAccountRegistry.PRIMARY_LABEL}=True",
             namespace3,
@@ -1428,17 +1433,21 @@ class TestServices(TestCase):
             registry.delete(f"{namespace2}:{name2}"), f"{namespace2}:{name2}"
         )
         mock_kube_interface.delete.assert_any_call(
-            "serviceaccount", name2, namespace=namespace2
+            KubernetesResourceType.SERVICEACCOUNT, name2, namespace=namespace2
         )
         mock_kube_interface.delete.assert_any_call(
-            "role", f"{name2}-role", namespace=namespace2
+            KubernetesResourceType.ROLE, f"{name2}-role", namespace=namespace2
         )
         mock_kube_interface.delete.assert_any_call(
-            "rolebinding", f"{name2}-role-binding", namespace=namespace2
+            KubernetesResourceType.ROLEBINDING,
+            f"{name2}-role-binding",
+            namespace=namespace2,
         )
 
         mock_kube_interface.delete.assert_any_call(
-            "secret", f"spark-client-sa-conf-{name2}", namespace=namespace2
+            KubernetesResourceType.SECRET,
+            f"spark-client-sa-conf-{name2}",
+            namespace=namespace2,
         )
 
 

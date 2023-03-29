@@ -142,6 +142,9 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL/conf"
       cp spark_client/resources/conf/* "$CRAFT_PART_INSTALL/conf/."
       
+      mkdir -p "$CRAFT_PART_INSTALL/resources/templates"
+      cp spark_client/resources/templates/* "$CRAFT_PART_INSTALL/resources/templates/."
+      
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
       cp kubectl ${CRAFT_PART_INSTALL}/

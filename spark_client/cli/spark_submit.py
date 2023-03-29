@@ -31,7 +31,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
     )
 
-    kube_interface = LightKube(args.kubeconfig or defaults.kube_config)
+    kube_interface = LightKube(args.kubeconfig or defaults.kube_config, defaults)
 
     registry = K8sServiceAccountRegistry(
         kube_interface.select_by_master(re.compile("^k8s://").sub("", args.master))

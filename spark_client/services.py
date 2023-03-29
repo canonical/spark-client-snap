@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+
 import base64
 import io
 import os
@@ -15,7 +17,12 @@ from lightkube.resources.core_v1 import ServiceAccount as LightKubeServiceAccoun
 from lightkube.resources.rbac_authorization_v1 import Role, RoleBinding
 from lightkube.types import PatchType
 
-from spark_client.domain import Defaults, PropertyFile, ServiceAccount
+from spark_client.domain import (
+    Defaults,
+    KubernetesResourceType,
+    PropertyFile,
+    ServiceAccount,
+)
 from spark_client.exceptions import FormatError, NoAccountFound, NoResourceFound
 from spark_client.utils import (
     WithLogging,
@@ -127,7 +134,11 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
 
     @abstractmethod
     def set_label(
-        self, resource_type: str, resource_name: str, label: str, namespace: str
+        self,
+        resource_type: KubernetesResourceType,
+        resource_name: str,
+        label: str,
+        namespace: str,
     ):
         """Set label to a specified resource (type and name).
 
@@ -141,7 +152,11 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
 
     @abstractmethod
     def remove_label(
-        self, resource_type: str, resource_name: str, label: str, namespace: str
+        self,
+        resource_type: KubernetesResourceType,
+        resource_name: str,
+        label: str,
+        namespace: str,
     ):
         """Remove label to a specified resource (type and name).
 
@@ -157,7 +172,7 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
     @abstractmethod
     def create(
         self,
-        resource_type: str,
+        resource_type: KubernetesResourceType,
         resource_name: str,
         username: str,
         namespace: str,
@@ -179,7 +194,9 @@ class AbstractKubeInterface(WithLogging, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def delete(self, resource_type: str, resource_name: str, namespace: str):
+    def delete(
+        self, resource_type: KubernetesResourceType, resource_name: str, namespace: str
+    ):
         """Delete a K8s resource.
 
         Args:
@@ -221,6 +238,7 @@ class LightKube(AbstractKubeInterface):
     def __init__(
         self,
         kube_config_file: Union[str, Dict[str, Any]],
+        defaults: Defaults,
         context_name: Optional[str] = None,
     ):
         """Initialise a KubeInterface class from a kube config file.
@@ -232,6 +250,8 @@ class LightKube(AbstractKubeInterface):
         self._kube_config_file = kube_config_file
         self._context_name = context_name
         self.config = KubeConfig.from_file(self.kube_config_file)
+
+        self.defaults = defaults
 
         if context_name:
             self.client = Client(config=self.config.get(context_name=context_name))
@@ -249,7 +269,7 @@ class LightKube(AbstractKubeInterface):
         Args:
             context_name: context to be used
         """
-        return LightKube(self.kube_config_file, context_name)
+        return LightKube(self.kube_config_file, self.defaults, context_name)
 
     @property
     def context_name(self) -> str:
@@ -338,7 +358,11 @@ class LightKube(AbstractKubeInterface):
             return secret
 
     def set_label(
-        self, resource_type: str, resource_name: str, label: str, namespace: str
+        self,
+        resource_type: KubernetesResourceType,
+        resource_name: str,
+        label: str,
+        namespace: str,
     ):
         """Set label to a specified resource (type and name).
 
@@ -351,18 +375,18 @@ class LightKube(AbstractKubeInterface):
         label_fragments = label.split("=")
         patch = {"metadata": {"labels": {label_fragments[0]: label_fragments[1]}}}
 
-        if resource_type == "serviceaccount":
+        if resource_type == KubernetesResourceType.SERVICEACCOUNT:
             self.client.patch(
                 res=LightKubeServiceAccount,
                 name=resource_name,
                 namespace=namespace,
                 obj=patch,
             )
-        elif resource_type == "role":
+        elif resource_type == KubernetesResourceType.ROLE:
             self.client.patch(
                 res=Role, name=resource_name, namespace=namespace, obj=patch
             )
-        elif resource_type == "rolebinding":
+        elif resource_type == KubernetesResourceType.ROLEBINDING:
             self.client.patch(
                 res=RoleBinding, name=resource_name, namespace=namespace, obj=patch
             )
@@ -372,7 +396,11 @@ class LightKube(AbstractKubeInterface):
             )
 
     def remove_label(
-        self, resource_type: str, resource_name: str, label: str, namespace: str
+        self,
+        resource_type: KubernetesResourceType,
+        resource_name: str,
+        label: str,
+        namespace: str,
     ):
         """Remove label to a specified resource (type and name).
 
@@ -386,7 +414,7 @@ class LightKube(AbstractKubeInterface):
         self.logger.debug(f"Removing label {label_to_remove}")
         patch = [{"op": "remove", "path": label_to_remove}]
 
-        if resource_type == "serviceaccount":
+        if resource_type == KubernetesResourceType.SERVICEACCOUNT:
             self.client.patch(
                 res=LightKubeServiceAccount,
                 name=resource_name,
@@ -394,7 +422,7 @@ class LightKube(AbstractKubeInterface):
                 obj=patch,
                 patch_type=PatchType.JSON,
             )
-        elif resource_type == "role":
+        elif resource_type == KubernetesResourceType.ROLE:
             self.client.patch(
                 res=Role,
                 name=resource_name,
@@ -402,7 +430,7 @@ class LightKube(AbstractKubeInterface):
                 obj=patch,
                 patch_type=PatchType.JSON,
             )
-        elif resource_type == "rolebinding":
+        elif resource_type == KubernetesResourceType.ROLEBINDING:
             self.client.patch(
                 res=RoleBinding,
                 name=resource_name,
@@ -424,7 +452,7 @@ class LightKube(AbstractKubeInterface):
 
     def create(
         self,
-        resource_type: str,
+        resource_type: KubernetesResourceType,
         resource_name: str,
         username: str,
         namespace: str,
@@ -444,10 +472,8 @@ class LightKube(AbstractKubeInterface):
         """
 
         res = None
-        if resource_type == "serviceaccount":
-            with open(
-                f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/serviceaccount_yaml.tmpl"
-            ) as f:
+        if resource_type == KubernetesResourceType.SERVICEACCOUNT:
+            with open(self.defaults.template_serviceaccount) as f:
                 res = codecs.load_all_yaml(
                     f,
                     context={
@@ -456,10 +482,8 @@ class LightKube(AbstractKubeInterface):
                         "namespace": namespace,
                     },
                 ).__getitem__(0)
-        elif resource_type == "role":
-            with open(
-                f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/role_yaml.tmpl"
-            ) as f:
+        elif resource_type == KubernetesResourceType.ROLE:
+            with open(self.defaults.template_role) as f:
                 res = codecs.load_all_yaml(
                     f,
                     context={
@@ -468,10 +492,8 @@ class LightKube(AbstractKubeInterface):
                         "namespace": namespace,
                     },
                 ).__getitem__(0)
-        elif resource_type == "rolebinding":
-            with open(
-                f"{os.getenv('SNAP')}/python/spark_client/resources/lightkube_jinja_templates/rolebinding_yaml.tmpl"
-            ) as f:
+        elif resource_type == KubernetesResourceType.ROLEBINDING:
+            with open(self.defaults.template_rolebinding) as f:
                 res = codecs.load_all_yaml(
                     f,
                     context={
@@ -480,7 +502,10 @@ class LightKube(AbstractKubeInterface):
                         "namespace": namespace,
                     },
                 ).__getitem__(0)
-        elif resource_type == "secret" or resource_type == "secret generic":
+        elif (
+            resource_type == KubernetesResourceType.SECRET
+            or resource_type == KubernetesResourceType.SECRET_GENERIC
+        ):
             res = Secret.from_dict(
                 {
                     "apiVersion": "v1",
@@ -498,7 +523,9 @@ class LightKube(AbstractKubeInterface):
 
         self.client.create(obj=res, name=resource_name, namespace=namespace)
 
-    def delete(self, resource_type: str, resource_name: str, namespace: str):
+    def delete(
+        self, resource_type: KubernetesResourceType, resource_name: str, namespace: str
+    ):
         """Delete a K8s resource.
 
         Args:
@@ -506,15 +533,15 @@ class LightKube(AbstractKubeInterface):
             resource_name: name of the resource to be deleted
             namespace: namespace where the resource is
         """
-        if resource_type == "serviceaccount":
+        if resource_type == KubernetesResourceType.SERVICEACCOUNT:
             self.client.delete(
                 res=LightKubeServiceAccount, name=resource_name, namespace=namespace
             )
-        elif resource_type == "role":
+        elif resource_type == KubernetesResourceType.ROLE:
             self.client.delete(res=Role, name=resource_name, namespace=namespace)
-        elif resource_type == "rolebinding":
+        elif resource_type == KubernetesResourceType.ROLEBINDING:
             self.client.delete(res=RoleBinding, name=resource_name, namespace=namespace)
-        elif resource_type == "secret":
+        elif resource_type == KubernetesResourceType.SECRET:
             self.client.delete(res=Secret, name=resource_name, namespace=namespace)
         else:
             raise NotImplementedError(
@@ -834,7 +861,7 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         pass
 
     @abstractmethod
-    def set_primary(self, account_id: str) -> str:
+    def set_primary(self, account_id: str) -> Optional[str]:
         """Set the primary account to the one related to the provided account id.
 
         Args:
@@ -847,18 +874,15 @@ class AbstractServiceAccountRegistry(WithLogging, ABC):
         all_accounts = self.all()
 
         if len(all_accounts) == 0:
-            raise NoAccountFound(
-                "There are no service account available. "
-                "Please create a primary service account first."
-            )
+            self.logger.warning("There are no service account available.")
+            return None
+
         primary_accounts = [
             account for account in all_accounts if account.primary is True
         ]
         if len(primary_accounts) == 0:
-            raise NoAccountFound(
-                "There are no primary service account available. "
-                "Please create a service account first."
-            )
+            self.logger.warning("There are no primary service account available.")
+            return None
 
         if len(primary_accounts) > 1:
             self.logger.warning(
@@ -929,7 +953,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             extra_confs=self._retrieve_account_configurations(name, namespace),
         )
 
-    def set_primary(self, account_id: str) -> str:
+    def set_primary(self, account_id: str) -> Optional[str]:
         """Set the primary account to the one related to the provided account id.
 
         Args:
@@ -937,20 +961,17 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         """
 
         # Relabeling primary
-        try:
-            primary_account = self.get_primary()
-        except NoAccountFound:
-            primary_account = None
+        primary_account = self.get_primary()
 
         if primary_account is not None:
             self.kube_interface.remove_label(
-                "serviceaccount",
+                KubernetesResourceType.SERVICEACCOUNT,
                 primary_account.name,
                 f"{self.PRIMARY_LABEL}",
                 primary_account.namespace,
             )
             self.kube_interface.remove_label(
-                "rolebinding",
+                KubernetesResourceType.ROLEBINDING,
                 f"{primary_account.name}-role-binding",
                 f"{self.PRIMARY_LABEL}",
                 primary_account.namespace,
@@ -962,13 +983,13 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             raise NoAccountFound(account_id)
 
         self.kube_interface.set_label(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             service_account.name,
             f"{self.PRIMARY_LABEL}=True",
             service_account.namespace,
         )
         self.kube_interface.set_label(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             f"{service_account.name}-role-binding",
             f"{self.PRIMARY_LABEL}=True",
             service_account.namespace,
@@ -986,13 +1007,13 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         rolebindingname = service_account.name + "-role-binding"
 
         self.kube_interface.create(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             service_account.name,
             username=service_account.name,
             namespace=service_account.namespace,
         )
         self.kube_interface.create(
-            "role",
+            KubernetesResourceType.ROLE,
             rolename,
             username=service_account.name,
             namespace=service_account.namespace,
@@ -1002,7 +1023,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             },
         )
         self.kube_interface.create(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             rolebindingname,
             username=service_account.name,
             namespace=service_account.namespace,
@@ -1010,19 +1031,19 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         )
 
         self.kube_interface.set_label(
-            "serviceaccount",
+            KubernetesResourceType.SERVICEACCOUNT,
             service_account.name,
             f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace,
         )
         self.kube_interface.set_label(
-            "role",
+            KubernetesResourceType.ROLE,
             rolename,
             f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace,
         )
         self.kube_interface.set_label(
-            "rolebinding",
+            KubernetesResourceType.ROLEBINDING,
             rolebindingname,
             f"{self.SPARK_MANAGER_LABEL}=spark-client",
             namespace=service_account.namespace,
@@ -1041,7 +1062,9 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
 
         try:
             self.kube_interface.delete(
-                "secret", secret_name, namespace=service_account.namespace
+                KubernetesResourceType.SECRET,
+                secret_name,
+                namespace=service_account.namespace,
             )
         except Exception:
             pass
@@ -1058,7 +1081,7 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
             t.flush()
 
             self.kube_interface.create(
-                "secret generic",
+                KubernetesResourceType.SECRET_GENERIC,
                 secret_name,
                 username=service_account.name,
                 namespace=service_account.namespace,
@@ -1099,25 +1122,31 @@ class K8sServiceAccountRegistry(AbstractServiceAccountRegistry):
         rolebindingname = name + "-role-binding"
 
         try:
-            self.kube_interface.delete("serviceaccount", name, namespace=namespace)
-        except Exception as e:
-            self.logger.debug(e)
-
-        try:
-            self.kube_interface.delete("role", rolename, namespace=namespace)
-        except Exception as e:
-            self.logger.debug(e)
-
-        try:
             self.kube_interface.delete(
-                "rolebinding", rolebindingname, namespace=namespace
+                KubernetesResourceType.SERVICEACCOUNT, name, namespace=namespace
             )
         except Exception as e:
             self.logger.debug(e)
 
         try:
             self.kube_interface.delete(
-                "secret", self._get_secret_name(name), namespace=namespace
+                KubernetesResourceType.ROLE, rolename, namespace=namespace
+            )
+        except Exception as e:
+            self.logger.debug(e)
+
+        try:
+            self.kube_interface.delete(
+                KubernetesResourceType.ROLEBINDING, rolebindingname, namespace=namespace
+            )
+        except Exception as e:
+            self.logger.debug(e)
+
+        try:
+            self.kube_interface.delete(
+                KubernetesResourceType.SECRET,
+                self._get_secret_name(name),
+                namespace=namespace,
             )
         except Exception as e:
             self.logger.debug(e)

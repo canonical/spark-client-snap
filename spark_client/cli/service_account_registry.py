@@ -104,11 +104,9 @@ if __name__ == "__main__":
         ArgumentParser(description="Spark Client Setup")
     ).parse_args()
 
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
-    )
+    logging.basicConfig(format="%(message)s", level=args.log_level)
 
-    kube_interface = LightKube(args.kubeconfig or defaults.kube_config)
+    kube_interface = LightKube(args.kubeconfig or defaults.kube_config, defaults)
 
     context = args.context or kube_interface.context_name
 
@@ -128,7 +126,7 @@ if __name__ == "__main__":
 
     elif args.action == Actions.DELETE:
         user_id = build_service_account_from_args(args).id
-        print(user_id)
+        logging.info(user_id)
         registry.delete(user_id)
 
     elif args.action == Actions.ADD_CONFIG:
@@ -159,16 +157,9 @@ if __name__ == "__main__":
         if service_account_in_registry is None:
             raise NoAccountFound(input_service_account.id)
 
-        current_props = service_account_in_registry.configurations.props
-
-        updated_props = (
-            {key: current_props[key] for key in current_props if key not in args.conf}
-            if args.conf
-            else current_props
-        )
-
         registry.set_configurations(
-            input_service_account.id, PropertyFile(props=updated_props)
+            input_service_account.id,
+            service_account_in_registry.configurations.remove(args.conf),
         )
 
     elif args.action == Actions.GET_CONFIG:
@@ -179,7 +170,7 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound(input_service_account.id)
 
-        maybe_service_account.configurations.log(print)
+        maybe_service_account.configurations.log(logging.info)
 
     elif args.action == Actions.CLEAR_CONFIG:
         registry.set_configurations(
@@ -192,9 +183,11 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound()
 
-        # maybe_service_account.configurations.log(print)
-        print(maybe_service_account.id)
+        # maybe_service_account.configurations.log(logging.info)
+        logging.info(maybe_service_account.id)
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():
-            print(str.expandtabs(f"{service_account.id}\t{service_account.primary}"))
+            logging.info(
+                str.expandtabs(f"{service_account.id}\t{service_account.primary}")
+            )
