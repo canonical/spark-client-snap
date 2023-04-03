@@ -54,6 +54,7 @@ optional = true
 [tool.poetry.group.fmt.dependencies]
 black = ">=21.12b0"
 isort = ">=5.10"
+lightkube = ">=0.11"
 
 [tool.poetry.group.lint]
 optional = true
@@ -63,6 +64,7 @@ codespell = "^2.1.0"
 flake8 = ">=4.0.1"
 Flake8-pyproject = ">=1.1.0"
 mypy = ">=0.910"
+lightkube = ">=0.11"
 
 [tool.poetry.group.unit]
 optional = true
@@ -72,6 +74,8 @@ tox = ">3.21.4"
 mypy = ">=0.910"
 pytest-cov = ">=3.0"
 pytest = ">=6.2"
+lightkube = ">=0.11"
+pyOpenSSL = ">=23.1.1"
 
 [tool.poetry.group.integration]
 optional = true

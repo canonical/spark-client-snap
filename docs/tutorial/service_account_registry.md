@@ -9,28 +9,23 @@ spark-client.service-account-registry --help
 From the output you will notice that the setup utility supports the following actions.
 * ***create*** - Create a new service account in Kubernetes for use during Spark job submission
 * ***delete*** - Delete a service account and associated resources from Kubernetes
-* ***update-conf*** - Create configuration entries associated with the specified service account in Kubernetes. Immutable once created.
-* ***get-conf*** - Fetch configuration entries associated with the specified service account from Kubernetes
-* ***delete-conf*** - Delete all configuration entries associated with the specified service account from Kubernetes
+* ***add-config*** - Add configuration entries associated with the specified service account in Kubernetes.
+* ***remove-config*** - Remove configuration entries from the specified service account in Kubernetes.
+* ***get-config*** - Fetch configuration entries associated with the specified service account from Kubernetes
+* ***clear-config*** - Delete all configuration entries associated with the specified service account from Kubernetes
 * ***get-primary*** - List resources related to 'primary' service account used implicitly for spark-submit
 * ***list*** - List all service accounts available to be used with Spark
 
 ```bash
-usage: service_account_registry.py [-h] [--log-level LOG_LEVEL] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--namespace NAMESPACE] [--username USERNAME] {create,delete,update-conf,get-conf,delete-conf,get-primary,list} ...
+usage: service_account_registry.py [-h] {create,delete,add-config,remove-config,get-config,clear-config,get-primary,list} ...
+
+Spark Client Setup
 
 positional arguments:
-  {create,delete,update-conf,get-conf,delete-conf,get-primary,list}
+  {create,delete,add-config,remove-config,get-config,clear-config,get-primary,list}
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --log-level LOG_LEVEL
-                        Level for logging.
-  --kubeconfig KUBECONFIG
-                        Kubernetes configuration file
-  --context CONTEXT     Context name to use within the provided kubernetes configuration file
-  --namespace NAMESPACE
-                        Namespace for the service account. Default is 'default'.
-  --username USERNAME   Service account username. Default is 'spark'.
 ```
 
 As you would have noticed, these commands can take following optional parameters.
@@ -59,14 +54,24 @@ You will notice from the help output that the action takes following optional ar
 * ***conf*** - Values to add to and override the ones in specified properties-file param.
 
 ```bash
-usage: service_account_registry.py service-account [-h] [--primary] [--properties-file PROPERTIES_FILE] [--conf CONF]
+usage: service_account_registry.py create [-h] [--log-level {INFO,WARN,ERROR,DEBUG}] [--master MASTER] [--kubeconfig KUBECONFIG] [--context CONTEXT] [--properties-file PROPERTIES_FILE] [--conf CONF]
+                                          [--username USERNAME] [--namespace NAMESPACE] [--primary]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --primary             Boolean to mark the service account as primary.
+  --log-level {INFO,WARN,ERROR,DEBUG}
+                        Set the log level of the logging
+  --master MASTER       Kubernetes control plane uri.
+  --kubeconfig KUBECONFIG
+                        Kubernetes configuration file
+  --context CONTEXT     Kubernetes context to be used
   --properties-file PROPERTIES_FILE
-                        File with all configuration properties assignments.
+                        Spark default configuration properties file.
   --conf CONF           Config properties to be added to the service account.
+  --username USERNAME   Service account name to use other than primary.
+  --namespace NAMESPACE
+                        Namespace of service account name to use other than primary.
+  --primary             Boolean to mark the service account as primary.
 ```
 Service account is an abstraction for a set of associated kubernetes resources needed to run a Spark job. The user can choose to associate configuration properties 
 with the service account that can serve as default while submitting jobs against that service account from any machine within the kubernetes cluster. A typical use 
