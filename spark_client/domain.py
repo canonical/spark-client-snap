@@ -2,6 +2,7 @@ import io
 import os
 import re
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from spark_client.utils import WithLogging, union
@@ -148,6 +149,19 @@ class PropertyFile(WithLogging):
         }
         return PropertyFile(union(*[simple_properties, merged_options]))
 
+    def remove(self, keys_to_remove: List[str]) -> "PropertyFile":
+        """Remove keys from PropertyFile properties.
+
+        Args:
+            keys_to_remove: List of keys to be removed from properties.
+        """
+        self.props = (
+            {key: self.props[key] for key in self.props if key not in keys_to_remove}
+            if keys_to_remove
+            else self.props
+        )
+        return self
+
 
 class Defaults:
     """Class containing all relevant defaults for the application."""
@@ -224,6 +238,30 @@ class Defaults:
     def pyspark(self) -> str:
         return f"{self.spark_folder}/bin/pyspark"
 
+    @property
+    def dir_package(self) -> str:
+        return (
+            f"{self.environ.get('SNAP')}"
+            if "SNAP" in self.environ
+            else f"{self.environ.get('HOME')}/python/dist/spark_client"
+        )
+
+    @property
+    def template_dir(self) -> str:
+        return f"{self.dir_package}/resources/templates"
+
+    @property
+    def template_serviceaccount(self) -> str:
+        return f"{self.template_dir}/serviceaccount_yaml.tmpl"
+
+    @property
+    def template_role(self) -> str:
+        return f"{self.template_dir}/role_yaml.tmpl"
+
+    @property
+    def template_rolebinding(self) -> str:
+        return f"{self.template_dir}/rolebinding_yaml.tmpl"
+
 
 @dataclass
 class ServiceAccount:
@@ -253,3 +291,11 @@ class ServiceAccount:
     def configurations(self) -> PropertyFile:
         """Return the service account configuration, associated to a given spark service account."""
         return self.extra_confs + self._k8s_configurations
+
+
+class KubernetesResourceType(str, Enum):
+    SERVICEACCOUNT = "serviceaccount"
+    ROLE = "role"
+    ROLEBINDING = "rolebinding"
+    SECRET = "secret"
+    SECRET_GENERIC = "secret generic"

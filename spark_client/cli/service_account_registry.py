@@ -9,7 +9,7 @@ from spark_client.domain import PropertyFile, ServiceAccount
 from spark_client.exceptions import NoAccountFound
 from spark_client.services import (
     K8sServiceAccountRegistry,
-    KubeInterface,
+    LightKube,
     parse_conf_overrides,
 )
 from spark_client.utils import (
@@ -33,9 +33,10 @@ def build_service_account_from_args(args) -> ServiceAccount:
 class Actions(str, Enum):
     CREATE = "create"
     DELETE = "delete"
-    UPDATE_CONF = "update-conf"
-    GET_CONF = "get-conf"
-    DELETE_CONF = "delete-conf"
+    ADD_CONFIG = "add-config"
+    REMOVE_CONFIG = "remove-config"
+    GET_CONFIG = "get-config"
+    CLEAR_CONFIG = "clear-config"
     PRIMARY = "get-primary"
     LIST = "list"
 
@@ -65,22 +66,28 @@ def create_service_account_registry_parser(parser: ArgumentParser):
         subparsers.add_parser(Actions.DELETE.value, parents=[base_parser]),
     )
 
-    #  subparser for sa-conf-create
+    #  subparser for add-config
     parse_arguments_with(
         [add_config_arguments, spark_user_parser],
-        subparsers.add_parser(Actions.UPDATE_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.ADD_CONFIG.value, parents=[base_parser]),
+    )
+
+    #  subparser for remove-config
+    parse_arguments_with(
+        [add_config_arguments, spark_user_parser],
+        subparsers.add_parser(Actions.REMOVE_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-get
     parse_arguments_with(
         [spark_user_parser],
-        subparsers.add_parser(Actions.GET_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.GET_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for sa-conf-del
     parse_arguments_with(
         [spark_user_parser],
-        subparsers.add_parser(Actions.DELETE_CONF.value, parents=[base_parser]),
+        subparsers.add_parser(Actions.CLEAR_CONFIG.value, parents=[base_parser]),
     )
 
     #  subparser for resources-primary-sa
@@ -97,13 +104,9 @@ if __name__ == "__main__":
         ArgumentParser(description="Spark Client Setup")
     ).parse_args()
 
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(message)s", level=args.log_level
-    )
+    logging.basicConfig(format="%(message)s", level=args.log_level)
 
-    kube_interface = KubeInterface(
-        args.kubeconfig or defaults.kube_config, kubectl_cmd=defaults.kubectl_cmd
-    )
+    kube_interface = LightKube(args.kubeconfig or defaults.kube_config, defaults)
 
     context = args.context or kube_interface.context_name
 
@@ -123,21 +126,43 @@ if __name__ == "__main__":
 
     elif args.action == Actions.DELETE:
         user_id = build_service_account_from_args(args).id
-        print(user_id)
+        logging.info(user_id)
         registry.delete(user_id)
 
-    elif args.action == Actions.UPDATE_CONF:
-        account_configuration = (
-            PropertyFile.read(args.properties_file)
-            if args.properties_file is not None
-            else PropertyFile.empty()
-        ) + parse_conf_overrides(args.conf)
+    elif args.action == Actions.ADD_CONFIG:
+        input_service_account = build_service_account_from_args(args)
 
-        registry.set_configurations(
-            build_service_account_from_args(args).id, account_configuration
+        service_account_in_registry = registry.get(input_service_account.id)
+
+        if service_account_in_registry is None:
+            raise NoAccountFound(input_service_account.id)
+
+        account_configuration = (
+            service_account_in_registry.configurations
+            + (
+                PropertyFile.read(args.properties_file)
+                if args.properties_file is not None
+                else PropertyFile.empty()
+            )
+            + parse_conf_overrides(args.conf)
         )
 
-    elif args.action == Actions.GET_CONF:
+        registry.set_configurations(input_service_account.id, account_configuration)
+
+    elif args.action == Actions.REMOVE_CONFIG:
+        input_service_account = build_service_account_from_args(args)
+
+        service_account_in_registry = registry.get(input_service_account.id)
+
+        if service_account_in_registry is None:
+            raise NoAccountFound(input_service_account.id)
+
+        registry.set_configurations(
+            input_service_account.id,
+            service_account_in_registry.configurations.remove(args.conf),
+        )
+
+    elif args.action == Actions.GET_CONFIG:
         input_service_account = build_service_account_from_args(args)
 
         maybe_service_account = registry.get(input_service_account.id)
@@ -145,9 +170,9 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound(input_service_account.id)
 
-        maybe_service_account.configurations.log(print)
+        maybe_service_account.configurations.log(logging.info)
 
-    elif args.action == Actions.DELETE_CONF:
+    elif args.action == Actions.CLEAR_CONFIG:
         registry.set_configurations(
             build_service_account_from_args(args).id, PropertyFile.empty()
         )
@@ -158,8 +183,11 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound()
 
-        maybe_service_account.configurations.log(print)
+        # maybe_service_account.configurations.log(logging.info)
+        logging.info(maybe_service_account.id)
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():
-            print(str.expandtabs(f"{service_account.id}\t{service_account.primary}"))
+            logging.info(
+                str.expandtabs(f"{service_account.id}\t{service_account.primary}")
+            )
