@@ -17,7 +17,7 @@ metadata:
 spec:
   containers:
   - name: spark-client
-    image: dataplatformoci/spark:3.3.2
+    image: ghcr.io/canonical/charmed-spark:3.3.2-22.04_edge
     command: ["/bin/pebble", "run", "--hold"]
   serviceAccountName: spark-user
   hostNetwork: true
