@@ -77,7 +77,7 @@ run_spark_shell() {
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
-  echo -e "$(cat ./tests/integration/resources/test-spark-shell.txt | spark-client.spark-shell --username=${USERNAME} --namespace ${NAMESPACE})" > spark-shell.out
+  echo -e "$(cat ./tests/integration/resources/test-spark-shell.scala | spark-client.spark-shell --username=${USERNAME} --namespace ${NAMESPACE})" > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   rm spark-shell.out
@@ -97,7 +97,7 @@ run_pyspark() {
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
-  echo -e "$(cat ./tests/integration/resources/test-pyspark.txt | spark-client.pyspark --username=${USERNAME} --namespace ${NAMESPACE} --conf spark.executor.instances=2)" > pyspark.out
+  echo -e "$(cat ./tests/integration/resources/test-pyspark.py | spark-client.pyspark --username=${USERNAME} --namespace ${NAMESPACE} --conf spark.executor.instances=2)" > pyspark.out
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
@@ -248,7 +248,7 @@ run_spark_shell_in_pod() {
   NAMESPACE=$1
   USERNAME=$2
 
-  SPARK_SHELL_COMMANDS=$(cat ./tests/integration/resources/test-spark-shell.txt)
+  SPARK_SHELL_COMMANDS=$(cat ./tests/integration/resources/test-spark-shell.scala)
 
   # Check job output
   # Sample output
@@ -272,7 +272,7 @@ run_pyspark_in_pod() {
   NAMESPACE=$1
   USERNAME=$2
 
-  PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark.txt)
+  PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark.py)
 
   # Check job output
   # Sample output
