@@ -69,4 +69,4 @@ spark-client.service-account-registry --username demouser --namespace demonamesp
 ```
 
 This command will delete the service account together with the other resources created, e.g. 
-secrets, role, role-bindings, etc. 
+secrets, role, role-bindings, etc.
