@@ -1,0 +1,124 @@
+## How to run Spark Streaming against Kafka
+
+One of the very interesting use cases for Spark is structured streaming with Kafka. 
+
+To get it up and running, follow the instructions below. 
+
+Prerequisite would be that juju is installed and we are working with a kubernetes based controller in juju.
+
+### Setup
+
+First setup a fresh juju model which we will use as a workspace for spark-streaming experiments.
+
+```shell
+juju add-model spark-streaming
+```
+
+Now deploy zookeeper and kafka k8s-charms. Single units should be enough. 
+
+```shell
+juju deploy zookeeper-k8s --series=jammy --channel=edge
+
+juju deploy kafka-k8s --series=jammy --channel=edge
+
+juju relate  kafka-k8s  zookeeper-k8s
+```
+
+Now deploy a test app to write messages to Kafka (producer, not a spark job).
+
+```shell
+juju deploy kafka-test-app --series=jammy --channel=edge --config role=producer --config topic_name=spark-streaming-store --config num_messages=1000
+
+juju relate kafka-test-app  kafka-k8s
+```
+
+For consumption of these messages using Spark, Spark would need the credentials to connect to Kafka.
+
+To retrieve these credentials from kafka, we need to setup data-integrator which will help with credential retrieval as shown below.
+
+```shell
+juju deploy data-integrator --series=jammy --channel=edge --config extra-user-roles=consumer,admin --config topic-name=spark-streaming-store
+
+juju relate data-integrator kafka-k8s 
+
+juju run-action data-integrator/0 get-credentials --wait 
+```
+
+Please note the username and password retrieved above to be used soon later.
+
+For the spark test, we need to set up the environment in a kubernetes testpod launched in the same namespace as the juju model i.e. spark-streaming in this example.
+
+Here is how the pod spec yaml might look like.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod
+spec:
+  containers:
+  - image: ghcr.io/canonical/charmed-spark:3.3.2-22.04_edge
+    name: spark
+    ports:
+    - containerPort: 18080
+    command: ["sleep"]
+    args: ["3600"]
+```
+
+Create a kubernetes test pod in the same namespace as the juju model name i.e. spark-streaming in this example. 
+
+Launch a bash shell inside the test pod. 
+
+```shell
+kubectl apply -f ./testpod.yaml --namespace=spark-streaming
+kubectl exec -it testpod -n spark-streaming -- /bin/bash
+```
+
+Create a kube config within the test pod bash session to work with spark-client.
+
+Launch a pyspark shell to read the structured stream from Kafka.
+
+```shell
+cd /home/spark
+mkdir .kube
+cat > .kube/config << EOF
+<<KUBECONFIG CONTENTS>>
+EOF
+
+spark-client.service-account-registry create --username hello --namespace spark-streaming
+
+spark-client.service-account-registry list
+
+spark-client.pyspark --username hello --namespace spark-streaming --conf spark.executor.instances=1 --conf spark.jars.ivy=/tmp --packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.2.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0
+```
+
+Within the pyspark shell, now use the credentials retrieved previously to read stream from Kafka.
+
+```python
+from pyspark.sql.functions import explode
+from pyspark.sql.functions import split, col
+
+username="relation-8"
+password="iGvE6HrCru1vqEsUdgRTsZKlOLqbebMJ"
+lines = spark.readStream \
+          .format("kafka") \
+          .option("kafka.bootstrap.servers", "kafka-k8s-0.kafka-k8s-endpoints:9092") \
+          .option("kafka.sasl.mechanism", "SCRAM-SHA-512") \
+          .option("kafka.security.protocol", "SASL_PLAINTEXT") \
+          .option("kafka.sasl.jaas.config", f'org.apache.kafka.common.security.scram.ScramLoginModule required username={username} password={password};') \
+          .option("subscribe", "spark-streaming-store") \
+          .option("includeHeaders", "true") \
+          .load()
+
+words = lines.select(explode(split(col("value"), " ")).alias("word"))
+
+wordCounts = words.groupBy("word").count()
+
+query = wordCounts \
+    .writeStream \
+    .outputMode("complete") \
+    .format("console") \
+    .start()
+
+query.awaitTermination()
+```

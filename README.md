@@ -31,7 +31,10 @@ They can save you a lot of time and debugging effort for authoring Spark jobs in
 
 Check out the [How-Tos](https://discourse.charmhub.io/t/spark-client-snap-how-to-manage-spark-accounts/8959) section for a list of useful 
 commands that will make your life easy working with the Spark client. If Python is your thing, then you can 
-also manage your service accounts via a Python [library](https://discourse.charmhub.io/t/spark-client-snap-how-to-python-api/8958)
+also manage your service accounts via a Python [library](https://discourse.charmhub.io/t/spark-client-snap-how-to-python-api/8958). 
+
+To work with structured Spark streaming application based on Kafka, please refer to the section on
+[How to run Spark Streaming against Kafka](./docs/how-to/spark_streaming.md)
 
 If you already have a _**Charmed Kubernetes**_ setup, check out the sections for 
 using _**spark-client**_ with [Charmed Kubernetes](https://discourse.charmhub.io/t/spark-client-snap-how-to-run-on-charmed-kubernetes/8960) as snap 
