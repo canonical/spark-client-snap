@@ -17,5 +17,3 @@ Following is the hierarchy of configurations merged during spark-submit
 * **CLI Configuration**: Properties specified as parameters (list of ```--conf```) in spark-submit command.
 
 The configurations are resolved i.e. merged preferring the latter sources over the previous ones during spark-submit.
-
-

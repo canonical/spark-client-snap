@@ -1,4 +1,5 @@
 ## Spark Client Snap Documentation 
+
 The Spark Client Snap is a utility client application that makes running Apache Spark on Kubernetes simple 
 and seamless. It packages in a single confined [snap](https://snapcraft.io/):
 
@@ -28,31 +29,24 @@ Spark Client Snap is an official distribution of Apache Spark. It’s an open-so
 
 # Navigation
 
-* [Set up the environment]()
-* [Manage Spark service accounts]()
-* [Submit a Spark Job]()
-* [Use the interactive shells]()
-* [Tips and Tricks](https://discourse.charmhub.io/t/spark-client-snap-tutorial-common-gotchas/8955)
-
-
-| Level | Path                                | Navlink                                                                                                                                           |
-|-------|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1     | tutorial                            | [Tutorial]()                                                                                                                                      |
-| 2     | tutorial-overview                   | [1. Introduction](https://discourse.charmhub.io/t/spark-client-snap-tutorial/8957)                                                                |
-| 2     | tutorial-setup-environment          | [2. Set up the environment](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8951)                                    |
-| 2     | tutorial-spark-service-accounts     | [3. Manage Spark service accounts](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952)                             |
-| 2     | tutorial-spark-job                  | [4. Submit a Spark Job](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953)                                             |
-| 2     | tutorial-spark-shells               | [5. Use the spark-shell](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954)                                        |
-| 2     | tutorial-tips-and-tricks            | [7. Tips and Tricks](https://discourse.charmhub.io/t/spark-client-snap-tutorial-common-gotchas/8955)                                              |
-| 1     | how-to                              | [How To]()                                                                                                                                        |
-| 2     | how-to-manage-service-accounts      | [Manage Service Accounts](https://discourse.charmhub.io/t/spark-client-snap-how-to-manage-spark-accounts/8959)                                    |
-| 2     | how-to-use-spark-client-from-python | [Use the Spark Client Python API](https://discourse.charmhub.io/t/spark-client-snap-how-to-python-api/8958)                                       |
-| 2     | how-to-run-on-charmed-k8s           | [Run on Charmed Kubernetes](https://discourse.charmhub.io/t/spark-client-snap-how-to-run-on-charmed-kubernetes/8960)                              |
-| 2     | how-to-run-on-k8s-pod               | [Run on K8s pods](https://discourse.charmhub.io/t/spark-client-snap-how-to-run-on-k8s-in-a-pod/8961)                                              |
-| 1     | reference                           | [Reference]()                                                                                                                                     |
-| 2     | refs-requirements                   | [Requirements](https://discourse.charmhub.io/t/spark-client-snap-reference-requirements/8962)                                                     |
-| 1     | explanation                         | [Explanation]()                                                                                                                                   |
-| 2     | expl-configuration                  | [Spark Client Hierarchical Configuration](https://discourse.charmhub.io/t/spark-client-snap-explanation-hierarchical-configuration-handling/8956) |
+| Level | Path                           | Navlink                                                                                                              |
+|-------|--------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| 1     | tutorial                       | [Tutorial]()                                                                                                         |
+| 2     | t-overview                     | [1. Introduction](/t/spark-client-snap-tutorial/8957)                                                                |
+| 2     | t-setup-environment            | [2. Set up the environment](/t/spark-client-snap-tutorial-setup-environment/8951)                                    |
+| 2     | t-spark-service-accounts       | [3. Manage Spark service accounts](/t/spark-client-snap-tutorial-setup-environment/8952)                             |
+| 2     | t-spark-job                    | [4. Submit a Spark Job](/t/spark-client-snap-tutorial-spark-submit/8953)                                             |
+| 2     | t-spark-shells                 | [5. Use interactive shells](/t/spark-client-snap-tutorial-interactive-mode/8954)                                     |
+| 2     | t-tips-and-tricks              | [6. Tips and Tricks](/t/spark-client-snap-tutorial-common-gotchas/8955)                                              |
+| 1     | how-to                         | [How To]()                                                                                                           |
+| 2     | h-manage-service-accounts      | [Manage Service Accounts](/t/spark-client-snap-how-to-manage-spark-accounts/8959)                                    |
+| 2     | h-use-spark-client-from-python | [Use the Spark Client Python API](/t/spark-client-snap-how-to-python-api/8958)                                       |
+| 2     | h-run-on-charmed-k8s           | [Run on Charmed Kubernetes](/t/spark-client-snap-how-to-run-on-charmed-kubernetes/8960)                              |
+| 2     | h-run-on-k8s-pod               | [Run on K8s pods](/t/spark-client-snap-how-to-run-on-k8s-in-a-pod/8961)                                              |
+| 1     | reference                      | [Reference]()                                                                                                        |
+| 2     | r-requirements                 | [Requirements](/t/spark-client-snap-reference-requirements/8962)                                                     |
+| 1     | explanation                    | [Explanation]()                                                                                                      |
+| 2     | e-configuration                | [Spark Client Hierarchical Configuration](/t/spark-client-snap-explanation-hierarchical-configuration-handling/8956) |
 
 
 # Redirects

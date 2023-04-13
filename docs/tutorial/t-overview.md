@@ -32,4 +32,3 @@ Here’s an overview of the steps required with links to our separate tutorials 
 * [Submit a Spark Job](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953)
 * [Use the interactive shells](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954)
 * [Tips and Tricks](https://discourse.charmhub.io/t/spark-client-snap-tutorial-common-gotchas/8955)
-
