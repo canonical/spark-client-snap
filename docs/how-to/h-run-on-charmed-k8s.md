@@ -29,7 +29,7 @@ $ spark-client.service-account-registry create --username spark --namespace defa
 Let's use the ```spark-submit``` utility in the snap to submit a ```Spark Pi``` job example.
 
 ```shell
-$ spark-client.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.3.2.jar 100
+$ spark-client.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.4.0.jar 100
 ```
 
 ### Spark Shell

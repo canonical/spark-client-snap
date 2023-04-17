@@ -2,8 +2,8 @@ name: Create a github release
 
 env:
   BRANCH: ${{ github.ref_name }}
-  SNAP_VERSION: 3.3.2
-  VERSION: 0.0.6
+  SNAP_VERSION: 3.4.0
+  VERSION: 0.0.7
 
 on:
   push:

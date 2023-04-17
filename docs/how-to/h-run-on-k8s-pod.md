@@ -17,7 +17,7 @@ metadata:
 spec:
   containers:
   - name: spark-client
-    image: ghcr.io/canonical/charmed-spark:3.3.2-22.04_edge
+    image: ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge
     command: ["/bin/pebble", "run", "--hold"]
   serviceAccountName: spark-user
   hostNetwork: true
@@ -55,11 +55,11 @@ $ python3 -m spark_client.cli.service-account-registry create --username spark
 Let's use the ```spark-submit``` script packaged within the Charmed Spark container image to submit a ```Spark Pi``` job example to Charmed Kubernetes.
 
 ```shell
-$ python3 -m spark_client.cli.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.3.2.jar 100
+$ python3 -m spark_client.cli.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.4.0.jar 100
 ```
 Or
 ```shell
-$ spark-client.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.3.2.jar 100
+$ spark-client.spark-submit --username spark --class org.apache.spark.examples.SparkPi local:///opt/spark/examples/jars/spark-examples_2.12-3.4.0.jar 100
 ```
 
 ### Spark Shell

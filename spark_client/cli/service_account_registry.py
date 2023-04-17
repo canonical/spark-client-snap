@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
     context = args.context or kube_interface.context_name
 
-    logging.info(f"Using K8s context: {context}")
+    logging.debug(f"Using K8s context: {context}")
 
     registry = K8sServiceAccountRegistry(kube_interface.with_context(context))
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     elif args.action == Actions.DELETE:
         user_id = build_service_account_from_args(args).id
-        logging.info(user_id)
+        logging.critical(user_id)
         registry.delete(user_id)
 
     elif args.action == Actions.ADD_CONFIG:
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound(input_service_account.id)
 
-        maybe_service_account.configurations.log(logging.info)
+        maybe_service_account.configurations.log(logging.critical)
 
     elif args.action == Actions.CLEAR_CONFIG:
         registry.set_configurations(
@@ -183,11 +183,11 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound()
 
-        # maybe_service_account.configurations.log(logging.info)
-        logging.info(maybe_service_account.id)
+        # maybe_service_account.configurations.log(logging.critical)
+        logging.critical(maybe_service_account.id)
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():
-            logging.info(
+            logging.critical(
                 str.expandtabs(f"{service_account.id}\t{service_account.primary}")
             )
