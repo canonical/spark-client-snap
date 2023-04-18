@@ -44,8 +44,8 @@ jobs:
           fi
           echo "::set-output name=version::${LATEST_AVAILABLE_VERSION}"
 
-  modify-snap-version:
-    name: Modify snap version to be published for reviewers reference.
+  create-or-update-pull-request:
+    name: Create or update pull request
     if: needs.check-spark.outputs.decision  ==  '1'
     runs-on: ubuntu-latest
     timeout-minutes: 5
