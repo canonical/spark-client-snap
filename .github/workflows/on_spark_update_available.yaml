@@ -4,6 +4,7 @@ env:
   BRANCH: main
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '00 16 * * *'
 
@@ -61,25 +62,39 @@ jobs:
         run: |
           git config user.email "abhishek.verma@canonical.com"
           git config user.name "Abhishek Verma"
-          git checkout -b ${{ github.run_id }}-${{ github.run_attempt }}
+          git checkout -b "bot/update-spark-version"
           echo -n ${{ needs.check-spark.outputs.version }} > ./SPARK_VERSION
           git add ./SPARK_VERSION
           git config author.name "GitHub <noreply@github.com>"
           git config author.email "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
           git commit -m "Update Spark Snap"
-          git push --set-upstream origin ${{ github.run_id }}-${{ github.run_attempt }}
-      - name: create pull request
-        id: cpr
-        run: gh pr create 
-          --title "Update snap for new spark version" 
-          --body "Update client snap with new version of Apache Spark." 
-          --base main 
-          --assignee deusebio
-          --assignee taurus-forever
-          --assignee averma-canonical
-          --reviewer deusebio
-          --reviewer taurus-forever
-          --reviewer averma-canonical 
-          --label "automated pr"
+          git push --set-upstream -f origin "bot/update-spark-version"
+      - name: Check if a PR already exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prs=$(gh pr list \
+              --json baseRefName,headRefName \
+              --jq '
+                  map(select(.baseRefName == "main" and .headRefName == "bot/update-spark-version"))
+                  | length
+              ')
+          if ((prs > 0)); then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      # - name: create pull request
+      #   if: '!steps.check.outputs.skip'
+      #   id: cpr
+      #   run: gh pr create
+      #     --title "Update snap for new spark version"
+      #     --body "Update client snap with new version of Apache Spark."
+      #     --base main
+      #     --assignee deusebio
+      #     --assignee taurus-forever
+      #     --assignee averma-canonical
+      #     --reviewer deusebio
+      #     --reviewer taurus-forever
+      #     --reviewer averma-canonical
+      #     --label "automated pr"
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
