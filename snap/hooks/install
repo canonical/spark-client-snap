@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+# for binaries
+#echo "Creating SNAP/opt/spark for binaries"
+mkdir -p  "$SNAP/opt/spark"
+
+# for config
+#echo "Creating SNAP_DATA/etc/spark for config"
+mkdir -p "$SNAP_DATA/etc/spark"
+
+# for logs
+#echo "Creating SNAP_COMMON/var/log/spark for logs"
+mkdir -p "$SNAP_COMMON/var/log/spark"
+
+# for data
+#echo "Creating $SNAP_COMMON/var/lib/spark for data"
+mkdir -p  "$SNAP_COMMON/var/lib/spark"
+
+
+cp -r "$SNAP/opt/spark/conf/spark-defaults.conf" "$SNAP_DATA/etc/spark/"

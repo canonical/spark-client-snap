@@ -232,11 +232,11 @@ class TestProperties(UnittestWithTmpFolder):
 
         label = helpers.utils.get_primary_label()
 
-        cmd_get_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l {label} -A -o yaml"
+        cmd_get_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l {label} -A -o yaml"
         output_get_service_account_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
         output_get_service_account = output_get_service_account_yaml_str.encode("utf-8")
 
-        cmd_get_master = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
+        cmd_get_master = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} config view --minify -o jsonpath=\"{{.clusters[0]['cluster.server']}}\""
         output_get_master = control_plane_uri.encode("utf-8")
 
         values = {
@@ -291,7 +291,7 @@ class TestProperties(UnittestWithTmpFolder):
         mock_tempfile.flush.return_value = 0
         mock_tempfile.return_value.__enter__.return_value.name = properties_file
 
-        cmd_create_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create secret generic spark-client-sa-conf-{username} --from-env-file={properties_file}"
+        cmd_create_secret = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create secret generic spark-client-sa-conf-{username} --from-env-file={properties_file}"
         output_create_secret_str = ""
         output_create_secret = output_create_secret_str.encode("utf-8")
 
@@ -335,11 +335,11 @@ class TestProperties(UnittestWithTmpFolder):
 
         mock_os.environ.__getitem__.return_value = test_id
 
-        cmd_retrieve_secret_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o yaml"
+        cmd_retrieve_secret_yaml = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o yaml"
         output_retrieve_secret_yaml_str = f'apiVersion: v1\ndata:\n  {conf_key}: {conf_value_base64_encoded}\nkind: Secret\nmetadata:\n  creationTimestamp: "2022-11-21T07:54:51Z"\n  name: spark-client-sa-conf-{username}\n  namespace: {namespace}\n  resourceVersion: "292967"\n  uid: 943b82c3-2891-4332-886c-621ef4f4633f\ntype: Opaque'
         output_retrieve_secret_yaml = output_retrieve_secret_yaml_str.encode("utf-8")
 
-        cmd_retrieve_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o jsonpath='{{.data.{conf_key}}}' | base64 --decode"
+        cmd_retrieve_secret = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} get secret spark-client-sa-conf-{username} -o jsonpath='{{.data.{conf_key}}}' | base64 --decode"
         output_retrieve_secret_str = conf_value
         output_retrieve_secret = output_retrieve_secret_str.encode("utf-8")
 
@@ -387,24 +387,24 @@ class TestProperties(UnittestWithTmpFolder):
         conf_key = str(uuid.uuid4())
         conf_value = str(uuid.uuid4())
 
-        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        cmd_create_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
         output_create_service_account = ""
-        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        cmd_create_role_binding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
         output_create_role_binding = ""
 
-        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
         output_retrieve_primary_sa_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
         output_retrieve_primary_sa_yaml = output_retrieve_primary_sa_yaml_str.encode(
             "utf-8"
         )
 
-        cmd_unlabel_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount --namespace={namespace} {username} app.kubernetes.io/spark-client-primary-"
+        cmd_unlabel_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount --namespace={namespace} {username} app.kubernetes.io/spark-client-primary-"
         output_unlabel_service_account = ""
-        cmd_unlabel_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding --namespace={namespace} {username}-role app.kubernetes.io/spark-client-primary-"
+        cmd_unlabel_rolebinding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding --namespace={namespace} {username}-role app.kubernetes.io/spark-client-primary-"
         output_unlabel_rolebinding = ""
-        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        cmd_label_new_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_service_account = ""
-        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        cmd_label_new_rolebinding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_new_rolebinding = ""
 
         values_subprocess = {
@@ -468,20 +468,20 @@ class TestProperties(UnittestWithTmpFolder):
         conf_key = str(uuid.uuid4())
         conf_value = str(uuid.uuid4())
 
-        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        cmd_create_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
         output_create_service_account = ""
-        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        cmd_create_role_binding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
         output_create_role_binding = ""
 
-        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
         output_retrieve_primary_sa_yaml_str = f'apiVersion: v1\nitems:\n- apiVersion: v1\n  kind: ServiceAccount\n  metadata:\n    creationTimestamp: "2022-11-21T14:32:06Z"\n    labels:\n      app.kubernetes.io/managed-by: spark-client\n      app.kubernetes.io/spark-client-primary: "1"\n    name: {username}\n    namespace: {namespace}\n    resourceVersion: "321848"\n    uid: 87ef7231-8106-4a36-b545-d8cf167788a6\nkind: List\nmetadata:\n  resourceVersion: ""'
         output_retrieve_primary_sa_yaml = output_retrieve_primary_sa_yaml_str.encode(
             "utf-8"
         )
 
-        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client"
+        cmd_label_new_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client"
         output_label_service_account = ""
-        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client"
+        cmd_label_new_rolebinding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client"
         output_label_new_rolebinding = ""
 
         values_subprocess = {
@@ -539,12 +539,12 @@ class TestProperties(UnittestWithTmpFolder):
         conf_key = str(uuid.uuid4())
         conf_value = str(uuid.uuid4())
 
-        cmd_create_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
+        cmd_create_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create serviceaccount {username}"
         output_create_service_account = ""
-        cmd_create_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
+        cmd_create_role_binding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} create rolebinding {username}-role --role=view --serviceaccount={namespace}:{username}"
         output_create_role_binding = ""
 
-        cmd_retrieve_primary_sa_yaml = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
+        cmd_retrieve_primary_sa_yaml = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context}  get serviceaccount -l app.kubernetes.io/spark-client-primary=1 -A -o yaml"
         output_retrieve_primary_sa_yaml_str = (
             'apiVersion: v1\nitems: []\nkind: List\nmetadata:\n  resourceVersion: ""'
         )
@@ -552,9 +552,9 @@ class TestProperties(UnittestWithTmpFolder):
             "utf-8"
         )
 
-        cmd_label_new_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        cmd_label_new_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label serviceaccount {username} app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_service_account = ""
-        cmd_label_new_rolebinding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
+        cmd_label_new_rolebinding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} label rolebinding {username}-role app.kubernetes.io/managed-by=spark-client app.kubernetes.io/spark-client-primary=1"
         output_label_new_rolebinding = ""
 
         values_subprocess = {
@@ -610,12 +610,12 @@ class TestProperties(UnittestWithTmpFolder):
         kubeconfig = str(uuid.uuid4())
         context = str(uuid.uuid4())
 
-        cmd_cleanup_service_account = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete serviceaccount {username}"
+        cmd_cleanup_service_account = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete serviceaccount {username}"
         output_cleanup_service_account = ""
-        cmd_cleanup_role_binding = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete rolebinding {username}-role"
+        cmd_cleanup_role_binding = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete rolebinding {username}-role"
         output_cleanup_role_binding = ""
 
-        cmd_delete_kubernetes_secret = f"{test_id}/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete secret spark-client-sa-conf-{username}"
+        cmd_delete_kubernetes_secret = f"{test_id}/opt/spark/kubectl --kubeconfig {kubeconfig} --namespace {namespace} --context {context} delete secret spark-client-sa-conf-{username}"
         output_delete_kubernetes_secret = ""
 
         values_os = {
@@ -1075,16 +1075,16 @@ class TestProperties(UnittestWithTmpFolder):
     def test_get_static_defaults_conf_file(self):
         test_id = str(uuid.uuid4())
 
-        env_snap = os.environ.get("SNAP")
-        os.environ["SNAP"] = test_id
+        env_snap = os.environ.get("SNAP_DATA")
+        os.environ["SNAP_DATA"] = test_id
 
         assert (
             helpers.utils.get_static_defaults_conf_file()
-            == f"{test_id}/conf/spark-defaults.conf"
+            == f"{test_id}/etc/spark/spark-defaults.conf"
         )
 
         if env_snap:
-            os.environ["SNAP"] = env_snap
+            os.environ["SNAP_DATA"] = env_snap
 
     def test_get_dynamic_defaults_conf_file(self):
         test_id = str(uuid.uuid4())

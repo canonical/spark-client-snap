@@ -15,6 +15,7 @@ class TestDomain(TestCase):
         """
         home_var = str(uuid.uuid4())
         snap_var = str(uuid.uuid4())
+        snap_data_var = str(uuid.uuid4())
         snap_user_data_dir = str(uuid.uuid4())
         snap_spark_env_conf_file = str(uuid.uuid4())
         snap_real_home = str(uuid.uuid4())
@@ -24,15 +25,16 @@ class TestDomain(TestCase):
             environ={
                 "HOME": home_var,
                 "SNAP": snap_var,
+                "SNAP_DATA": snap_data_var,
                 "SNAP_USER_DATA": snap_user_data_dir,
                 "SPARK_CLIENT_ENV_CONF": snap_spark_env_conf_file,
                 "SNAP_REAL_HOME": snap_real_home,
                 "KUBECONFIG": kubeconfig,
             }
         )
-        self.assertEqual(defaults.spark_folder, snap_var)
+        self.assertEqual(defaults.spark_folder, f"{snap_var}/opt/spark")
         self.assertEqual(
-            defaults.static_conf_file, f"{snap_var}/conf/spark-defaults.conf"
+            defaults.static_conf_file, f"{snap_data_var}/etc/spark/spark-defaults.conf"
         )
         self.assertEqual(
             defaults.dynamic_conf_file, f"{snap_user_data_dir}/spark-defaults.conf"
@@ -43,10 +45,10 @@ class TestDomain(TestCase):
         self.assertEqual(
             defaults.scala_history_file, f"{snap_user_data_dir}/.scala_history"
         )
-        self.assertEqual(defaults.kubectl_cmd, f"{snap_var}/kubectl")
-        self.assertEqual(defaults.spark_submit, f"{snap_var}/bin/spark-submit")
-        self.assertEqual(defaults.spark_shell, f"{snap_var}/bin/spark-shell")
-        self.assertEqual(defaults.pyspark, f"{snap_var}/bin/pyspark")
+        self.assertEqual(defaults.kubectl_cmd, f"{snap_var}/opt/spark/kubectl")
+        self.assertEqual(defaults.spark_submit, f"{snap_var}/opt/spark/bin/spark-submit")
+        self.assertEqual(defaults.spark_shell, f"{snap_var}/opt/spark/bin/spark-shell")
+        self.assertEqual(defaults.pyspark, f"{snap_var}/opt/spark/bin/pyspark")
 
     def test_service_account(self):
         """

@@ -177,13 +177,13 @@ class Defaults:
 
     @property
     def spark_folder(self) -> str:
-        """Return the SNAP folder"""
-        return self.environ.get("SNAP", self.environ.get("SPARK_HOME"))
+        """Return the spark root folder"""
+        return self.environ.get("SPARK_HOME") if "SNAP" not in self.environ else f"{self.environ.get('SNAP')}/opt/spark"
 
     @property
     def static_conf_file(self) -> str:
         """Return static config properties file packaged with the client snap."""
-        return f"{self.spark_folder}/conf/spark-defaults.conf"
+        return f"{self.environ.get('SNAP_DATA')}/etc/spark/spark-defaults.conf"
 
     @property
     def dynamic_conf_file(self) -> str:
@@ -241,7 +241,7 @@ class Defaults:
     @property
     def dir_package(self) -> str:
         return (
-            f"{self.environ.get('SNAP')}"
+            f"{self.environ.get('SNAP')}/opt/spark"
             if "SNAP" in self.environ
             else f"{self.environ.get('HOME')}/python/dist/spark_client"
         )

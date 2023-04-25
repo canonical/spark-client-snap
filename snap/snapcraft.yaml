@@ -1,6 +1,6 @@
 name: spark-client
 base: core22
-version: '3.4.0'
+version: '3.3.2'
 summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
@@ -20,25 +20,25 @@ environment:
 
 apps:
   service-account-registry:
-    command: ops/cli/service_account_registry.py
+    command: opt/spark/ops/cli/service_account_registry.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
-      OPS_ROOT: ${SNAP}/ops
+      OPS_ROOT: ${SNAP}
     plugs:
         - network
         - home
         - dot-kube-config
   spark-submit:
-    command: ops/cli/spark_submit.py
+    command: opt/spark/ops/cli/spark_submit.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
-      OPS_ROOT: ${SNAP}/ops
+      OPS_ROOT: ${SNAP}
     plugs:
         - network
         - home
         - dot-kube-config
   spark-shell:
-    command: ops/cli/spark_shell.py
+    command: opt/spark/ops/cli/spark_shell.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
@@ -47,7 +47,7 @@ apps:
         - home
         - dot-kube-config
   pyspark:
-    command: ops/cli/pyspark.py
+    command: opt/spark/ops/cli/pyspark.py
     environment:
       PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
     plugs:
@@ -71,24 +71,24 @@ parts:
         SPARK_HADOOP_VERSION='3'
         AWS_JAVA_SDK_BUNDLE_VERSION='1.11.874'
         HADOOP_AWS_VERSION='3.2.2'
-        SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
-        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
+        SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION)
+        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
         if  [[ ${STATUSCODE} -ne 200 ]]
           then
             echo "ERROR: Latest available Spark version ${SPARK_VERSION} does not have a downloadable binary! Exiting...."
             exit 1
         fi
         echo "Downloading latest available Spark version ${SPARK_VERSION}."
-        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
-        sha512sum --check "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        sha512sum --check "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
         if  [[ $? -ne 0 ]]
           then
             echo "DOWNLOAD ERROR: Latest available Spark version ${SPARK_VERSION} could not be downloaded properly! Exiting...."
             exit 1
         fi
-        tar -zxf "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        cd "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
+        tar -zxf "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        cd "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
         echo "`cat aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1`  aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar" | sha1sum --check
@@ -106,12 +106,15 @@ parts:
             exit 1
         fi
         cd ..
-        mkdir -p $CRAFT_PART_INSTALL/bin
-        cp -r bin/* $CRAFT_PART_INSTALL/bin/
-        mkdir -p $CRAFT_PART_INSTALL/jars
-        cp -r jars/* $CRAFT_PART_INSTALL/jars/
-        mkdir -p $CRAFT_PART_INSTALL/python
-        cp -r python/* $CRAFT_PART_INSTALL/python/
+      
+        mkdir -p $CRAFT_PART_INSTALL/opt/spark/ops
+
+        mkdir -p $CRAFT_PART_INSTALL/opt/spark/bin
+        cp -r bin/* $CRAFT_PART_INSTALL/opt/spark/bin/
+        mkdir -p $CRAFT_PART_INSTALL/opt/spark/jars
+        cp -r jars/* $CRAFT_PART_INSTALL/opt/spark/jars/
+        mkdir -p $CRAFT_PART_INSTALL/opt/spark/python
+        cp -r python/* $CRAFT_PART_INSTALL/opt/spark/python/
     override-prime: |
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
@@ -127,26 +130,26 @@ parts:
     source-type: local
     override-build: |
       craftctl default
-      target_dir="$CRAFT_PART_INSTALL/ops"
+      target_dir="$CRAFT_PART_INSTALL/opt/spark/ops"
 
       mkdir -p "$target_dir"
       cp -r spark_client/cli "${target_dir}/."
       chmod 755 -R "${target_dir}/cli"
 
-      package_dir="$CRAFT_PART_INSTALL/python"
+      package_dir="$CRAFT_PART_INSTALL/opt/spark/python"
 
       mkdir -p "$package_dir"
       cp -r spark_client "${package_dir}/."
       chmod 755 -R "${package_dir}/spark_client"
 
-      mkdir -p "$CRAFT_PART_INSTALL/conf"
-      cp spark_client/resources/conf/* "$CRAFT_PART_INSTALL/conf/."
+      mkdir -p "$CRAFT_PART_INSTALL/opt/spark/conf"
+      cp spark_client/resources/conf/* "$CRAFT_PART_INSTALL/opt/spark/conf/."
       
-      mkdir -p "$CRAFT_PART_INSTALL/resources/templates"
-      cp spark_client/resources/templates/* "$CRAFT_PART_INSTALL/resources/templates/."
+      mkdir -p "$CRAFT_PART_INSTALL/opt/spark/resources/templates"
+      cp spark_client/resources/templates/* "$CRAFT_PART_INSTALL/opt/spark/resources/templates/."
       
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
-      cp kubectl ${CRAFT_PART_INSTALL}/
+      cp kubectl ${CRAFT_PART_INSTALL}/opt/spark/
       
       

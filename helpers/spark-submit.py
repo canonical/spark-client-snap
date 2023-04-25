@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     os.environ["HOME"] = str(pwd.getpwuid(os.getuid())[constants.USER_HOME_DIR_ENT_IDX])
     if os.environ.get("SPARK_HOME") is None or os.environ.get("SPARK_HOME") == "":
-        os.environ["SPARK_HOME"] = os.environ["SNAP"]
+        os.environ["SPARK_HOME"] = f"{os.environ['SNAP']}/opt/spark"
 
     STATIC_DEFAULTS_CONF_FILE = utils.get_static_defaults_conf_file()
     ENV_DEFAULTS_CONF_FILE = utils.get_env_defaults_conf_file()

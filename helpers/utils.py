@@ -173,7 +173,7 @@ def merge_configurations(dictionaries_to_merge: List[Dict]) -> Dict:
 
 def get_static_defaults_conf_file() -> str:
     """Return static config properties file packaged with the client snap."""
-    SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP')}/conf/spark-defaults.conf"
+    SPARK_STATIC_DEFAULTS_FILE = f"{os.environ.get('SNAP_DATA')}/etc/spark/spark-defaults.conf"
     return SPARK_STATIC_DEFAULTS_FILE
 
 
@@ -247,7 +247,7 @@ def get_kube_config() -> str:
 
 def get_kubectl_cmd() -> str:
     """Return the kubectl binary location within the snap, used to build k8s commands."""
-    kubectl_cmd = "{}/kubectl".format(os.environ["SNAP"])
+    kubectl_cmd = "{}/opt/spark/kubectl".format(os.environ["SNAP"])
     return kubectl_cmd
 
 
