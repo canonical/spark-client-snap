@@ -46,7 +46,9 @@ class TestDomain(TestCase):
             defaults.scala_history_file, f"{snap_user_data_dir}/.scala_history"
         )
         self.assertEqual(defaults.kubectl_cmd, f"{snap_var}/opt/spark/kubectl")
-        self.assertEqual(defaults.spark_submit, f"{snap_var}/opt/spark/bin/spark-submit")
+        self.assertEqual(
+            defaults.spark_submit, f"{snap_var}/opt/spark/bin/spark-submit"
+        )
         self.assertEqual(defaults.spark_shell, f"{snap_var}/opt/spark/bin/spark-shell")
         self.assertEqual(defaults.pyspark, f"{snap_var}/opt/spark/bin/pyspark")
 

@@ -178,7 +178,11 @@ class Defaults:
     @property
     def spark_folder(self) -> str:
         """Return the spark root folder"""
-        return self.environ.get("SPARK_HOME") if "SNAP" not in self.environ else f"{self.environ.get('SNAP')}/opt/spark"
+        return (
+            f"{self.environ.get('SPARK_HOME')}"
+            if "SNAP" not in self.environ
+            else f"{self.environ.get('SNAP')}/opt/spark"
+        )
 
     @property
     def static_conf_file(self) -> str:
