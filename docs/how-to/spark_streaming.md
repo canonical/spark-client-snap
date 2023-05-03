@@ -95,8 +95,8 @@ spark-client.pyspark --username hello --namespace spark-streaming --conf spark.e
 Within the pyspark shell, now use the credentials retrieved previously to read stream from Kafka.
 
 ```python
-from pyspark.sql.functions import explode
-from pyspark.sql.functions import split, col
+from pyspark.sql.functions import udf
+from json import loads
 
 username="relation-8"
 password="iGvE6HrCru1vqEsUdgRTsZKlOLqbebMJ"
@@ -110,15 +110,12 @@ lines = spark.readStream \
           .option("includeHeaders", "true") \
           .load()
 
-words = lines.select(explode(split(col("value"), " ")).alias("word"))
+get_origin = udf(lambda x: loads(x)["origin"])
+count = lines.withColumn("origin", get_origin(col("value"))).select("origin")\
+          .groupBy("origin", "partition")\
+          .count()
 
-wordCounts = words.groupBy("word").count()
-
-query = wordCounts \
-    .writeStream \
-    .outputMode("complete") \
-    .format("console") \
-    .start()
+query = count
 
 query.awaitTermination()
 ```
