@@ -11,7 +11,7 @@ Once you have set up the service account successfully, please execute the follow
 Here we are launching the Pi example bundled with Apache Spark.
 
 ```bash
-SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0-SNAPSHOT.jar'
+SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.2.jar'
         
 spark-client.spark-submit \
 --deploy-mode cluster \
