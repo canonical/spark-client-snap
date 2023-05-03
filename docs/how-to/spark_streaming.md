@@ -115,7 +115,5 @@ count = lines.withColumn("origin", get_origin(col("value"))).select("origin")\
           .groupBy("origin", "partition")\
           .count()
 
-query = count
-
-query.awaitTermination()
+count.awaitTermination()
 ```
