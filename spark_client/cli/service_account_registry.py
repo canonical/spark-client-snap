@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     elif args.action == Actions.DELETE:
         user_id = build_service_account_from_args(args).id
-        logging.info(user_id)
+        print(user_id)
         registry.delete(user_id)
 
     elif args.action == Actions.ADD_CONFIG:
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         if maybe_service_account is None:
             raise NoAccountFound(input_service_account.id)
 
-        maybe_service_account.configurations.log(logging.info)
+        maybe_service_account.configurations.log(print)
 
     elif args.action == Actions.CLEAR_CONFIG:
         registry.set_configurations(
@@ -184,10 +184,10 @@ if __name__ == "__main__":
             raise NoAccountFound()
 
         # maybe_service_account.configurations.log(logging.info)
-        logging.info(maybe_service_account.id)
+        print(maybe_service_account.id)
 
     elif args.action == Actions.LIST:
         for service_account in registry.all():
-            logging.info(
+            print(
                 str.expandtabs(f"{service_account.id}\t{service_account.primary}")
             )

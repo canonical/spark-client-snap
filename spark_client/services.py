@@ -320,7 +320,7 @@ class LightKube(AbstractKubeInterface):
                 labels_to_pass[k] = v
 
         if not namespace:
-            namespace = "default"
+            namespace = "*"
 
         with io.StringIO() as buffer:
             codecs.dump_all_yaml(

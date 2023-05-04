@@ -22,7 +22,7 @@ apps:
   service-account-registry:
     command: ops/cli/service_account_registry.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
@@ -31,7 +31,7 @@ apps:
   spark-submit:
     command: ops/cli/spark_submit.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
       OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
@@ -40,7 +40,7 @@ apps:
   spark-shell:
     command: ops/cli/spark_shell.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
     plugs:
         - network
         - network-bind
@@ -49,7 +49,7 @@ apps:
   pyspark:
     command: ops/cli/pyspark.py
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.10/site-packages:$SNAP/usr/lib/python3/dist-packages:$SNAP/python
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
     plugs:
         - network
         - network-bind
@@ -71,24 +71,24 @@ parts:
         SPARK_HADOOP_VERSION='3'
         AWS_JAVA_SDK_BUNDLE_VERSION='1.11.874'
         HADOOP_AWS_VERSION='3.2.2'
-        SPARK_VERSION=$(curl --silent https://downloads.apache.org/spark/ | grep "spark-" | cut -d'>' -f3 | cut -d'/' -f1  | sort | tail -n 1)
-        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
+        SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
+        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
         if  [[ ${STATUSCODE} -ne 200 ]]
           then
-            echo "ERROR: Latest available Spark version ${SPARK_VERSION} does not have a downloadable binary! Exiting...."
+            echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
             exit 1
         fi
-        echo "Downloading latest available Spark version ${SPARK_VERSION}."
-        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        wget "https://downloads.apache.org/spark/${SPARK_VERSION}/${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
-        sha512sum --check "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        echo "Downloading latest available Spark version spark-${SPARK_VERSION}."
+        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        sha512sum --check "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
         if  [[ $? -ne 0 ]]
           then
-            echo "DOWNLOAD ERROR: Latest available Spark version ${SPARK_VERSION} could not be downloaded properly! Exiting...."
+            echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
             exit 1
         fi
-        tar -zxf "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        cd "${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
+        tar -zxf "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
+        cd "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
         echo "`cat aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1`  aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar" | sha1sum --check
