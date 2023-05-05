@@ -210,7 +210,7 @@ run_example_job_in_pod() {
   NAMESPACE=$1
   USERNAME=$2
 
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark-22.04_edge_1:3.4.0'
+  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
 
   kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" IM="$SPARK_IMAGE" \
                   /bin/bash -c 'spark-client.spark-submit \
@@ -277,7 +277,7 @@ run_pyspark_in_pod() {
   USERNAME=$2
 
   PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark.py)
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark-22.04_edge_1:3.4.0'
+  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
 
   # Check job output
   # Sample output
