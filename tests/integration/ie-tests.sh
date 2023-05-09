@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
+
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
 }
@@ -210,7 +212,6 @@ run_example_job_in_pod() {
   NAMESPACE=$1
   USERNAME=$2
 
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
 
   kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" IM="$SPARK_IMAGE" \
                   /bin/bash -c 'spark-client.spark-submit \
@@ -253,7 +254,6 @@ run_spark_shell_in_pod() {
 
   SPARK_SHELL_COMMANDS=$(cat ./tests/integration/resources/test-spark-shell.scala)
 
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
@@ -277,7 +277,6 @@ run_pyspark_in_pod() {
   USERNAME=$2
 
   PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark.py)
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
 
   # Check job output
   # Sample output
