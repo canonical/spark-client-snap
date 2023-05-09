@@ -210,21 +210,21 @@ class TestServices(TestCase):
                 {
                     "cluster": {
                         "certificate-authority-data": f"{ca_cert_data}",
-                        "server": f"https://0.0.0.0:{test_id}-1",
+                        "server": f"https://0.0.0.0:9090",
                     },
                     "name": f"{context1}-cluster",
                 },
                 {
                     "cluster": {
                         "certificate-authority-data": f"{ca_cert_data}",
-                        "server": f"https://0.0.0.0:{test_id}-2",
+                        "server": f"https://0.0.0.1:9090",
                     },
                     "name": f"{context2}-cluster",
                 },
                 {
                     "cluster": {
                         "certificate-authority-data": f"{ca_cert_data}",
-                        "server": f"https://0.0.0.0:{test_id}-3",
+                        "server": f"https://0.0.0.2:8080",
                     },
                     "name": f"{context3}-cluster",
                 },
@@ -294,7 +294,7 @@ class TestServices(TestCase):
         self.assertEqual(current_context.get("user"), f"{username2}")
 
         current_cluster = k.cluster
-        self.assertEqual(current_cluster.get("server"), f"https://0.0.0.0:{test_id}-2")
+        self.assertEqual(current_cluster.get("server"), f"https://0.0.0.1:9090")
 
     @patch("lightkube.Client.get")
     def test_lightkube_get_secret(self, mock_lightkube_client_get):
@@ -649,9 +649,8 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
-                "serviceaccount",
+                KubernetesResourceType.SERVICEACCOUNT,
                 resource_name,
-                username,
                 namespace,
             )
 
@@ -699,9 +698,8 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
-                "role",
+                KubernetesResourceType.ROLE,
                 resource_name,
-                username,
                 namespace,
             )
 
@@ -750,9 +748,8 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
-                "rolebinding",
+                KubernetesResourceType.ROLEBINDING,
                 resource_name,
-                username,
                 namespace,
             )
 
@@ -800,9 +797,8 @@ class TestServices(TestCase):
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
             k = LightKube(kube_config_file=kubeconfig, defaults=defaults)
             k.create(
-                "secret generic",
+                KubernetesResourceType.SECRET_GENERIC,
                 resource_name,
-                username,
                 namespace,
                 **{"from-env-file": "dummy"},
             )
@@ -934,7 +930,6 @@ class TestServices(TestCase):
             k.create(
                 resource_type,
                 resource_name,
-                username,
                 namespace,
                 **{"k1": "v1", "k2": ["v21", "v22"]},
             )
@@ -1063,12 +1058,6 @@ class TestServices(TestCase):
     def test_kube_interface_get_service_accounts(
         self, mock_subprocess, mock_open, mock_yaml_safe_load
     ):
-        # mock logic
-        def side_effect(*args, **kwargs):
-            return values[args[0]]
-
-        mock_subprocess.side_effect = side_effect
-
         test_id = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
         username = str(uuid.uuid4())
@@ -1104,7 +1093,7 @@ class TestServices(TestCase):
 
         kubeconfig_yaml_str = yaml.dump(kubeconfig_yaml, sort_keys=False)
 
-        cmd_get_sa = f"kubectl --kubeconfig {kubeconfig}  --namespace default  --context {context} get serviceaccount -l {label1}  -l {label2} -n {namespace} -o yaml "
+        cmd_get_sa = f"kubectl --kubeconfig {kubeconfig}  --context {context} get serviceaccount -l {label1}  -l {label2} -n {namespace} -o yaml "
         output_get_sa_yaml = {
             "apiVersion": "v1",
             "items": [
@@ -1128,9 +1117,11 @@ class TestServices(TestCase):
             "metadata": {"resourceVersion": ""},
         }
         output_get_sa = yaml.dump(output_get_sa_yaml, sort_keys=False).encode("utf-8")
-        values = {
-            cmd_get_sa: output_get_sa,
-        }
+        # mock logic
+        def side_effect(*args, **kwargs):
+            return output_get_sa
+
+        mock_subprocess.side_effect = side_effect
 
         mock_yaml_safe_load.side_effect = [kubeconfig_yaml, output_get_sa_yaml]
 
@@ -1148,12 +1139,6 @@ class TestServices(TestCase):
     def test_kube_interface_autodetect(
         self, mock_subprocess, mock_open, mock_yaml_safe_load
     ):
-        # mock logic
-        def side_effect(*args, **kwargs):
-            return values[args[0]]
-
-        mock_subprocess.side_effect = side_effect
-
         test_id = str(uuid.uuid4())
         kubeconfig = str(uuid.uuid4())
         username = str(uuid.uuid4())
@@ -1215,10 +1200,12 @@ class TestServices(TestCase):
         output_autodetect = yaml.dump(output_autodetect_yaml, sort_keys=False).encode(
             "utf-8"
         )
-        values = {
-            cmd_autodetect: output_autodetect,
-        }
 
+        # mock logic
+        def side_effect(*args, **kwargs):
+            return output_autodetect
+
+        mock_subprocess.side_effect = side_effect
         mock_yaml_safe_load.side_effect = [kubeconfig_yaml, output_autodetect_yaml]
 
         with patch("builtins.open", mock_open(read_data=kubeconfig_yaml_str)):
@@ -1479,14 +1466,12 @@ class TestServices(TestCase):
         mock_kube_interface.create.assert_any_call(
             KubernetesResourceType.SERVICEACCOUNT,
             name3,
-            username=name3,
             namespace=namespace3,
         )
 
         mock_kube_interface.create.assert_any_call(
             "role",
             f"{name3}-role",
-            username=name3,
             namespace=namespace3,
             **{
                 "resource": ["pods", "configmaps", "services"],
@@ -1497,7 +1482,6 @@ class TestServices(TestCase):
         mock_kube_interface.create.assert_any_call(
             KubernetesResourceType.ROLEBINDING,
             f"{name3}-role-binding",
-            username=name3,
             namespace=namespace3,
             **{"role": f"{name3}-role", "serviceaccount": sa3_obj.id},
         )

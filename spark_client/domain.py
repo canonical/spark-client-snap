@@ -299,3 +299,4 @@ class KubernetesResourceType(str, Enum):
     ROLEBINDING = "rolebinding"
     SECRET = "secret"
     SECRET_GENERIC = "secret generic"
+    NAMESPACE = "namespace"

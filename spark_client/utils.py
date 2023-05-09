@@ -20,6 +20,7 @@ from typing import (
     Optional,
     TypedDict,
     Union,
+    TypeVar
 )
 
 import yaml
@@ -31,6 +32,7 @@ LevelTypes = Literal[
 ]
 StrLevelTypes = Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
 
+T = TypeVar("T")
 
 class LevelsDict(TypedDict):
     CRITICAL: Literal[50]
@@ -114,6 +116,25 @@ def union(*dicts: dict) -> dict:
         return merged
 
     return reduce(__dict_merge, dicts)
+
+def _check(value: Optional[T]) -> bool:
+    return False if value is None else True
+
+def filter_none(_dict: Dict[T, Any]) -> Dict[T, Any]:
+    """
+    Return a dictionary where the key,value pairs are filtered where the value is None.
+
+    :param _dict: dict with Nones
+    :return: dict without Nones
+    """
+    agg = {}
+    for k, v in _dict.items():
+        if isinstance(v, dict):
+            agg[k] = filter_none(v)
+        elif _check(v):
+            agg[k] = v
+    return agg
+
 
 
 def umask_named_temporary_file(*args, **kargs):

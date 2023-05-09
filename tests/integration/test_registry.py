@@ -8,7 +8,7 @@ from spark_client.services import (
     KubeInterface,
 )
 from tests import integration_test
-
+from parameterized import parameterized
 
 class TestRegistry(TestCase):
     kube_interface: KubeInterface
@@ -36,15 +36,22 @@ class TestRegistry(TestCase):
         [registry.delete(account.id) for account in registry.all()]
         return registry
 
+    @parameterized.expand([
+        ("default-namespace", "spark"),
+        ("spark-namespace", "spark-user")
+    ])
     @integration_test
-    def test_registry_io(self):
+    def test_registry_io(self, namespace, user):
+
         registry = self.get_registry()
 
         self.assertEqual(len(registry.all()), 0)
 
+        self.kube_interface.create(resource_type="namespace", resource_name=namespace)
+
         service_account = ServiceAccount(
-            "my-spark",
-            "default",
+            user,
+            namespace,
             self.kube_interface.api_server,
             primary=True,
             extra_confs=PropertyFile({"my-key": "my-value"}),
@@ -66,21 +73,27 @@ class TestRegistry(TestCase):
         )
 
         registry.delete(service_account.id)
+        self.kube_interface.delete("namespace", namespace)
 
+    @parameterized.expand([
+        ("default-namespace", "spark"), ("spark-namespace", "spark-user")
+    ])
     @integration_test
-    def test_registry_change_primary_account(self):
+    def test_registry_change_primary_account(self, namespace, username):
+        self.kube_interface.create(resource_type="namespace", resource_name=namespace)
+
         registry = self.get_registry()
         self.assertEqual(len(registry.all()), 0)
         sa1 = ServiceAccount(
-            "my-spark1",
-            "default",
+            f"{username}-1",
+            namespace,
             self.kube_interface.api_server,
             primary=True,
             extra_confs=PropertyFile({"k1": "v1"}),
         )
         sa2 = ServiceAccount(
-            "my-spark2",
-            "default",
+            f"{username}-2",
+            namespace,
             self.kube_interface.api_server,
             primary=False,
             extra_confs=PropertyFile({"k2": "v2"}),
@@ -96,6 +109,8 @@ class TestRegistry(TestCase):
 
         registry.delete(sa1.id)
         registry.delete(sa2.id)
+
+        self.kube_interface.delete("namespace", namespace)
 
     @integration_test
     def test_merge_configurations(self):
