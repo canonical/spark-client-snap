@@ -253,7 +253,7 @@ run_spark_shell_in_pod() {
 
   SPARK_SHELL_COMMANDS=$(cat ./tests/integration/resources/test-spark-shell.scala)
 
-  SPARK_IMAGE='ghcr.io/canonical/charmed-spark-22.04_edge_1:3.4.0'
+  SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
