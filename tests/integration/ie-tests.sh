@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
+
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
 }
@@ -18,7 +20,7 @@ run_example_job() {
   KUBE_CONFIG=/home/${USER}/.kube/config
 
   K8S_MASTER_URL=k8s://$(kubectl --kubeconfig=${KUBE_CONFIG} config view -o jsonpath="{.clusters[0]['cluster.server']}")
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.2.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0.jar'
 
   echo $K8S_MASTER_URL
 
@@ -203,18 +205,20 @@ teardown_test_pod() {
 }
 
 run_example_job_in_pod() {
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.2.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.0.jar'
 
   PREVIOUS_JOB=$(kubectl get pods | grep driver | tail -n 1 | cut -d' ' -f1)
 
   NAMESPACE=$1
   USERNAME=$2
 
-  kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" \
+
+  kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" JJ="$SPARK_EXAMPLES_JAR_NAME" IM="$SPARK_IMAGE" \
                   /bin/bash -c 'spark-client.spark-submit \
                   --username $UU --namespace $NN \
                   --conf spark.kubernetes.driver.request.cores=100m \
                   --conf spark.kubernetes.executor.request.cores=100m \
+                  --conf spark.kubernetes.container.image=$IM \
                   --class org.apache.spark.examples.SparkPi \
                   local:///opt/spark/examples/jars/$JJ 100'
 
@@ -254,7 +258,7 @@ run_spark_shell_in_pod() {
   # Sample output
   # "Pi is roughly 3.13956232343"
 
-  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$SPARK_SHELL_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.spark-shell --username $UU --namespace $NN')" > spark-shell.out
+  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$SPARK_SHELL_COMMANDS" IM="$SPARK_IMAGE" /bin/bash -c 'echo "$CMDS" | spark-client.spark-shell --username $UU --namespace $NN --conf spark.kubernetes.container.image=$IM')" > spark-shell.out
 
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
@@ -278,7 +282,7 @@ run_pyspark_in_pod() {
   # Sample output
   # "Pi is roughly 3.13956232343"
 
-  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$PYSPARK_COMMANDS" /bin/bash -c 'echo "$CMDS" | spark-client.pyspark --username $UU --namespace $NN')" > pyspark.out
+  echo -e "$(kubectl exec testpod -- env UU="$USERNAME" NN="$NAMESPACE" CMDS="$PYSPARK_COMMANDS" IM="$SPARK_IMAGE" /bin/bash -c 'echo "$CMDS" | spark-client.pyspark --username $UU --namespace $NN --conf spark.kubernetes.container.image=$IM')" > pyspark.out
 
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "Pi is roughly" | tail -n 1 | rev | cut -d' ' -f1 | rev | cut -c 1-3)
