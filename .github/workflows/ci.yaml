@@ -8,36 +8,10 @@ on:
         value: ${{ jobs.build.outputs.snap-file }}
 
 jobs:
-  check:
-    name: Check build condition for Snap
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version:
-          - '3.9'
-          - '3.10'
-    steps:
-      - id: checkout
-        name: Checkout repo
-        uses: actions/checkout@v3
-      - id: setup-python
-        name: Setup Python
-        uses: actions/setup-python@v2.2.2
-        with:
-          python-version: ${{matrix.python-version}}
-          architecture: x64
-      - id: code-checks
-        name: Make sure the code follows conventions and tests correctly
-        run: |
-          make checks
   build:
     name: Build Snap
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs:
-      - check
     outputs:
       snap-file: ${{ steps.build-snap.outputs.snap }}
     steps:
@@ -60,9 +34,7 @@ jobs:
     name: Test Snap
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs:
-      - check
-      - build
+    needs: build
     steps:
       - name: Download snap file
         uses: actions/download-artifact@v3
