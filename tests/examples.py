@@ -1,7 +1,7 @@
 import os
 
-from spark_client.domain import Defaults, PropertyFile, ServiceAccount
-from spark_client.services import K8sServiceAccountRegistry, KubeInterface
+from spark8t.domain import Defaults, PropertyFile, ServiceAccount
+from spark8t.services import K8sServiceAccountRegistry, KubeInterface
 
 # Defaults for spark-client
 defaults = Defaults(dict(os.environ))  # General defaults
