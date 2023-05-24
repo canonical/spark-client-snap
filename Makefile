@@ -80,11 +80,8 @@ requirements.txt: poetry.lock pyproject.toml
 format: setup $(files)
 	${PYTHON} tox -e fmt
 
-unittest: setup $(files)
-	${PYTHON} tox -e unit
-
 $(checks_tag): $(setup_tag)
-	${PYTHON} tox
+	${PYTHON} tox -e lint
 	touch $(checks_tag)
 
 checks: $(checks_tag)
