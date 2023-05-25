@@ -73,7 +73,7 @@ parts:
         chmod -R 755 $CRAFT_PART_INSTALL/lib/python3.10/site-packages/spark8t/cli/
 
   spark:
-    plugin: nil 
+    plugin: nil
     build-packages:
         - ca-certificates
         - ca-certificates-java
@@ -131,7 +131,7 @@ parts:
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
 
-  helper-package:
+  kubectl:
     plugin: nil
     build-packages:
         - curl

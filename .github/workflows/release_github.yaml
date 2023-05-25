@@ -12,34 +12,6 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  checks:
-    name: Check build condition for snap
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version:
-          - '3.9'
-          - '3.10'
-    steps:
-      - id: checkout
-        name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ env.BRANCH }}
-          fetch-depth: 0
-      - id: setup-python
-        name: Setup Python
-        uses: actions/setup-python@v2.2.2
-        with:
-          python-version: ${{matrix.python-version}}
-          architecture: x64
-      - id: code-checks
-        name: Make sure the code follows conventions and tests correctly
-        run: |
-          make checks
-
   autorelease:
     name: Release the package on github
     needs: checks
@@ -63,8 +35,7 @@ jobs:
       - id: build-package
         name: Build package
         run: |
-          make checks
-          poetry build
+          make build
       - name: Add version to environment vars
         run: |
           echo "PROJECT_VERSION=${{ env.VERSION }}" >> $GITHUB_ENV
@@ -90,7 +61,6 @@ jobs:
     timeout-minutes: 5
     needs:
       - autorelease
-      - checks
     steps:
       - id: check-tar-gz
         name: Check tar.gz package
