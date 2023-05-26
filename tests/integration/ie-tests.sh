@@ -37,6 +37,7 @@ run_example_job() {
     --deploy-mode cluster \
     --conf spark.kubernetes.driver.request.cores=100m \
     --conf spark.kubernetes.executor.request.cores=100m \
+    --conf spark.kubernetes.container.image=$SPARK_IMAGE \
     --class org.apache.spark.examples.SparkPi \
     local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 
@@ -79,7 +80,11 @@ run_spark_shell() {
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
-  echo -e "$(cat ./tests/integration/resources/test-spark-shell.scala | spark-client.spark-shell --username=${USERNAME} --namespace ${NAMESPACE})" > spark-shell.out
+  echo -e "$(cat ./tests/integration/resources/test-spark-shell.scala | spark-client.spark-shell \
+      --username=${USERNAME} \
+      --conf spark.kubernetes.container.image=$SPARK_IMAGE \
+      --namespace ${NAMESPACE})" \
+      > spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   rm spark-shell.out
@@ -99,7 +104,11 @@ run_pyspark() {
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
-  echo -e "$(cat ./tests/integration/resources/test-pyspark.py | spark-client.pyspark --username=${USERNAME} --namespace ${NAMESPACE} --conf spark.executor.instances=2)" > pyspark.out
+  echo -e "$(cat ./tests/integration/resources/test-pyspark.py | spark-client.pyspark \
+      --username=${USERNAME} \
+      --conf spark.kubernetes.container.image=$SPARK_IMAGE \
+      --namespace ${NAMESPACE} --conf spark.executor.instances=2)" \
+      > pyspark.out
   cat pyspark.out
   pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Pyspark Pi Job Output: \n ${pi}"
@@ -151,7 +160,7 @@ cleanup_user() {
 
   spark-client.service-account-registry delete --username=${USERNAME} --namespace ${NAMESPACE}
 
-  account_not_found_counter=$(spark-client.service-account-registry get-config --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c '404 Not Found')
+  account_not_found_counter=$(spark-client.service-account-registry get-config --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c 'NotFound')
 
   if [ "${account_not_found_counter}" == "0" ]; then
       exit 2

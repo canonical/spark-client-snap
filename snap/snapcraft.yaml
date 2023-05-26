@@ -16,29 +16,31 @@ plugs:
 
 environment:
   JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-  PATH: $JAVA_HOME/bin:$PATH
+  PATH: $JAVA_HOME/bin:$PATH:$SNAP
+  KUBECONFIG: $SNAP_REAL_HOME/.kube/config
+  SPARK_HOME: $SNAP
+  SPARK_CONFS: $SNAP/lib/python3.10/site-packages/spark8t/resources/conf/
+  SPARK_USER_DATA: $HOME
 
 apps:
   service-account-registry:
-    command: ops/cli/service_account_registry.py
+    command: lib/python3.10/site-packages/spark8t/cli/service_account_registry.py
     environment:
-      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
-      OPS_ROOT: ${SNAP}/ops
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$SNAP/local/lib/dist-packages/:$SNAP/local/lib/dist-packages/spark8t/cli:$PYTHONPATH
     plugs:
         - network
         - home
         - dot-kube-config
   spark-submit:
-    command: ops/cli/spark_submit.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_submit.py
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
-      OPS_ROOT: ${SNAP}/ops
     plugs:
         - network
         - home
         - dot-kube-config
   spark-shell:
-    command: ops/cli/spark_shell.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_shell.py
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
     plugs:
@@ -47,7 +49,7 @@ apps:
         - home
         - dot-kube-config
   pyspark:
-    command: ops/cli/pyspark.py
+    command: lib/python3.10/site-packages/spark8t/cli/pyspark.py
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
     plugs:
@@ -57,13 +59,25 @@ apps:
         - dot-kube-config
 
 parts:
+  spark8t:
+    plugin: python
+    python-packages:
+        - git+https://github.com/canonical/spark-k8s-toolkit-py.git
+    source: .
+    build-packages:
+        - python3
+        - pip
+    override-build: |
+        craftctl default
+        # Scripts must be executable
+        chmod -R 755 $CRAFT_PART_INSTALL/lib/python3.10/site-packages/spark8t/cli/
+
   spark:
     plugin: nil
     build-packages:
         - ca-certificates
         - ca-certificates-java
         - openjdk-11-jre-headless
-        - python3
         - wget
     stage-packages:
         - openjdk-11-jre-headless
@@ -112,39 +126,19 @@ parts:
         cp -r jars/* $CRAFT_PART_INSTALL/jars/
         mkdir -p $CRAFT_PART_INSTALL/python
         cp -r python/* $CRAFT_PART_INSTALL/python/
+
     override-prime: |
         snapcraftctl prime
         rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
 
-  helper-package:
-    plugin: python
-    python-packages:
-        - pyyaml
-        - lightkube
+  kubectl:
+    plugin: nil
     build-packages:
         - curl
     source: .
     source-type: local
     override-build: |
       craftctl default
-      target_dir="$CRAFT_PART_INSTALL/ops"
-
-      mkdir -p "$target_dir"
-      cp -r spark_client/cli "${target_dir}/."
-      chmod 755 -R "${target_dir}/cli"
-
-      package_dir="$CRAFT_PART_INSTALL/python"
-
-      mkdir -p "$package_dir"
-      cp -r spark_client "${package_dir}/."
-      chmod 755 -R "${package_dir}/spark_client"
-
-      mkdir -p "$CRAFT_PART_INSTALL/conf"
-      cp spark_client/resources/conf/* "$CRAFT_PART_INSTALL/conf/."
-      
-      mkdir -p "$CRAFT_PART_INSTALL/resources/templates"
-      cp spark_client/resources/templates/* "$CRAFT_PART_INSTALL/resources/templates/."
-      
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
       cp kubectl ${CRAFT_PART_INSTALL}/
