@@ -16,10 +16,10 @@ plugs:
 
 environment:
   JAVA_HOME: $SNAP/usr/lib/jvm/java-11-openjdk-amd64
-  PATH: $JAVA_HOME/bin:$PATH:$SNAP
+  PATH: $JAVA_HOME/bin:$PATH:$SNAP:$SNAP/opt/$CRAFT_PROJECT_NAME:$SNAP/opt/k8s:$SNAP/opt/spark
   KUBECONFIG: $SNAP_REAL_HOME/.kube/config
-  SPARK_HOME: $SNAP
-  SPARK_CONFS: $SNAP/lib/python3.10/site-packages/spark8t/resources/conf/
+  SPARK_HOME: $SNAP/opt/spark
+  SPARK_CONFS: $SNAP_DATA/etc/spark-client/
   SPARK_USER_DATA: $HOME
 
 apps:
@@ -59,6 +59,11 @@ apps:
         - dot-kube-config
 
 parts:
+
+  spark8t-conf:
+    plugin: dump
+    source: snap/local
+
   spark8t:
     plugin: python
     python-packages:
@@ -120,12 +125,13 @@ parts:
             exit 1
         fi
         cd ..
-        mkdir -p $CRAFT_PART_INSTALL/bin
-        cp -r bin/* $CRAFT_PART_INSTALL/bin/
-        mkdir -p $CRAFT_PART_INSTALL/jars
-        cp -r jars/* $CRAFT_PART_INSTALL/jars/
-        mkdir -p $CRAFT_PART_INSTALL/python
-        cp -r python/* $CRAFT_PART_INSTALL/python/
+        SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
+        mkdir -p $SPARK_DIR/bin
+        cp -r bin/* $SPARK_DIR/bin
+        mkdir -p $SPARK_DIR/jars
+        cp -r jars/* $SPARK_DIR/jars
+        mkdir -p $SPARK_DIR/python
+        cp -r python/* $SPARK_DIR/python/
 
     override-prime: |
         snapcraftctl prime
@@ -141,6 +147,6 @@ parts:
       craftctl default
       curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
       chmod +x kubectl
-      cp kubectl ${CRAFT_PART_INSTALL}/
-      
-      
+      K8S_DIR=$CRAFT_PART_INSTALL/opt/k8s
+      mkdir -p $K8S_DIR
+      cp kubectl $K8S_DIR
