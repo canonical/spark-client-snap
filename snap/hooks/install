@@ -4,15 +4,13 @@ set -eux
 
 export COMPONENT=${SNAP_NAME}
 
-export CONF="${SNAP_DATA}"/etc/$COMPONENT
 export LOGS="${SNAP_COMMON}"/var/log/$COMPONENT
 export DATA="${SNAP_COMMON}"/var/lib/$COMPONENT
 
-mkdir -p $CONF
 mkdir -p $LOGS
 mkdir -p $DATA
 
-cp $SNAP/etc/$COMPONENT/* $CONF
+cp -r $SNAP/etc/ ${SNAP_DATA}
 
 chmod -R 775 "${SNAP_DATA}"/*
 chmod -R 775 "${SNAP_COMMON}"/*
