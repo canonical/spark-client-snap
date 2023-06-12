@@ -22,7 +22,25 @@ local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 > **Note** When running locally or on CI/CD pipelines, in case executor pods fail to schedule due to insufficient CPU resources, make 
 [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests.
 
+The command above is using the default (`spark`) user. Following the example from the [previous chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952), the command has two more parameters (`--username`, `--namespace`)... However since we've already set the same `deploy-mode` defaults for our user, that parameter can be skipped.
 
+Such as:
+
+```bash
+spark-client.spark-submit \
+--username demouser \
+--namespace demonamespace \
+--class org.apache.spark.examples.SparkPi \
+local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
+```
+
+In case you'd like to monitor your submission, you could easily do it on the level of K8 pods. Typically:
+```
+$ kubectl get pod
+org-apache-spark-examples-sparkpi-bd526f87e1deb586-driver   0/1     Completed     0             18h
+spark-pi-32f7f187e5c9ea7f-exec-3                            0/1     Terminating   0             2m8s
+$ kubectl logs -f org-apache-spark-examples-sparkpi-bd526f87e1deb586-driver
+```
 
 ### Adding Big Data to the mix
 
@@ -90,3 +108,8 @@ With a valid configuration file placed appropriately, the submit command becomes
 spark-client.spark-submit --deploy-mode cluster $S3_PATH_FOR_CODE_PY_FILE
 ```
 The configuration defaults can be overriden as well in the submit command with ```--conf``` arguments as illustrated previously.
+
+***
+
+ * Previous: [Manage Spark service accounts](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) 
+ * Next: [Use the interactive shells](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954)

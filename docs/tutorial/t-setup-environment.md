@@ -60,3 +60,8 @@ sudo snap install spark-client --edge
 
 This will install all the spark binaries along side with the spark-client utilities provided in 
 the snap.
+
+***
+
+ * Previous: [Spark Client Snap Tutorial](https://discourse.charmhub.io/t/spark-client-snap-tutorial/8957)
+ * Next: [Manage Spark service accounts](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952)

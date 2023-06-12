@@ -78,20 +78,22 @@ with the service account that can serve as default while submitting jobs against
 of this feature would look like this.
 
 ```bash
-spark-client.service-account-registry --username demouser --namespace demonamespace create --properties-file /home/demouser/conf/spark-defaults.conf --conf spark.app.name=demo-spark-app --conf spark.executor.instances=3
+spark-client.service-account-registry create --username demouser --namespace demonamespace  --properties-file /home/demouser/conf/spark-defaults.conf --conf spark.app.name=demo-spark-app --conf spark.executor.instances=3
 ```
 
 The above command sets up a service account for user ```demonamespace:demouser``` for Spark job submission using configuration properties coming from the specified 
 properties file while overriding the configuration properties ```spark.app.name``` and ```spark.executor.instances```.
 
-For [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), this service account along with it's default configuration properties can be used to submit a Spark job. 
-
-For example, assuming the properties file provided has configuration details to access data in S3, one could submit a job like
-```bash
-spark-client.submit  --username demouser --namespace demonamespace --deploy-mode cluster --conf spark.app.name=demo-spark-s3-app $S3_PATH_FOR_CODE_FILE
+**_Note:_** The command described above does not create a kubernetes namespace but needs it to be there. It does however create the requested username in the specified and existing namespace. The kubernetes namespace could be created such as:
 ```
-This would launch the spark job with configuration coming from the service account for user ```demonamespace:demouser``` but the app name would be ```demo-spark-s3-app```. 
+kubectl create namespace demonamespace
+```
 
-**_Note:_** The command described above does not create a kubernetes namespace but needs it to be there. It does however create the requested username in the specified and existing namespace.
+This service account - along with it's default configuration properties - can be used for [Spark job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953). 
 
 During [job submission](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953), if the account is not specified, the account currently marked as ```primary``` is implicitly picked. An account can be marked as ```primary``` during creation.
+
+***
+
+ * Previous: [Set up the environment](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8951)
+ * Next: [Submit a Spark Job](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953)

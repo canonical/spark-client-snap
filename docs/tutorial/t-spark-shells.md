@@ -60,3 +60,8 @@ Welcome to
 >>> print("Sum of squares is %f" % (squares_sum))
 >>> quit()
 ```
+
+***
+
+ * Previous: [Submit a Spark Job](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953)
+ * Next: [Tips and Tricks](https://discourse.charmhub.io/t/spark-client-snap-tutorial-common-gotchas/8955)
