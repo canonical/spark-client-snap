@@ -1,20 +1,24 @@
-The Spark Client Snap is a utility client application that makes running Apache Spark on Kubernetes simple 
-and seamless. It packages in a single confined [snap](https://snapcraft.io/):
+The Spark Client Snap is a utility client application that allows for running Apache Spark on Kubernetes in a simple and seamless manner. All necessary components are packed in a single confined [Snap](https://snapcraft.io/) package:
 
-* Apache Spark binaries, executables and libraries 
-* Python package/CLI to enhance Spark capabilities/customization, allowing the user to create, configure and manage dedicated Spark service accounts, with hierarchical level of configuration
-* Expose simple SNAP commands to run and manage Spark Jobs
+* [Apache Spark](https://spark.apache.org/downloads.html) (binaries, executables and libraries)
+* [spark8t](https://github.com/canonical/spark-k8s-toolkit-py) Python package to enhance Spark capabilities allowing to manage Spark jobs and service accounts, with hierarchical level of configuration
+* Expose simple Snap commands to run and manage Spark Jobs
 
-The Spark Client Snap can be used to deploy and manage Apache Spark on different distribution of Kubernetes, like
+The `spark-client` Snap can be used to deploy and manage Apache Spark on different Kubernetes distributions, like
 * [microk8s](https://microk8s.io/), which is the simplest production-grade conformant K8s. Lightweight and focused. 
 Single command install on Linux, Windows and macOS.
-* [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), which is a platform independent, model-driven distribution 
-of Kubernetes powered by [juju](https://juju.is/) 
+    * Setup instructions are available in the Spark Tutorial [Set up the environment chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8951)
+* [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), which is a platform independent, model-driven distribution of Kubernetes powered by [juju](https://juju.is/) 
 
-The Spark Client Snap can effectively be used by anyone in the pipeline of processing 
+The `spark-client` Snap can effectively be used by anyone in the pipeline of processing 
 data using Spark, ranging from administrators, who create and manage Spark service accounts, to 
 developers and data-scientists, who need to launch Spark Jobs or perform interactive analysis
 using `pyspark` and `spark-shell`.
+
+The spark-client snap can be installed such as:
+```
+snap install spark-client --edge
+```
 
 
 ## Project and community

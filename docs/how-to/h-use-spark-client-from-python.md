@@ -1,7 +1,15 @@
 ## Use the Spark Client from Python 
 
-In the following, we show how to use the spark client to manage service accounts
-using Python.
+The `spark-client` snap relies on the [`spark8t` toolkit](https://github.com/canonical/spark-k8s-toolkit-py). `spark8t` provides both a CLI and a programmatic interface to enhanced Spark client functionalities. 
+
+Here we describe how to use the `spark8t` toolkit (as part of the `spark-client` snap) to manage service accounts using Python.
+
+### Preparation
+
+Make sure that environment settings (described on the [tool's README](https://github.com/canonical/spark-k8s-toolkit-py)) are correctly configured.
+
+Furthermore you need to make sure that `PYTHONPATH` contains the location where the `spark8t` libraries were installed within the snap (something like `/snap/spark-client/current/lib/python3.10/site-packages`)
+
 
 ### Bind to Kubernetes
 
@@ -11,8 +19,8 @@ kubeconfig file location.
 
 ```python
 import os
-from spark_client.domain import Defaults
-from spark_client.services import KubeInterface
+from spark8t.domain import Defaults
+from spark8t.services import KubeInterface
 
 # Defaults for spark-client
 defaults = Defaults(dict(os.environ))  # General defaults
@@ -21,19 +29,17 @@ defaults = Defaults(dict(os.environ))  # General defaults
 kube_interface = KubeInterface(defaults.kube_config)
 ```
 
-Note that if you want to override some of these settings,
-you can extend the `Default` class accordingly. 
+Note that if you want to override some of these settings, you can extend the `Default` class accordingly. 
 
 Alternatively you can also use auto-inference using the `kubectl` command via
 
 ```python
-from spark_client.services import KubeInterface
+from spark8t.services import KubeInterface
 
 kube_interface = KubeInterface.autodetect(kubectl_cmd="kubectl")
 ```
 
-Once you have binded to the k8s cluster, you have some 
-properties of the connection readily available, e.g. 
+Once bound to the k8s cluster, you have some properties of the connection readily available, e.g. 
 
 ```python
 kube_interface.namespace
@@ -57,7 +63,7 @@ object we defined above
 
 
 ```python
-from spark_client.services import K8sServiceAccountRegistry
+from spark8t.services import K8sServiceAccountRegistry
 
 registry = K8sServiceAccountRegistry(kube_interface)
 ```
@@ -71,7 +77,7 @@ New Spark service accounts can be created by first creating a `ServiceAccount`
 domain object, and optionally specifying extra-properties, e.g. 
 
 ```python
-from spark_client.domain import PropertyFile, ServiceAccount
+from spark8t.domain import PropertyFile, ServiceAccount
 
 configurations = PropertyFile({"my-key": "my-value"})
 service_account = ServiceAccount(
@@ -121,8 +127,8 @@ registry.delete(service_account.id)
 
 #### Manage Primary Accounts
 
-In the Spark Client Snap, there is the notion of the primary service account, the 
-one that would be chosed by default, if no specific information is provided. The
+Spark has a notation of the so called 'primary' service account, the 
+one that would be chosen by default, if no specific account is provided. The
 primary Spark service account can be set using 
 
 ```python
@@ -135,7 +141,7 @@ or using an already existing `ServiceAccount` object:
 registry.set_primary(service_account.id)
 ```
 
-The primary Spark service account can be retrieve using 
+The primary Spark service account can be retrieved using 
 
 ```python
 primary_account = registry.get_primary()
@@ -143,16 +149,14 @@ primary_account = registry.get_primary()
 
 #### Manage configurations of Spark service accounts
 
-Spark service accounts can have configurations that are provided (unless 
-overridden) during each execution of Spark Jobs. These configuration are abstracted 
-by means of the `PropertyFile` object, that are provided when creating the 
-`ServiceAccount` object, via the `extra_confs` argument (see above). 
+Spark service accounts can have configuration that is provided (unless 
+overridden) during each execution of Spark Jobs. These configuration is stored in the `PropertyFile` object, that can be provided on creation of a `ServiceAccount` object (`extra_confs` argument). 
 
 The `PropertyFile` object can either be created from a dictionary, as 
 done above
 
 ```python
-from spark_client.domain import PropertyFile
+from spark8t.domain import PropertyFile
 
 static_property = PropertyFile({"my-key": "my-value"})
 ```
@@ -160,7 +164,7 @@ static_property = PropertyFile({"my-key": "my-value"})
 or also read from a file, e.g. 
 
 ```python
-from spark_client.domain import PropertyFile
+from spark8t.domain import PropertyFile
 
 static_property = PropertyFile.read(defaults.static_conf_file)
 ```
@@ -184,3 +188,8 @@ Alternatively, you can also store these properties in files
 with open("my-file", "w") as fid:
     merged_property.log().write(fid)
 ```
+
+***
+
+* Previous: [Manage Service Accounts](/t/spark-client-snap-how-to-manage-spark-accounts/8959) 
+* Next: [Run on Charmed Kubernetes](/t/spark-client-snap-how-to-run-on-charmed-kubernetes/8960)

@@ -1,14 +1,14 @@
 ## Spark Job Submission To Kubernetes Cluster
-The spark-client snap ships with the Apache Spark's spark-submit utility for Kubernetes distribution.
 
-To submit Spark jobs to a Kubernetes cluster using the spark-submit utility, first follow the 
-[setup](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) instructions to create the Kubernetes service account.
+The `spark-client` snap contains the Apache Spark `spark-submit` utility for Kubernetes distribution.
+
+### Pre-requisites
+
+Before being able to use the `spark-submit` utility, make sure that you have a [service account](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) instructions to available.
 
 ### Validating Setup with an Example Spark Job
 
-Once you have set up the service account successfully, please execute the following commands to test the validity of your setup.
-
-Here we are launching the Pi example bundled with Apache Spark.
+In order to test the validity of your setup, we can launch the Pi example bundled with Apache Spark:
 
 ```bash
 SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.3.2.jar'
@@ -19,10 +19,10 @@ spark-client.spark-submit \
 local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
 ```
 
-> **Note** When running locally or on CI/CD pipelines, in case executor pods fail to schedule due to insufficient CPU resources, make 
+> **Note** In case executor pods fail to schedule due to insufficient CPU resources (either locally or in CI/CD pipelines), issue 
 [fractional](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) CPU requests.
 
-The command above is using the default (`spark`) user. Following the example from the [previous chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952), the command has two more parameters (`--username`, `--namespace`)... However since we've already set the same `deploy-mode` defaults for our user, that parameter can be skipped.
+The command above is using the default (`spark`) user. Following the example from the [previous chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952), the command has two more parameters (`--username`, `--namespace`)... However since we've already set the same `deploy-mode` defaults for the user, that parameter can be skipped.
 
 Such as:
 
@@ -44,7 +44,7 @@ $ kubectl logs -f org-apache-spark-examples-sparkpi-bd526f87e1deb586-driver
 
 ### Adding Big Data to the mix
 
-Once the setup is validated, it's time to test out with a real big data workload. Here we assume that 
+It's time to test out with a real big data workload. Here we assume that 
 * the input data is placed in S3
 * the code i.e. python script is also placed in S3 and reads from the provided input location.
 * the destination directory for output is also in S3
@@ -77,12 +77,11 @@ spark-client.spark-submit --deploy-mode cluster --name $APP_NAME \
 $S3_PATH_FOR_CODE_PY_FILE
 ```
 
-These configuration parameters and others can be provided via a ```spark-defaults.conf``` config file placed as described here.
+Such configuration parameters can be provided via a ```spark-defaults.conf``` config file placed as described here.
 * Either setting ***SPARK_HOME*** and placing the config as ```$SPARK_HOME/conf/spark-defaults.conf```. Or
-* Overriding ***SPARK_CONF_DIR*** and placing the config as ```$SPARK_CONF_DIR/spark-defaults.conf``` Or
-* Overriding ***SPARK_CLIENT_ENV_CONF*** to point to the config file to use
+* Overriding ***SPARK_CONFS*** and placing the config as ```$SPARK_CONFS/spark-defaults.conf```
 
-For example, with a ```spark-defaults.conf``` similar to provided below for reference, we can make the submit command much simpler.
+For example, with a ```spark-defaults.conf``` as provided below for reference, we can make the submit command much simpler.
 
 ```
 spark.master=k8s://https://<MY_K8S_CONTROL_PLANE_HOST_IP>:<MY_K8S_CONTROL_PLANE_PORT>
@@ -102,14 +101,15 @@ spark.hadoop.fs.s3a.connection.ssl.enabled=false
 spark.hadoop.fs.s3a.path.style.access=true
 ```
 
-With a valid configuration file placed appropriately, the submit command becomes quite simple.
+With a valid configuration file placed appropriately, the submit command becomes straightforward:
 
 ```bash
 spark-client.spark-submit --deploy-mode cluster $S3_PATH_FOR_CODE_PY_FILE
 ```
-The configuration defaults can be overriden as well in the submit command with ```--conf``` arguments as illustrated previously.
+The configuration defaults can be overridden as well in the submit command with ```--conf``` arguments as demonstrated previously.
 
 ***
 
  * Previous: [Manage Spark service accounts](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) 
  * Next: [Use the interactive shells](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954)
+ * [Charmed Spark Documentation](https://discourse.charmhub.io/t/charmed-spark-documentation/8963)
