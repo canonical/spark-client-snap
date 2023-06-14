@@ -10,3 +10,20 @@ spec:
     - containerPort: 18080
     command: ["sleep"]
     args: ["3600"]
+    env:
+      - name: SPARK_CONFS
+        value: /etc/spark8t/conf
+      - name: SPARK_HOME
+        value: "/opt/spark"
+      - name: JAVA_HOME
+        value: "/usr/lib/jvm/java-11-openjdk-amd64"
+      - name: PYTHONPATH
+        value: "/opt/spark/python:/opt/spark8t/python/dist:/usr/lib/python3/dist-packages"
+      - name: PATH
+        value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark:/opt/spark/bin:/opt/spark/python/bin:/opt/spark-client/python/bin
+      - name: HOME
+        value: /home/spark
+      - name: KUBECONFIG
+        value: /home/spark/.kube/config
+      - name: SPARK_USER_DATA
+        value: /home/spark
