@@ -60,15 +60,9 @@ apps:
 
 parts:
 
-  spark8t-conf:
+  local-files:
     plugin: dump
     source: snap/local
-    organize:
-      spark8t/spark-defaults.conf: etc/spark8t/spark-defaults.conf
-      spark/podTemplate.yaml: opt/spark/conf/podTemplate.yaml
-    stage:
-      - etc/spark8t/spark-defaults.conf
-      - opt/spark/conf/podTemplate.yaml
 
   spark8t:
     plugin: python
