@@ -10,10 +10,10 @@ Single command install on Linux, Windows and macOS.
     * Setup instructions are available in the Spark Tutorial [Set up the environment chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8951)
 * [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), which is a platform independent, model-driven distribution of Kubernetes powered by [juju](https://juju.is/) 
 
-The `spark-client` Snap can effectively be used by anyone in the pipeline of processing 
-data using Spark, ranging from administrators, who create and manage Spark service accounts, to 
-developers and data-scientists, who need to launch Spark Jobs or perform interactive analysis
-using `pyspark` and `spark-shell`.
+The `spark-client` Snap can effectively be used by:
+* cluster administrators, who create and manage Spark service accounts (as shown [here](/t/spark-client-snap-tutorial-setup-environment/8952)) 
+* developers and data-scientists, who need to launch Spark Jobs (as shown [here](/t/spark-client-snap-tutorial-spark-submit/8953)) or perform interactive analysis
+using `pyspark` and `spark-shell`  (as shown [here](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954))
 
 The spark-client snap can be installed such as:
 ```

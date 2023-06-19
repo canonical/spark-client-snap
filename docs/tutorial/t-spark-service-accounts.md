@@ -1,6 +1,6 @@
 ## Manage Spark Service Accounts
 
-The `spark-client` snap comes with a utility to manage service accounts. 
+The `spark-client` snap comes with a utility that helps administrators to manage service accounts. 
 
 The setup utility supports the following actions.
 * ***create*** - Create a new service account in Kubernetes for Spark job submission
@@ -32,6 +32,8 @@ As indicated above, the commands can take following optional parameters.
 * ***username*** - Username for the service accoun (default: `spark`)
 
 > **Note** Don't forget to enable default kubeconfig access for the snap, otherwise it will complain not able to find kubeconfig file even after providing the valid default kubeconfig file
+
+> **Note 2** The following utility functions assume that you have administrative permission on the namespaces (or on the kubernetes cluster) such that the corresponding resources (such as service accounts, secrets, roles and role-bindings) can be created and deleted. 
 
 ### Service Account Creation
 

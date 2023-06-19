@@ -11,7 +11,7 @@ MicroK8s snap installation goes as simple as
 sudo snap install microk8s --classic
 ```
 
-It is also recommended to configure MicroK8s in a way, so that the correpsonding user has admin rights on  the cluster. 
+It is also recommended to configure MicroK8s in a way, so that the corresponding user has admin rights on  the cluster. This is needed since some parts of this tutorial will present the tooling that helps administrators to manage Spark user-accounts. Therefore, the K8s user associated with the kube-config file needs to be able to create different type of resources (e.g. service-accounts, roles, role-bindings, secrets, config-maps) to work properly.
 
 ```bash 
 sudo snap alias microk8s.kubectl kubectl

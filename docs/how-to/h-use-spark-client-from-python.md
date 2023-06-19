@@ -6,10 +6,9 @@ Here we describe how to use the `spark8t` toolkit (as part of the `spark-client`
 
 ### Preparation
 
-Make sure that environment settings (described on the [tool's README](https://github.com/canonical/spark-k8s-toolkit-py)) are correctly configured.
+The `spark8t` package is already part of the SNAP. However, if the python package is used outside of the SNAP context, please make sure that environment settings (described on the [tool's README](https://github.com/canonical/spark-k8s-toolkit-py)) are correctly configured.
 
 Furthermore you need to make sure that `PYTHONPATH` contains the location where the `spark8t` libraries were installed within the snap (something like `/snap/spark-client/current/lib/python3.10/site-packages`)
-
 
 ### Bind to Kubernetes
 
@@ -127,7 +126,7 @@ registry.delete(service_account.id)
 
 #### Manage Primary Accounts
 
-Spark has a notation of the so called 'primary' service account, the 
+`spark8t` and spark-client snap have the notation of the so called 'primary' service account, the 
 one that would be chosen by default, if no specific account is provided. The
 primary Spark service account can be set using 
 

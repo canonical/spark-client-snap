@@ -4,7 +4,7 @@ The `spark-client` snap contains the Apache Spark `spark-submit` utility for Kub
 
 ### Pre-requisites
 
-Before being able to use the `spark-submit` utility, make sure that you have a [service account](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952) instructions to available.
+Before being able to use the `spark-submit` utility, make sure that you have a [service account](/t/spark-client-snap-tutorial-setup-environment/8952) available. Note that for running applications as outlined in the following guide, you **DON'T** need to have administrative rights on the kubernetes cluster. The service account created by an administrator (more details on the functionalities [here](/t/spark-client-snap-how-to-manage-spark-accounts/8959)) already provides the minimal set of permission to run Spark jobs on the associated namespace on K8s. 
 
 ### Validating Setup with an Example Spark Job
 

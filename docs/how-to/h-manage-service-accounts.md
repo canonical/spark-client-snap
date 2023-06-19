@@ -1,6 +1,8 @@
 ## Manage Spark Client Accounts
 
-This is an introduction to the CLI interface for creating, managing and configuring Spark accounts.
+This is an introduction to the CLI interface for creating, managing and configuring Spark accounts. 
+
+> **Note** The following commands assume that you have administrative permission on the namespaces (or on the kubernetes cluster) such that the corresponding resources (such as service accounts, secrets, roles and role-bindings) can be created and deleted. 
 
 ### Create Service Account
 
