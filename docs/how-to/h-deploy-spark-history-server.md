@@ -1,8 +1,8 @@
 ## Deploy the Spark History Server 
 
-The Spark History server is a component in the Spark ecosystem that helps you monitor your spark jobs. In particualar, the History Server enables access to logs of completed/running Spark jobs for viewing and analysis.
+The Spark History server is a component in the Spark ecosystem that helps you monitor your Spark jobs. In particualar, the History Server enables access to logs of completed/running Spark jobs for viewing and analysis.
 
-Within the Charmed Spark solution, its deployment, configuration and operation is handled by [Juju](https://juju.is/). Therefore, a [Charmed operator](https://charmhub.io/spark-history-server-k8s) will be responsible for its management and operations on K8s.
+Within the Charmed Spark solution, its deployment, configuration and operation is handled by [Juju](https://juju.is/). Therefore, a [Juju charm](https://charmhub.io/spark-history-server-k8s) will be responsible for its management and operations on K8s.
 
 ### Requirements
 
@@ -20,15 +20,20 @@ obtain the access key, the access secret and the MinIO endpoint:
 * *secret key*: `microk8s.kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d`
 * *MinIO endpoint*: `microk8s.kubectl get services -n minio-operator | grep minio | awk '{ print $3 }'`
 
+For other backends other than MinIO and microk8s (e.g. Ceph, AWS S3, Charmed Kubernetes, EKS, GKE, etc), please refer to the documentation or your admin to find out these information.
+
 ### Preparation
 
-#### Juju Namespace 
+#### Juju Model 
 
-Before deploying the Spark History server, it is advisable to create a dedicated namespace for `Spark` components if you don't already have one:
+Make sure that you have a Juju model where to deploy the Spark History server. In general, we advise to segregate juju applications belonging to different solutions, and therefore
+to have a dedicated model for `Spark` components, e.g.
 
 ```bash 
 juju add-model spark
 ```
+
+> Note that this will create a K8s namespace where the different juju applications will be deployed to.
 
 #### Setup S3 Bucket
 
@@ -68,7 +73,7 @@ juju deploy spark-history-server-k8s -n1 --channel 3.4/edge
 ```bash
 juju deploy s3-integrator -n1 --channel edge
 juju config s3-integrator bucket="history-server" path="spark-events" endpoint=<S3_ENDPOINT>
-juju run s3-integrator/0 sync-s3-credentials access-key=<ACCESS_KEY> secret-key=<SECRET_KEY>
+juju run-action s3-integrator/0 sync-s3-credentials access-key=<ACCESS_KEY> secret-key=<SECRET_KEY> --wait 
 ```
 
 * *Relate s3-integrator and Spark History server*
@@ -77,7 +82,22 @@ juju run s3-integrator/0 sync-s3-credentials access-key=<ACCESS_KEY> secret-key=
 juju relate s3-integrator spark-history-server-k8s
 ```
 
-Make sure that the s3-integrator and Spark History server services are active using `juju status`.
+The Spark History server should now be configured to read data from the S3 storage backend. 
+Before start using the Spark History server, make sure that the s3-integrator and Spark History server services are active using `juju status`, e.g.  
+
+```bash 
+$ juju status
+Model  Controller  Cloud/Region        Version  SLA          Timestamp
+spark  micro       microk8s/localhost  2.9.43   unsupported  19:12:46+02:00
+
+App                       Version  Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
+s3-integrator                      active      1  s3-integrator             edge      12  10.152.183.253  no       
+spark-history-server-k8s           active      1  spark-history-server-k8s             0  10.152.183.100  no       
+
+Unit                         Workload  Agent  Address      Ports  Message
+s3-integrator/0*             active    idle   10.1.99.136         
+spark-history-server-k8s/0*  active    idle   10.1.99.135 
+```
 
 ### Expose the Spark History server UI
 
@@ -92,5 +112,39 @@ microk8s enable dns
 and retrieve the Spark History server POD IP using
 
 ```bash
-kubectl get pod spark-history-server-0 -n spark --template '{{.status.podIP}}'
+IP=$(kubectl get pod spark-history-server-k8s-0 -n spark --template '{{.status.podIP}}')
 ```
+
+### Run Spark Jobs
+
+When running a Spark job, it is important to provide the correct configuration to write logs to S3, such that these files can be read by the Spark History server. 
+
+Create a configuration file `spark-s3-bindings.conf` with the Spark configuration keys
+
+```properties
+# 
+spark.eventLog.enabled=true
+spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+spark.hadoop.fs.s3a.connection.ssl.enabled=false
+spark.hadoop.fs.s3a.path.style.access=true
+spark.hadoop.fs.s3a.access.key=<ACCESS_KEY>
+spark.hadoop.fs.s3a.endpoint=<S3_ENDPOINT>
+spark.hadoop.fs.s3a.secret.key=<SECRET_KEY>
+spark.eventLog.dir=s3a://history-server/spark-events/ \
+spark.history.fs.logDirectory=s3a://history-server/spark-events/
+```
+
+Add these configurations to your Spark service account using the `spark-client` tool:
+
+```bash
+$ spark-client.service-account-registry add-config --username <USER> --namespace <NAMESPACE> --properties-file spark-s3-bindings.conf
+```
+
+You can now normally submit a Spark job using the `spark-client` tool:
+
+```bash
+$ spark-client.spark-submit --username <USER> --namespace <NAMESPACE> --class ...
+```
+
+> Note that if you only want to store logs for some jobs, configuration files could also be provided directly to the `spark-client.spark-submit` command via the `--properties-file` argument. 
+> Please refer to the dedicated documentation for more information about [managing service account](/t/spark-client-snap-how-to-manage-spark-accounts/8959) and [running Spark jobs](/t/spark-client-snap-tutorial-spark-submit/8953) using the `spark-client` tool.
