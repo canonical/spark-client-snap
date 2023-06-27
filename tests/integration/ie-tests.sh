@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.0-22.04_edge'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_edge'
 
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
@@ -160,15 +160,17 @@ cleanup_user() {
 
   spark-client.service-account-registry delete --username=${USERNAME} --namespace ${NAMESPACE}
 
-  account_not_found_counter=$(spark-client.service-account-registry get-config --username=${USERNAME} --namespace ${NAMESPACE} 2>&1 | grep -c 'NotFound')
+  OUTPUT=$(spark-client.service-account-registry list)
 
-  if [ "${account_not_found_counter}" == "0" ]; then
+  EXISTS=$(echo -e "$OUTPUT" | grep "$NAMESPACE:$USERNAME" | wc -l)
+
+  if [ "${EXISTS}" -ne "0" ]; then
       exit 2
   fi
 
   kubectl delete namespace ${NAMESPACE}
 
-  if [ "${EXIT_CODE}" != "0" ]; then
+  if [ "${EXIT_CODE}" -ne "0" ]; then
       exit 1
   fi
 }
@@ -186,20 +188,24 @@ cleanup_user_failure() {
 setup_test_pod() {
   kubectl apply -f ./tests/integration/resources/testpod.yaml
 
+  SLEEP_TIME=1
   for i in {1..5}
   do
     pod_status=$(kubectl get pod testpod | awk '{ print $3 }' | tail -n 1)
+    echo $pod_status
     if [ "${pod_status}" == "Running" ]
     then
         echo "testpod is Running now!"
         break
     elif [ "${i}" -le "5" ]
     then
-        sleep 5
+        echo "Waiting for the pod to come online..."
+        sleep $SLEEP_TIME
     else
         echo "testpod did not come up. Test Failed!"
         exit 3
     fi
+    SLEEP_TIME=$(expr $SLEEP_TIME \* 2);
   done
 
   MY_KUBE_CONFIG=$(cat /home/${USER}/.kube/config)
