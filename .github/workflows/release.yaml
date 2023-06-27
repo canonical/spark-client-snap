@@ -1,14 +1,43 @@
-name: Release to latest/edge
-
-env:
-  RELEASE: edge
+name: Release to 3.4 channels
 
 on:
   push:
     branches:
-      - main
+      - 3.4/*
 
 jobs:
+  release_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract branch metadata
+        shell: bash
+        run: |
+          BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "risk=${BRANCH##*\/}" >> $GITHUB_OUTPUT
+          echo "track=${BRANCH%*\/*}" >> $GITHUB_OUTPUT
+        id: branch_metadata
+      - name: Check consistency between metadata and release branch
+        run: |
+          RAW_VERSION=$(yq '(.version|split("-"))[0]' snap/snapcraft.yaml)
+          MAJOR_MINOR_VERSION=$(echo $RAW_VERSION | sed -n "s/\(^[0-9]*\.[0-9]*\).*/\1/p")
+          if [ "${MAJOR_MINOR_VERSION}" != "${{ steps.branch_metadata.outputs.track }}" ]; then exit 1; fi
+        continue-on-error: false
+
+      - name: Output Branch Metadata information
+        run: |
+          echo "Branch: ${{ steps.branch_metadata.outputs.branch }}"
+          echo "Track: ${{ steps.branch_metadata.outputs.track }}"
+          echo "Risk: ${{ steps.branch_metadata.outputs.risk }}"
+
+    outputs:
+      branch: ${{ steps.branch_metadata.outputs.branch }}
+      track: ${{ steps.branch_metadata.outputs.track }}
+      risk: ${{ steps.branch_metadata.outputs.risk }}
+
   build:
     uses: ./.github/workflows/ci.yaml
 
@@ -18,6 +47,7 @@ jobs:
     timeout-minutes: 5
     needs:
       - build
+      - release_checks
     steps:
       - name: Download built snap file
         uses: actions/download-artifact@v3
@@ -30,4 +60,4 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
         with:
           snap: ${{ needs.build.outputs.snap-file }}
-          release: ${{ env.RELEASE }}
+          release: ${{ needs.release_checks.outputs.track }}/${{ needs.release_checks.outputs.risk }}
