@@ -1,15 +1,17 @@
 ## Run Spark Interactively
 
-Apache Spark comes with two shells to be used in interactive mode:
+Apache Spark comes with two interactive shells:
+
 * `spark-shell`, that is built on top of the Scala REPL shell
 * `pyspark`, that is built on top of the python interpreter shell
 
 ### Interactive Spark Shell
-For interactive use cases, spark-client snap ships with Apache Spark's spark-shell utility.
 
-It's a useful tool to quickly validate your assumptions about Spark in Scala before finding out after an actual long running job failure.
+Supporting interactive usage, the `spark-client` snap ships with Apache Spark's `spark-shell` utility.
 
-Great! Let us test out our spark-shell setup with a simple example.
+It's a useful tool to validate your assumptions about Spark in Scala before finding out within an actual long running job failure.
+
+Let us test out our spark-shell setup with a simple example.
 
 ```shell
 $ spark-client.spark-shell
@@ -33,10 +35,11 @@ scala> :quit
 ```
 
 ### Interactive PySpark Shell
-For interactive use case using python shell, spark-client snap ships with Apache Spark's pyspark utility.
 
-Make sure python is installed on your system. Then, execute the following commands to validate 
-that your pyspark setup is working.
+For interactive Python shell usage, `spark-client` snap ships with Apache Spark's `pyspark` utility.
+
+Make sure that Python is installed on your system. Then, execute the following commands to validate 
+that your `pyspark` setup is working.
 
 ```bash
 $ spark-client.pyspark
@@ -60,3 +63,9 @@ Welcome to
 >>> print("Sum of squares is %f" % (squares_sum))
 >>> quit()
 ```
+
+***
+
+ * Previous: [Submit a Spark Job](https://discourse.charmhub.io/t/spark-client-snap-tutorial-spark-submit/8953)
+ * Next: [Tips and Tricks](https://discourse.charmhub.io/t/spark-client-snap-tutorial-common-gotchas/8955)
+ * [Charmed Spark Documentation](https://discourse.charmhub.io/t/charmed-spark-documentation/8963)

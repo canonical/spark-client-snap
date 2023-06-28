@@ -1,20 +1,17 @@
 ## Setup Kubernetes and Spark Client Snap
 
-We are working with Kubernetes distribution for Spark. So, to be able to work with Kubernetes, 
-we first need to install a kubernetes cluster. In this tutorial we will [MicroK8s](https://microk8s.io/), 
-which is the simplest production-grade conformant K8s. Lightweight and focused. 
-Single command install on Linux, Windows and macOS.
+In order to be able to work with Kubernetes,  first we first to set up a Kubernetes cluster. In this tutorial we use [MicroK8s](https://microk8s.io/), 
+which is the simplest production-grade conformant K8s.
 
 ### Setup MicroK8s
 
-To install MicroK8s
+MicroK8s snap installation goes as simple as
 
 ```bash
 sudo snap install microk8s --classic
 ```
 
-It is also recommended to configure MicroK8s, so that the user has admin permission on 
-the cluster. Use the following commands to configure the user to perform actions on the K8s cluster:
+It is also recommended to configure MicroK8s in a way, so that the corresponding user has admin rights on  the cluster. This is needed since some parts of this tutorial will present the tooling that helps administrators to manage Spark user-accounts. Therefore, the K8s user associated with the kube-config file needs to be able to create different type of resources (e.g. service-accounts, roles, role-bindings, secrets, config-maps) to work properly.
 
 ```bash 
 sudo snap alias microk8s.kubectl kubectl
@@ -23,25 +20,25 @@ mkdir -p ~/.kube
 sudo chown -f -R ${USER} ~/.kube
 ```
 
-In order to make this changes effective, it is best to open a new shell such that the permissions
-becomes effective. In the new terminal, make sure that the MicroK8s cluster is 
-now up and running, using:
+In order to make these changes effective, it is best to open a new shell (or log in, log out) so the permissions would become effective. 
+
+Make sure that the MicroK8s cluster is now up and running:
 
 ```bash
 microk8s status --wait-ready
 ```
 
-Note that this will wait until the cluster is ready and once this is indeed the case, it will 
+Note that this command will wait until the cluster is ready. Once this is indeed the case, it will 
 print a summary of the services that are active. 
 
-At this point we can export the kubeconfig file: 
+At this point we can export the Kubernetes config file: 
 
 ```bash 
 microk8s config | tee ~/.kube/config
 ```
 
 MicroK8s also allows to enable some K8s features used by the Spark Client Snap 
-(DNS resolution of pods and RBAC) by simply using 
+(DNS resolution of pods and RBAC):
 
 ```
 microk8s.enable dns
@@ -58,5 +55,10 @@ In order to install the spark-client snap, simply issue the following command:
 sudo snap install spark-client --edge
 ```
 
-This will install all the spark binaries along side with the spark-client utilities provided in 
+This will install all the spark binaries along side with the `spark-client` utilities provided in 
 the snap.
+
+***
+
+ * Previous: [Spark Client Snap Tutorial](https://discourse.charmhub.io/t/spark-client-snap-tutorial/8957)
+ * Next: [Manage Spark service accounts](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8952)

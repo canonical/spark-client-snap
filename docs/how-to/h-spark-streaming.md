@@ -1,20 +1,20 @@
 ## How to run Spark Streaming against Kafka
 
-One of the very interesting use cases for Spark is structured streaming with Kafka. 
+A very interesting use case for Spark is structured streaming with Kafka. 
 
-To get it up and running, follow the instructions below. 
+To set it up and running, follow the instructions below. 
 
-Prerequisite would be that juju is installed and we are working with a kubernetes based controller in juju.
+As a pre-requisite, [Juju](https://juju.is/docs/olm/install-juju) has to be installed together with a kubernetes based juju controller.
 
 ### Setup
 
-First setup a fresh juju model which we will use as a workspace for spark-streaming experiments.
+First create a fresh Juju model to be used as a workspace for spark-streaming experiments.
 
 ```shell
 juju add-model spark-streaming
 ```
 
-Now deploy zookeeper and kafka k8s-charms. Single units should be enough. 
+Deploy the Zookeeper and the Kafka k8s-charms. Single units should be enough. 
 
 ```shell
 juju deploy zookeeper-k8s --series=jammy --channel=edge
@@ -24,7 +24,7 @@ juju deploy kafka-k8s --series=jammy --channel=edge
 juju relate  kafka-k8s  zookeeper-k8s
 ```
 
-Now deploy a test app to write messages to Kafka (producer, not a spark job).
+Deploy a test producer application, to write messages to Kafka.
 
 ```shell
 juju deploy kafka-test-app --series=jammy --channel=edge --config role=producer --config topic_name=spark-streaming-store --config num_messages=1000
@@ -32,9 +32,9 @@ juju deploy kafka-test-app --series=jammy --channel=edge --config role=producer 
 juju relate kafka-test-app  kafka-k8s
 ```
 
-For consumption of these messages using Spark, Spark would need the credentials to connect to Kafka.
+In order to consume these messages, credentials are required to establish a connection between Spark and Kafka.
 
-To retrieve these credentials from kafka, we need to setup data-integrator which will help with credential retrieval as shown below.
+We need to setup the Juju data-integrator module, which perform credential retrieval as shown below.
 
 ```shell
 juju deploy data-integrator --series=jammy --channel=edge --config extra-user-roles=consumer,admin --config topic-name=spark-streaming-store
@@ -44,11 +44,11 @@ juju relate data-integrator kafka-k8s
 juju run-action data-integrator/0 get-credentials --wait 
 ```
 
-Please note the username and password retrieved above to be used soon later.
+(Note: We are using the service account set up in the previous examples.)
 
-For the spark test, we need to set up the environment in a kubernetes testpod launched in the same namespace as the juju model i.e. spark-streaming in this example.
+We need to set up the environment in a Kubernetes pod launched in the same namespace as the Juju model (i.e. `spark-streaming` in this example).
 
-Here is how the pod spec yaml might look like.
+The pod specification yaml goes as below:
 
 ```yaml
 apiVersion: v1
@@ -65,18 +65,18 @@ spec:
     args: ["3600"]
 ```
 
-Create a kubernetes test pod in the same namespace as the juju model name i.e. spark-streaming in this example. 
+Create the pod in the same namespace as the Juju model.
 
-Launch a bash shell inside the test pod. 
+Launch a Bash shell inside the test pod. 
 
 ```shell
 kubectl apply -f ./testpod.yaml --namespace=spark-streaming
 kubectl exec -it testpod -n spark-streaming -- /bin/bash
 ```
 
-Create a kube config within the test pod bash session to work with spark-client.
+Create a Kubernetes cluster configuration within the test pod shell session to be able to work with `spark-client`.
 
-Launch a pyspark shell to read the structured stream from Kafka.
+Launch a `pyspark` shell to read the structured stream from Kafka.
 
 ```shell
 cd /home/spark
@@ -92,7 +92,7 @@ spark-client.service-account-registry list
 spark-client.pyspark --username hello --namespace spark-streaming --conf spark.executor.instances=1 --conf spark.jars.ivy=/tmp --packages org.apache.spark:spark-streaming-kafka-0-10_2.12:3.2.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0
 ```
 
-Within the pyspark shell, now use the credentials retrieved previously to read stream from Kafka.
+Within the `pyspark` shell, now use the credentials retrieved previously to read stream from Kafka.
 
 ```python
 from pyspark.sql.functions import udf
@@ -117,3 +117,9 @@ count = lines.withColumn("origin", get_origin(col("value"))).select("origin")\
 
 count.awaitTermination()
 ```
+
+***
+
+ * Previous: [Run on K8s pods](/t/spark-client-snap-how-to-run-on-k8s-in-a-pod/8961)    
+ * Next: [Requirements](/t/spark-client-snap-reference-requirements/8962)  
+ * [Charmed Spark Documentation](https://discourse.charmhub.io/t/charmed-spark-documentation/8963)
