@@ -9,18 +9,9 @@ Within the Charmed Spark solution, its deployment, configuration and operation i
 Since Spark History server will be managed by Juju, make sure that:
 * you have a Juju client (e.g. via a [SNAP](https://snapcraft.io/juju)) installed in your local machine  
 * you are able to connect to a juju controller running on K8s.
-* you have read-write permissions (therefore you have a access key and access secret) to a S3-compatible object storage (e.g. MinIO)
+* you have read-write permissions (therefore you have an access key, access secret and the s3 endpoint) to a S3-compatible object storage 
 
-To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju).
-
-To see how to setup MinIO on top of MicroK8s, please refer to [here](https://microk8s.io/docs/addon-minio). If you have a MicroK8s MinIO plugin enabled, use the following commands to 
-obtain the access key, the access secret and the MinIO endpoint:
-
-* *access key*: `microk8s.kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d`
-* *secret key*: `microk8s.kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d`
-* *MinIO endpoint*: `microk8s.kubectl get services -n minio-operator | grep minio | awk '{ print $3 }'`
-
-For other backends other than MinIO and microk8s (e.g. Ceph, AWS S3, Charmed Kubernetes, EKS, GKE, etc), please refer to the documentation or your admin to find out these information.
+To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju) for MicroK8s and [here](https://juju.is/docs/juju/amazon-elastic-kubernetes-service-(amazon-eks)) for AWS EKS. Also refer to the [How-To Setup K8s Cluster]() userguide to install S3-compatible object storage on MicroK8s (MinIO) or EKS (AWS S3). For other backends or K8s distributions other than MinIO on MicroK8s and S3 on EKS (e.g. Ceph, Charmed Kubernetes, GKE, etc), please refer to the documentation or your admin.
 
 ### Preparation
 
