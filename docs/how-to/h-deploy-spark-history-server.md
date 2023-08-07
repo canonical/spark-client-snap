@@ -92,6 +92,8 @@ spark-history-server-k8s/0*  active    idle   10.1.99.135
 
 ### Expose the Spark History server UI
 
+#### Without Ingress (MicroK8s only)
+
 The Spark History server exposes a UI accessible at ```http://<spark-history-server-ip>:18080```. 
 
 If you are running MicroK8s, you can directly expose it to the local network by enabling DNS
@@ -105,6 +107,30 @@ and retrieve the Spark History server POD IP using
 ```bash
 IP=$(kubectl get pod spark-history-server-k8s-0 -n spark --template '{{.status.podIP}}')
 ```
+
+#### With Ingress
+
+The Spark History server can be exposed outside a K8s cluster by means of an ingress. This is the recommended way in production for any K8s distribution. If you are running on Microk8s, make sure that you have enabled `metallb`, as shown in the "How-To Setup K8s" userguide. 
+
+Deploy the `traefik-k8s` charm
+
+```bash
+juju deploy traefik-k8s --channel latest/candidate --trust
+```
+
+and relate with the Spark History server charm
+
+```bash
+juju relate traefik-k8s spark-history-server-k8s
+```
+
+After the charms to settle down into `idle/active` states, fetch the URL of the Spark History server with 
+
+```bash
+juju run-action traefik-k8s/0 show-proxied-endpoints --wait
+```
+
+This should print a JSON with all the ingress endpoints exposed by the `traefik-k8s` charm. To also exposed the UI outside the local cloud network via a public domain or to enable TLS encryption, please refer to [this userguide](https://discourse.charmhub.io/t/lets-encrypt-certificates-in-the-juju-ecosystem/8704) about integration of `traefik-k8s` with Route53 and Let's Encrypt (note that this is currently only supported on AWS EKS only).
 
 ### Run Spark Jobs
 
@@ -139,3 +165,4 @@ $ spark-client.spark-submit --username <USER> --namespace <NAMESPACE> --class ..
 
 > Note that if you only want to store logs for some jobs, configuration files could also be provided directly to the `spark-client.spark-submit` command via the `--properties-file` argument. 
 > Please refer to the dedicated documentation for more information about [managing service account](/t/spark-client-snap-how-to-manage-spark-accounts/8959) and [running Spark jobs](/t/spark-client-snap-tutorial-spark-submit/8953) using the `spark-client` tool.
+
