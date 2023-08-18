@@ -3,7 +3,7 @@
 In order to be able to work with Kubernetes, we first need to set up a Kubernetes cluster. 
 
 In this tutorial we use [MicroK8s](https://microk8s.io/), which is the simplest production-grade conformant K8s.
-If you would like to run this tutorial on other K8s installation, please refer to the "How-to setup on K8s" user guide. 
+If you would like to run this tutorial on other K8s installation, please refer to the [How-to setup environment](/t/charmed-spark-k8s-documentation-how-to-setup-k8s-environment/11618) user guide. 
 
 ### Setup MicroK8s
 
