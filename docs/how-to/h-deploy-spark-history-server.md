@@ -124,7 +124,7 @@ and relate with the Spark History server charm
 juju relate traefik-k8s spark-history-server-k8s
 ```
 
-After the charms to settle down into `idle/active` states, fetch the URL of the Spark History server with 
+After the charms settle down into `idle/active` states, fetch the URL of the Spark History server with 
 
 ```bash
 juju run-action traefik-k8s/0 show-proxied-endpoints --wait

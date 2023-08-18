@@ -1,6 +1,6 @@
 ## How to setup a K8s cluster for Spark
 
-The Charmed Spark solution runs on top of a K8s distribution. We recommend you to use version 1.27. There are multiple ways that a K8s cluster can be deployed. Here below we summarize how to setup on K8s on the distributions that we currently support: 
+The Charmed Spark solution runs on top of a K8s distribution. We recommend you to use version the latest stable version, but at least version 1.26. There are multiple ways that a K8s cluster can be deployed. Here below we summarize how to setup on K8s on the distributions that we currently support: 
 
 * MicroK8s
 * AWS EKS
@@ -88,6 +88,7 @@ Make also sure that your service account (configured in AWS) has the right permi
 
 #### Creating the cluster
 
+An EKS cluster can be created using `eksctl`, the AWS Management Console, or the AWS CLI. In the following we will use `eksctl`.
 Create a YAML file with the following content 
 
 ```yaml
