@@ -11,7 +11,7 @@ Since Spark History server will be managed by Juju, make sure that:
 * you are able to connect to a juju controller running on K8s.
 * you have read-write permissions (therefore you have an access key, access secret and the s3 endpoint) to a S3-compatible object storage 
 
-To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju) for MicroK8s and [here](https://juju.is/docs/juju/amazon-elastic-kubernetes-service-(amazon-eks)) for AWS EKS. Also refer to the [How-To Setup K8s Cluster]() userguide to install S3-compatible object storage on MicroK8s (MinIO) or EKS (AWS S3). For other backends or K8s distributions other than MinIO on MicroK8s and S3 on EKS (e.g. Ceph, Charmed Kubernetes, GKE, etc), please refer to the documentation or your admin.
+To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju) for MicroK8s and [here](https://juju.is/docs/juju/amazon-elastic-kubernetes-service-(amazon-eks)) for AWS EKS. Also refer to the [How-To Setup Environment](/t/charmed-spark-k8s-documentation-how-to-setup-k8s-environment/11618) userguide to install S3-compatible object storage on MicroK8s (MinIO) or EKS (AWS S3). For other backends or K8s distributions other than MinIO on MicroK8s and S3 on EKS (e.g. Ceph, Charmed Kubernetes, GKE, etc), please refer to the documentation or your admin.
 
 ### Preparation
 
@@ -165,4 +165,3 @@ $ spark-client.spark-submit --username <USER> --namespace <NAMESPACE> --class ..
 
 > Note that if you only want to store logs for some jobs, configuration files could also be provided directly to the `spark-client.spark-submit` command via the `--properties-file` argument. 
 > Please refer to the dedicated documentation for more information about [managing service account](/t/spark-client-snap-how-to-manage-spark-accounts/8959) and [running Spark jobs](/t/spark-client-snap-tutorial-spark-submit/8953) using the `spark-client` tool.
-
