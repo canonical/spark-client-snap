@@ -9,18 +9,9 @@ Within the Charmed Spark solution, its deployment, configuration and operation i
 Since Spark History server will be managed by Juju, make sure that:
 * you have a Juju client (e.g. via a [SNAP](https://snapcraft.io/juju)) installed in your local machine  
 * you are able to connect to a juju controller running on K8s.
-* you have read-write permissions (therefore you have a access key and access secret) to a S3-compatible object storage (e.g. MinIO)
+* you have read-write permissions (therefore you have an access key, access secret and the s3 endpoint) to a S3-compatible object storage 
 
-To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju).
-
-To see how to setup MinIO on top of MicroK8s, please refer to [here](https://microk8s.io/docs/addon-minio). If you have a MicroK8s MinIO plugin enabled, use the following commands to 
-obtain the access key, the access secret and the MinIO endpoint:
-
-* *access key*: `microk8s.kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d`
-* *secret key*: `microk8s.kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d`
-* *MinIO endpoint*: `microk8s.kubectl get services -n minio-operator | grep minio | awk '{ print $3 }'`
-
-For other backends other than MinIO and microk8s (e.g. Ceph, AWS S3, Charmed Kubernetes, EKS, GKE, etc), please refer to the documentation or your admin to find out these information.
+To see how to setup a Juju controller on K8s and the juju client, you can refer to existing tutorials and documentation, e.g. [here](https://juju.is/docs/olm/get-started-with-juju) for MicroK8s and [here](https://juju.is/docs/juju/amazon-elastic-kubernetes-service-(amazon-eks)) for AWS EKS. Also refer to the [How-To Setup Environment](/t/charmed-spark-k8s-documentation-how-to-setup-k8s-environment/11618) userguide to install S3-compatible object storage on MicroK8s (MinIO) or EKS (AWS S3). For other backends or K8s distributions other than MinIO on MicroK8s and S3 on EKS (e.g. Ceph, Charmed Kubernetes, GKE, etc), please refer to the documentation or your admin.
 
 ### Preparation
 
@@ -101,6 +92,8 @@ spark-history-server-k8s/0*  active    idle   10.1.99.135
 
 ### Expose the Spark History server UI
 
+#### Without Ingress (MicroK8s only)
+
 The Spark History server exposes a UI accessible at ```http://<spark-history-server-ip>:18080```. 
 
 If you are running MicroK8s, you can directly expose it to the local network by enabling DNS
@@ -114,6 +107,30 @@ and retrieve the Spark History server POD IP using
 ```bash
 IP=$(kubectl get pod spark-history-server-k8s-0 -n spark --template '{{.status.podIP}}')
 ```
+
+#### With Ingress
+
+The Spark History server can be exposed outside a K8s cluster by means of an ingress. This is the recommended way in production for any K8s distribution. If you are running on Microk8s, make sure that you have enabled `metallb`, as shown in the "How-To Setup K8s" userguide. 
+
+Deploy the `traefik-k8s` charm
+
+```bash
+juju deploy traefik-k8s --channel latest/candidate --trust
+```
+
+and relate with the Spark History server charm
+
+```bash
+juju relate traefik-k8s spark-history-server-k8s
+```
+
+After the charms settle down into `idle/active` states, fetch the URL of the Spark History server with 
+
+```bash
+juju run-action traefik-k8s/0 show-proxied-endpoints --wait
+```
+
+This should print a JSON with all the ingress endpoints exposed by the `traefik-k8s` charm. To also exposed the UI outside the local cloud network via a public domain or to enable TLS encryption, please refer to [this userguide](https://discourse.charmhub.io/t/lets-encrypt-certificates-in-the-juju-ecosystem/8704) about integration of `traefik-k8s` with Route53 and Let's Encrypt (note that this is currently only supported on AWS EKS only).
 
 ### Run Spark Jobs
 

@@ -1,3 +1,5 @@
+# Charmed Spark Documentation
+
 The Spark Client Snap is a utility client application that allows for running Apache Spark on Kubernetes in a simple and seamless manner. All necessary components are packed in a single confined [Snap](https://snapcraft.io/) package:
 
 * [Apache Spark](https://spark.apache.org/downloads.html) (binaries, executables and libraries)
@@ -33,7 +35,7 @@ Spark Client Snap is an official distribution of Apache Spark. It’s an open-so
 
 | Level | Path                           | Navlink                                                                                                              |
 |-------|--------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| 1     | overview                       | [Overview](/t/spark-client-snap-documentation/8963)                                                                                                  | 
+| 1     | overview                       | [Overview](/t/spark-client-snap-documentation/8963)                                                                  | 
 | 1     | tutorial                       | [Tutorial]()                                                                                                         |
 | 2     | t-overview                     | [1. Introduction](/t/spark-client-snap-tutorial/8957)                                                                |
 | 2     | t-setup-environment            | [2. Set up the environment](/t/spark-client-snap-tutorial-setup-environment/8951)                                    |
@@ -42,11 +44,12 @@ Spark Client Snap is an official distribution of Apache Spark. It’s an open-so
 | 2     | t-spark-shells                 | [5. Use interactive shells](/t/spark-client-snap-tutorial-interactive-mode/8954)                                     |
 | 2     | t-tips-and-tricks              | [6. Tips and Tricks](/t/spark-client-snap-tutorial-common-gotchas/8955)                                              |
 | 1     | how-to                         | [How To]()                                                                                                           |
+| 2     | h-setup-k8s                    | [Setup Environment](/t/charmed-spark-k8s-documentation-how-to-setup-k8s-environment/11618)                           |
 | 2     | h-manage-service-accounts      | [Manage Service Accounts](/t/spark-client-snap-how-to-manage-spark-accounts/8959)                                    |
 | 2     | h-use-spark-client-from-python | [Use the Spark Client Python API](/t/spark-client-snap-how-to-python-api/8958)                                       |
-| 2     | h-run-on-charmed-k8s           | [Run on Charmed Kubernetes](/t/spark-client-snap-how-to-run-on-charmed-kubernetes/8960)                              |
 | 2     | h-run-on-k8s-pod               | [Run on K8s pods](/t/spark-client-snap-how-to-run-on-k8s-in-a-pod/8961)                                              |
-| 2     | h-spark-streaming               | [Run Spark Streaming Jobs](/t/charmed-spark-how-to-run-a-spark-streaming-job/10880)                                              |
+| 2     | h-deploy-spark-history         | [Deploy Spark History Server](/t/charmed-spark-k8s-documentation-how-to-deploy-spark-history-server/10979)           |
+| 2     | h-spark-streaming              | [Run Spark Streaming Jobs](/t/charmed-spark-how-to-run-a-spark-streaming-job/10880)                                  |
 | 1     | reference                      | [Reference]()                                                                                                        |
 | 2     | r-requirements                 | [Requirements](/t/spark-client-snap-reference-requirements/8962)                                                     |
 | 1     | explanation                    | [Explanation]()                                                                                                      |

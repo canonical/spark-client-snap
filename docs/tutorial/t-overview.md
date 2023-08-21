@@ -1,4 +1,4 @@
-# `spark-client` Snap tutorial
+# Charmed Spark Tutorial 
 
 The `spark-client` Snap package delivers Spark utility client applications, that allow for simple and seamless usage of Apache Spark on Kubernetes.
 
