@@ -1,27 +1,13 @@
 # Charmed Spark Documentation
 
+Charmed Spark is a set of Canonical supported artifacts (including charms, ROCK OCI images and SNAPs) that makes operating Spark workloads on Kubernetes seamless, secure and production-ready. 
+
+The solution helps to simplify user interaction with Spark applications and the underlying Kubernetes cluster whilst retaining the traditional semantics and command line tooling that users already know. Operators benefit from straightforward, automated deployment of Spark components (e.g. Spark History Server) to the Kubernetes cluster, using [Juju](https://juju.is/). 
+
+Deploying Spark applications to Kubernetes has several benefits over other cluster resource managers such as Apache YARN, as it greatly simplifies deployment, operation, authentication while allowing for flexibility and scaling. However, it requires knowledge on Kubernetes, networking and coordination between the different components of the Spark ecosystem in order to provide a scalable, secure and production-ready environment. As a consequence, this can significantly increase complexity for the end user and administrators, as a number of parameters need to be configured and prerequisites must be met for the application to deploy correctly or for using the Spark CLI interface (e.g. pyspark and spark-shell). 
+Charmed Spark helps to address these usability concerns and provides a consistent management interface for operations engineers and cluster administrators who need to manage enablers like Spark History Server.
+
 The Spark Client Snap is a utility client application that allows for running Apache Spark on Kubernetes in a simple and seamless manner. All necessary components are packed in a single confined [Snap](https://snapcraft.io/) package:
-
-* [Apache Spark](https://spark.apache.org/downloads.html) (binaries, executables and libraries)
-* [spark8t](https://github.com/canonical/spark-k8s-toolkit-py) Python package to enhance Spark capabilities allowing to manage Spark jobs and service accounts, with hierarchical level of configuration
-* Expose simple Snap commands to run and manage Spark Jobs
-
-The `spark-client` Snap can be used to deploy and manage Apache Spark on different Kubernetes distributions, like
-* [microk8s](https://microk8s.io/), which is the simplest production-grade conformant K8s. Lightweight and focused. 
-Single command install on Linux, Windows and macOS.
-    * Setup instructions are available in the Spark Tutorial [Set up the environment chapter](https://discourse.charmhub.io/t/spark-client-snap-tutorial-setup-environment/8951)
-* [Charmed Kubernetes](https://ubuntu.com/kubernetes/charmed-k8s), which is a platform independent, model-driven distribution of Kubernetes powered by [juju](https://juju.is/) 
-
-The `spark-client` Snap can effectively be used by:
-* cluster administrators, who create and manage Spark service accounts (as shown [here](/t/spark-client-snap-tutorial-setup-environment/8952)) 
-* developers and data-scientists, who need to launch Spark Jobs (as shown [here](/t/spark-client-snap-tutorial-spark-submit/8953)) or perform interactive analysis
-using `pyspark` and `spark-shell`  (as shown [here](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954))
-
-The spark-client snap can be installed such as:
-```
-snap install spark-client --edge
-```
-
 
 ## Project and community
 
@@ -53,6 +39,7 @@ Spark Client Snap is an official distribution of Apache Spark. It’s an open-so
 | 1     | reference                      | [Reference]()                                                                                                        |
 | 2     | r-requirements                 | [Requirements](/t/spark-client-snap-reference-requirements/8962)                                                     |
 | 1     | explanation                    | [Explanation]()                                                                                                      |
+| 2     | e-component-overview           | [Component Overview]()                                                                                               |
 | 2     | e-configuration                | [Spark Client Hierarchical Configuration](/t/spark-client-snap-explanation-hierarchical-configuration-handling/8956) |
 
 

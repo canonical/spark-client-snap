@@ -51,7 +51,7 @@ The MicroK8s cluster is now ready to be used.
 
 ### Setup Spark Client Snap 
 
-In order to install the spark-client snap, simply issue the following command:
+In order to install the spark-client snap on your local environment or on an edge node of a cluster, simply issue the following command:
 
 ```bash
 sudo snap install spark-client --edge
@@ -59,6 +59,11 @@ sudo snap install spark-client --edge
 
 This will install all the spark binaries along side with the `spark-client` utilities provided in 
 the snap.
+
+As we will see in the following, the `spark-client` Snap can effectively be used by:
+* cluster administrators, who create and manage Spark service accounts (as shown [here](/t/spark-client-snap-tutorial-setup-environment/8952)) 
+* developers and data-scientists, who need to launch Spark Jobs (as shown [here](/t/spark-client-snap-tutorial-spark-submit/8953)) or perform interactive analysis
+using `pyspark` and `spark-shell`  (as shown [here](https://discourse.charmhub.io/t/spark-client-snap-tutorial-interactive-mode/8954))
 
 ***
 
