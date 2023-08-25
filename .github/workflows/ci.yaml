@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
       - id: build-snap
         name: Build snap
-        uses: snapcore/action-build@v1
+        uses: snapcore/action-build@2ee46bc29d163c9c836f2820cc46b39664bf0de2
         with:
           snapcraft-channel: 7.x/candidate
       - id: upload
