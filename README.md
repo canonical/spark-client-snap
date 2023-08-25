@@ -1,7 +1,7 @@
 ## Introduction
 
 Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster. 
-You can get started right away with [Microk8s](https://microk8s.io/) - the mightiest tiny Kubernetes distro around! 
+You can get started right away with [MicroK8s](https://microk8s.io/) - the mightiest tiny Kubernetes distro around! 
 You can install MicroK8s on your Ubuntu laptop, workstation, or nodes in your workgroup or server cluster with just one command - ```snap install microk8s --classic```. Learn more at [microk8s.io](https://microk8s.io/).
 
 ## Spark-client Snap

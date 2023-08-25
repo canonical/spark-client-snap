@@ -9,13 +9,13 @@ The how-to guide belows shows you how to setup all of the services used by Charm
 
 ### MicroK8s
 
-[Microk8s](https://microk8s.io/) is the mightiest tiny Kubernetes distribution around. It can easily installed locally via SNAPs
+[MicroK8s](https://microk8s.io/) is the mightiest tiny Kubernetes distribution around. It can easily installed locally via SNAPs
 
 ```bash
 sudo snap install microk8s --classic
 ```
 
-When installing Microk8s, it is recommended to configure MicroK8s in a way, so that there exists a user that has admin rights on the cluster. 
+When installing MicroK8s, it is recommended to configure MicroK8s in a way, so that there exists a user that has admin rights on the cluster. 
 
 ```bash 
 sudo snap alias microk8s.kubectl kubectl
@@ -53,7 +53,7 @@ Enable the MinIO storage if you want to store Spark Jobs logs in a S3 compatible
 microk8s.enable minio
 ```
 
-Refer [here](https://microk8s.io/docs/addon-minio) for more information how to customize your MinIO Microk8s deployment.
+Refer [here](https://microk8s.io/docs/addon-minio) for more information how to customize your MinIO MicroK8s deployment.
 
 Use the following commands to obtain the access key, the access secret and the MinIO endpoint:
 
