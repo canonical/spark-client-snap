@@ -111,7 +111,7 @@ parts:
             echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
             exit 1
         fi
-        tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz.tgz"
+        tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
         cd "spark-${SPARK_VERSION}-bin-k8s/jars"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
