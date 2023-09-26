@@ -97,7 +97,7 @@ parts:
 
         STATUSCODE=$(curl --silent --head $TARBALL_URL | head -n 1 | cut -d' ' -f2)
         
-        if  [[ ${STATUSCODE} -lt 400 ]]
+        if  [[ ${STATUSCODE} -gt 400 ]]
           then
             echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
             exit 1
