@@ -93,7 +93,7 @@ parts:
         SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
         TAG=$( echo ${SPARK_VERSION%-*} )
         TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
-        CHECKSUM_URL+=".sha512"
+        CHECKSUM_URL="${TARBALL_URL}.sha512"
 
         STATUSCODE=$(curl --silent --head $TARBALL_URL | head -n 1 | cut -d' ' -f2)
         
