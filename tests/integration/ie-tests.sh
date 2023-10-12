@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_beta'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_edge'
 
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
