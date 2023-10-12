@@ -91,23 +91,28 @@ parts:
         AWS_JAVA_SDK_BUNDLE_VERSION='1.11.874'
         HADOOP_AWS_VERSION='3.2.2'
         SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
-        STATUSCODE=$(curl --silent --head "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" | head -n 1 | cut -d' ' -f2)
-        if  [[ ${STATUSCODE} -ne 200 ]]
+        TAG=$( echo ${SPARK_VERSION%-*} )
+        TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
+        CHECKSUM_URL="${TARBALL_URL}.sha512"
+
+        STATUSCODE=$(curl --silent --head $TARBALL_URL | head -n 1 | cut -d' ' -f2)
+        
+        if  [[ ${STATUSCODE} -gt 400 ]]
           then
             echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
             exit 1
         fi
         echo "Downloading latest available Spark version spark-${SPARK_VERSION}."
-        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        wget "https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
-        sha512sum --check "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz.sha512"
+        wget $TARBALL_URL
+        wget $CHECKSUM_URL
+        sha512sum --check "spark-${SPARK_VERSION}-bin-k8s.tgz.sha512"
         if  [[ $? -ne 0 ]]
           then
             echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
             exit 1
         fi
-        tar -zxf "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}.tgz"
-        cd "spark-${SPARK_VERSION}-bin-hadoop${SPARK_HADOOP_VERSION}/jars"
+        tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
+        cd "spark-${SPARK_VERSION}-bin-k8s/jars"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
         echo "`cat aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1`  aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar" | sha1sum --check
