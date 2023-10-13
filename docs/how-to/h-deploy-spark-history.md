@@ -56,7 +56,7 @@ s3.put_object(Bucket="history-server", Key=("spark-events/"))
 * *Deploy the Spark History Server component*
 
 ```bash
-juju deploy spark-history-server-k8s -n1 --channel 3.4/edge
+juju deploy spark-history-server-k8s -n1 --channel 3.4/stable
 ```
 
 * *Deploy and configure a [s3-integrator](https://charmhub.io/s3-integrator) charm*
@@ -83,7 +83,7 @@ spark  micro       microk8s/localhost  2.9.43   unsupported  19:12:46+02:00
 
 App                       Version  Status  Scale  Charm                     Channel  Rev  Address         Exposed  Message
 s3-integrator                      active      1  s3-integrator             edge      12  10.152.183.253  no       
-spark-history-server-k8s           active      1  spark-history-server-k8s             0  10.152.183.100  no       
+spark-history-server-k8s           active      1  spark-history-server-k8s  stable     0  10.152.183.100  no       
 
 Unit                         Workload  Agent  Address      Ports  Message
 s3-integrator/0*             active    idle   10.1.99.136         

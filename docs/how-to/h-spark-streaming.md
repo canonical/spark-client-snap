@@ -57,7 +57,7 @@ metadata:
   name: testpod
 spec:
   containers:
-  - image: ghcr.io/canonical/charmed-spark:3.4.1-22.04_edge
+  - image: ghcr.io/canonical/charmed-spark:3.4.1-22.04_stable
     name: spark
     ports:
     - containerPort: 18080
