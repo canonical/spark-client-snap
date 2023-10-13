@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_beta'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_stable'
 
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
@@ -210,9 +210,9 @@ setup_test_pod() {
 
   MY_KUBE_CONFIG=$(cat /home/${USER}/.kube/config)
 
-  kubectl exec testpod -- /bin/bash -c 'mkdir /home/spark/.kube'
-  kubectl exec testpod -- env KCONFIG="$MY_KUBE_CONFIG" /bin/bash -c 'echo "$KCONFIG" > /home/spark/.kube/config'
-  kubectl exec testpod -- /bin/bash -c 'cat /home/spark/.kube/config'
+  kubectl exec testpod -- /bin/bash -c 'mkdir -p ~/.kube'
+  kubectl exec testpod -- env KCONFIG="$MY_KUBE_CONFIG" /bin/bash -c 'echo "$KCONFIG" > ~/.kube/config'
+  kubectl exec testpod -- /bin/bash -c 'cat ~/.kube/config'
 }
 
 teardown_test_pod() {
