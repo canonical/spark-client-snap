@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_stable'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_edge'
 
 setup_tests() {
   sudo snap connect spark-client:dot-kube-config
@@ -20,7 +20,7 @@ run_example_job() {
   KUBE_CONFIG=/home/${USER}/.kube/config
 
   K8S_MASTER_URL=k8s://$(kubectl --kubeconfig=${KUBE_CONFIG} config view -o jsonpath="{.clusters[0]['cluster.server']}")
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.1.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.2.jar'
 
   echo $K8S_MASTER_URL
 
@@ -220,7 +220,7 @@ teardown_test_pod() {
 }
 
 run_example_job_in_pod() {
-  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.1.jar'
+  SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.2.jar'
 
   PREVIOUS_JOB=$(kubectl get pods | grep driver | tail -n 1 | cut -d' ' -f1)
 
