@@ -1,8 +1,8 @@
 ## Setup Environment for the Tutorial
 
-This tutorial takes the demonstration on Charmed Spark by Paolo Sottovia at Ubuntu Summit 2023 as its reference. The video demonstration for this tutorial can be viewed on YouTube via (this link)[https://www.youtube.com/watch?v=nu1ll7VRqbI].
+This tutorial takes the demonstration on Charmed Spark by Paolo Sottovia at Ubuntu Summit 2023 as its reference. The video demonstration for this tutorial can be viewed on YouTube via [this link](https://www.youtube.com/watch?v=nu1ll7VRqbI).
 
-The resources that will be used during this tutorial are available at (this GitHub repository)[https://github.com/welpaolo/ubuntu-summit-2023]. Let's clone that repository onto our machine.
+The resources that will be used during this tutorial are available at [this GitHub repository](https://github.com/welpaolo/ubuntu-summit-2023). Let's clone that repository onto our machine.
 
 ```bash
 git clone https://github.com/welpaolo/ubuntu-summit-2023.git
