@@ -26,11 +26,11 @@ The Spark rock image is used to run containers in the executor pods by Spark. Th
 The sections that follow takes you through a comprehensive tutorial on how to submit jobs to Spark cluster, how to interact with it, how to view the results, how to process streaming data and how to monitor the status of the jobs in it.
 
 This tutorial can be divided into the following sections:
-1. Submitting Jobs with Spark Submit
-2. Interacting with Spark using Spark interactive shell
-3. Interacting with Spark using PySpark
-4. Streaming Workload with Charmed Spark
-5. Monitoring with Spark History Server
-6. Monitoring with Canonical Observability Stack
-7. Cleanup
-8. Further Reading
+1. Introduction to Spark and Charmed Spark 
+2. Setting up Environment for the Tutorial
+3. Submitting Jobs with Spark Submit
+4. Interacting with Spark using interactive shells
+5. Streaming Workload with Charmed Spark
+6. Monitoring with Spark History Server
+7. Monitoring with Canonical Observability Stack
+8. wrapping Up
