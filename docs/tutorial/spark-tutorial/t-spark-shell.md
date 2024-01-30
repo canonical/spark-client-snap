@@ -1,8 +1,63 @@
 ## Interacting with Spark using Interactive Shell
 
-We can also interact with the Spark cluster directly using an interactive shell. There are two shells that are available:
-1. Spark Shell (Scala)
-2. PySpark (Python)
+Spark comes with an interactive shell that provides a simple way to learn the API. It is available in either Scala or Python. In this section, we're going to play around a bit with Spark's shell to interact directly with the Spark cluster.
+
+### PySpark Shell
+
+Spark comes with a built-in Python shell where we can execute commands interactively against Spark cluster using Python programming language.
+
+Let's launch a PySpark shell. This can be done with `spark-client` snap as:
+
+```bash
+spark-client.pyspark \
+  --username spark --namespace spark
+```
+
+Once the shell is open and ready, you should see a prompt simlar to the following:
+
+```
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /__ / .__/\_,_/_/ /_/\_\   version 3.4.1
+      /_/
+
+Using Python version 3.10.12 (main, Jun 11 2023 05:26:28)
+Spark context Web UI available at http://172.31.29.134:4040
+Spark context available as 'sc' (master = k8s://https://172.31.29.134:16443, app id = spark-b364a0a9a2cb41f3a713c62b900fbd82).
+SparkSession available as 'spark'.
+>>> 
+```
+
+A good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
+
+Let's open a new shell and create a dummy text file at `/tmp/somelines.txt` and add a few lines to it. We'll then read the contents of this file from the PySpark shell.
+
+```bash
+cat <<EOT >> /tmp/somelines.txt
+Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
+You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
+Spark on Kubernetes is a complex environment with many moving parts.
+Sometimes, small mistakes can take a lot of time to debug and figure out.
+EOT
+```
+
+```python
+>>> df = spark.read.text("/home/ubuntu/.kube/config")
+```
+
+As an experiment, let's try reading text from a text file and then count the Kubeconfig file we exported earlier and count the number of lines that contain the word "microk8s" on it.
+
+For that, let's first read the file onto a dataframe using the `spark.read.text` function:
+
+```python
+>>> df = spark.read.text("/home/ubuntu/.kube/config") # Note that the username could be different in your system
+
+>> df.first() # First row in the dataframe
+
+```
 
 
 ### Spark Shell

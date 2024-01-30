@@ -21,7 +21,7 @@ Since 2018, Apache Spark can now be run on top of Kubernetes. However, getting A
 2. Spark Client Snap (Simplifies client interaction with a Spark K8s cluster)
 3. Observability charms (Provides charms to manage Web UIs services like Spark History Server and Grafana to monitor spark jobs via Juju)
 
-The Spark rock image is used to run containers in the executor pods by Spark. The user can submit jobs to the Spark cluster using the snap-client snap. The snap also enables users to create Kubernetes service accounts and set configurations to integrate Spark with other applications. Finally, the history, status and metrics of the jobs can be viewed and analyzed by using the observability charms that are deployed via Juju.
+The Spark rock image is used to run containers in the executor pods by Spark. The user can submit jobs to the Spark cluster using the spark-client snap. The snap also enables users to create Kubernetes service accounts and set configurations to integrate Spark with other applications. Finally, the history, status and metrics of the jobs can be viewed and analyzed by using the observability charms that are deployed via Juju.
 
 The sections that follow takes you through a comprehensive tutorial on how to submit jobs to Spark cluster, how to interact with it, how to view the results, how to process streaming data and how to monitor the status of the jobs in it.
 
@@ -33,4 +33,4 @@ This tutorial can be divided into the following sections:
 5. Streaming Workload with Charmed Spark
 6. Monitoring with Spark History Server
 7. Monitoring with Canonical Observability Stack
-8. wrapping Up
+8. Wrapping Up

@@ -1,46 +1,39 @@
 ## Setup Environment for the Tutorial
 
-This tutorial takes the demonstration on Charmed Spark by Paolo Sottovia at Ubuntu Summit 2023 as its reference. The video demonstration for this tutorial can be viewed on YouTube via [this link](https://www.youtube.com/watch?v=nu1ll7VRqbI).
 
-The resources that will be used during this tutorial are available at [this GitHub repository](https://github.com/welpaolo/ubuntu-summit-2023). Let's clone that repository onto our machine.
+### Minimum requirements
+Before we start, make sure your machine meets the following requirements:
+* Ubuntu 22.04 (jammy) or later (the tutorial has been prepared and tested to work on 22.04)
+* 8 GB of RAM
+* 2 CPU threads
+* At least 20GB of available storage.
+* Access to the internet for downloading the required snaps and charms.
 
-```bash
-git clone https://github.com/welpaolo/ubuntu-summit-2023.git
-cd ubuntu-summit-2023
-```
+### Prepare MicroK8s
 
-Charmed Spark is developed to be run on top of a Kubernetes cluster. In this tutorial we use [MicroK8s](https://microk8s.io/), which is the simplest production-grade conformant K8s.
+Charmed Spark is developed to be run on top of a Kubernetes cluster. For the purpose of this tutorial, we are going to use [MicroK8s](https://microk8s.io/), a very simple production-grade conformant K8s that can run locally. 
 
-Before starting, it's always a good idea to update the packages in the system.
-
-```bash
-sudo apt update
-sudp apt upgrade
-```
-
-MicroK8s can be installed via Snap as
+Installing MicroK8s is as simple as running the following command:
 
 ```bash
-sudo snap install microk8s -channel=1.28-strict/stable
+sudo snap install microk8s --channel=1.28-strict/stable
 ```
 
-Please note that we're installing the strictly confined version of the MicroK8s snap, because the non-confined one no longer works with Juju (starting from Juju 3.x onwards).
-
-Let's configure MicroK8s for use in this tutorial:
+Let's configure MicroK8s so that the currently logged in user has admin rights to the cluster.
 
 ```bash
 # Set an alias 'kubectl' that can be used instead of microk8s.kubectl
 sudo snap alias microk8s.kubectl kubectl
 
 # Add the current user into 'microk8s' group
-sudo usermod -a -G microk8s ${USER}
+sudo usermod -a -G snap_microk8s ${USER}
 
 # Create and provide ownership of '~/.kube' directory to current user
 mkdir -p ~/.kube
 sudo chown -f -R ${USER} ~/.kube
 
 # Put the group membership changes into effect
-newgrp microk8s
+newgrp snap_microk8s
 ```
 
 Once done, the status of the MicroK8s can be verified with
@@ -49,32 +42,102 @@ Once done, the status of the MicroK8s can be verified with
 microk8s status --wait-ready
 ```
 
-Let's generate the Kubernetes configuration file using MicroK8s and write it to `~/.kube/config`
+When MicroK8s cluster is running and ready, you should see an output similar to the following:
+
+```
+microk8s is running
+high-availability: no
+...
+addons:
+  enabled:
+    dns                  # (core) CoreDNS
+    ha-cluster           # (core) Configure high availability on the current node
+    helm                 # (core) Helm - the package manager for Kubernetes
+    helm3                # (core) Helm 3 - the package manager for Kubernetes
+  disabled:
+    cert-manager         # (core) Cloud native certificate management
+...
+```
+
+Let's generate the Kubernetes configuration file using MicroK8s and write it to `~/.kube/config`.
 
 ```bash
 microk8s config | tee ~/.kube/config
 ```
 
-In order to use Spark use S3 for object storage, we are going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Let's install the addon and a few other addons.
+Now let's enable a few addons for using features like role based access control, load balancing and usage of local volume for storage.
 
 ```bash
-sudo microk8s enable hostpath-storage dns rbac storage minio
+sudo microk8s enable rbac storage hostpath-storage
 
-sudo apt install jq
+sudo apt install -y jq
+
+# Get IP address
 IPADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 sudo microk8s enable metallb:$IPADDR-$IPADDR
 ```
 
-Once you enable `minio` add-on, you will have a MinIO Kubernetes operator running in the K8s cluster. All the resources created for MinIO are created in the `minio-operator` namespace. You can verify these with the following commands:
+Once done, the list of enabled addons can be seen via `microk8s status --wait-ready` command. The output of the command should look similar to the following:
 
-```bash
-kubectl get namespace minio-operator
-kubectl get deployments -n minio-operator
-kubectl get services -n minio-operator
-kubectl get pods -n minio-operator
+```
+microk8s is running
+...
+addons:
+  enabled:
+    dns                  # (core) CoreDNS
+    ha-cluster           # (core) Configure high availability on the current node
+    helm                 # (core) Helm - the package manager for Kubernetes
+    helm3                # (core) Helm 3 - the package manager for Kubernetes
+    hostpath-storage     # (core) Storage class; allocates storage from host directory
+    metallb              # (core) Loadbalancer for your Kubernetes cluster
+    storage              # (core) Alias to hostpath-storage add-on, deprecated
+...
 ```
 
-We'll use `juju` to deploy `kafka`, `zookeeper`, `prometheus`, Spark history server and a bunch of other applications later to use together with Spark. For that reason, let's install and configure `juju`:
+### Setup MinIO
+
+Spark can be configured to use S3 for object storage. However, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket running locally which is more convinient than AWS S3 for experimentation purposes. Let's enable the `minio` addon for MicroK8s.
+
+```bash
+sudo microk8s enable minio
+```
+
+For Spark to be able to access the local S3 bucket, we'll need to authenticate to MinIO using an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled. Let's fetch these credentials and export them as environment variables in order to use them later.
+
+```bash
+export ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
+export SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
+export S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}')
+export S3_BUCKET="spark-tutorial"
+```
+
+The MinIO add-on also provides with a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. Let's fetch the MinIO web interface URL as follows:
+
+```bash
+MINIO_UI_IP=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.clusterIP}')
+MINIO_UI_PORT=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.ports[0].port}')
+export MINIO_UI_URL=$MINIO_UI_IP:$MINIO_UI_PORT
+echo $MINIO_UI_URL
+```
+
+On running the command above, you should see a combination of IP address and port. Let's open the URL in a web browser. In the login page that appears, the username is the access key and the password is the secret key we fetched earlier. These credentials can now be viewed simply by `echo`ing the variables `ACCESS_KEY` and `SECRET_KEY`:
+
+```bash
+echo $ACCESS_KEY
+echo $SECRET_KEY
+```
+
+Once you're logged in, you'll see the MinIO console as shown below. 
+![Minio Dashboard (Empty)](resources/minio-dashboard-empty.png)
+
+The list of the buckets currently in our S3 storage is empty. That's because we have not created any buckets yet! Let's proceed to create a new bucket now.
+
+Click "Create Bucket +" button on the top right. On the next screen, let's choose "spark-tutorial" for the name of the bucket and click "Create Bucket". That's it. We now have a S3 bucket available locally on our system!
+
+
+### Setup Juju
+
+Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy `kafka`, `zookeeper`, `prometheus`, Spark history server and a bunch of other applications later to use together with Spark. For that reason, let's install and configure `juju`.
 
 ```bash
 sudo snap install juju --channel 3.1/stable
@@ -82,60 +145,96 @@ sudo snap install juju --channel 3.1/stable
 mkdir -p ~/.local/share
 ```
 
+Juju has a built-in knowledge of MicroK8s and can detect MicroK8s cluster installed in our system automatically without the need of additional setup or configuration. You can verify this by running `juju clouds` command. You should see an output similar to the following:
+
+```
+Since Juju 3 is being run for the first time, it has downloaded the latest public cloud information.
+Only clouds with registered credentials are shown.
+There are more clouds, use --all to see them.
+You can bootstrap a new controller using one of these clouds...
+
+Clouds available on the client:
+Cloud      Regions  Default    Type  Credentials  Source    Description
+localhost  1        localhost  lxd   0            built-in  LXD Container Hypervisor
+microk8s   1        localhost  k8s   0            built-in  A Kubernetes Cluster
+```
+
+As you can see, Juju has detected LXD as well as K8s installation in the system. For us to be able to deploy Kubernetes charms, let's bootstrap a Juju controller in the `microk8s` cloud:
+
+```bash
+juju bootstrap microk8s spark-tutorial
+```
+
+The creation of the new controller can be verified with `juju controllers` command. The output of the command should be similar to:
+
+```
+Use --refresh option with this command to see the latest information.
+
+Controller       Model  User   Access     Cloud/Region        Models  Nodes  HA  Version
+spark-tutorial*  -      admin  superuser  microk8s/localhost       1      1   -  3.1.7
+```
+
+### Setup spark-client snap
+
 When Spark jobs are run on top of Kubernetes a set of Kubernetes, resources like service account, associated roles, role bindings and other configurations needs to be created and configured. Luckily, we have a `spark-client` snap as part of Charmed Spark solution to do all of that. Let's install the `spark-client` snap:
 
 ```bash
 sudo snap install spark-client --channel 3.4/edge
 ```
 
-Now we need to create a S3 bucket and upload the sample data and a few scripts we'll use later there. For us to be able to create the bucket, we need to authenticate to MinIO using an access key and the secret key. These can be obtained using the `microk8s-user-1` Kubernetes secret in the `minio-operator` namespace in Kubernetes cluster.
-
-Export these into environment variables so that they can be used later in our tutorial.
+Let's create a Kubernetes namespace for us to use as a playground in this tutorial.
 
 ```bash
-export ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
-export SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
-export S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}')
-
-MINIO_UI_IP=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.clusterIP}')
-MINIO_UI_PORT=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.ports[0].port}')
-export MINIO_UI_URL=$MINIO_UI_IP:$MINIO_UI_PORT
-
-export S3_BUCKET="spark_tutorial"
-```
-
-These information can also be viewed on the console by running the `bin/check-minio.sh` script from the repository.
-
-```bash
-./bin/check-minio.sh
-```
-
-The repository also contains a Python script that creates a S3 bucket and copies some files we'll use later in the tutorial to the bucket. Run the `spark_bucket.py` script as:
-
-```bash
-python scripts/spark_bucket.py \
-  --action create setup \
-  --access-key $ACCESS_KEY \
-  --secret-key $SECRET_KEY \
-  --endpoint $S3_ENDPOINT \
-  --bucket $S3_BUCKET
-```
-
-Once the script executes, the S3 bucket will be created successfully. Let's verify that using MinIO web UI as well. The IP and port in which MinIO web UI runs has already been exported to `MINIO_UI` earlier and can also be viewed by running the `./bin/check-minio.sh` script as demonstrated earlier.
-
-
-Open a browser and enter the URL. In the login page, enter the access key as the username and secret key as the password. Once you're logged in, browse through the `spark_tutorial` bucket. There you can see the a few files and directories copied over to the bucket.
-
-We will now create Kubernetes service accounts that will be used to run the Spark workloads. The creation of the service account can be done using the `spark-client` snap, which will create necessary roles, rolebindings and configurations along with the service account.
-
-```bash
-# Create namespace
 kubectl create namespace spark
-
-# Create service account
-spark-client.service-account-registry create \
-  --username spark --namespace spark \
-  --properties-file ./confs/s3.conf
 ```
 
-That's it. Now we're ready to submit jobs to Spark!
+We will now create a Kubernetes service account that will be used to run the Spark workloads. The creation of the service account can be done using the `spark-client` snap, which will create necessary roles, rolebindings and configurations along with the service account.
+
+```bash
+spark-client.service-account-registry create \
+  --username spark --namespace spark
+```
+
+This command does a bunch of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. These resources can be viewed as:
+
+```bash
+kubectl get serviceaccounts -n spark
+kubectl get roles -n spark
+kubectl get rolebindings -n spark
+```
+
+For Spark to be able to access and use our local S3 bucket, we need to provide a few Spark configurations including the bucket endpoint, access key, secret key, etc. In Charmed Spark solution, we bind these configurations to a Kubernetes service account such that when Spark jobs are executed with that service account, all the configurations binded to that service account are supplied to Spark automatically.
+
+The S3 configurations can be added to the `spark` service account we just created with the following command:
+
+```bash
+spark-client.service-account-registry add-config \
+  --username spark --namespace spark \
+  --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+  --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+  --conf spark.hadoop.fs.s3a.path.style.access=true \
+  --conf spark.hadoop.fs.s3a.access.key=$ACCESS_KEY \
+  --conf spark.hadoop.fs.s3a.endpoint=$S3_ENDPOINT \
+  --conf spark.hadoop.fs.s3a.secret.key=$SECRET_KEY
+```
+
+The list of configurations binded for the service account `spark` can be verified with the command:
+
+```bash
+spark-client.service-account-registry get-config \
+  --username spark --namespace spark \
+```
+
+You should see the following list of configurations in the output:
+```bash
+spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider 
+spark.hadoop.fs.s3a.connection.ssl.enabled=false 
+spark.hadoop.fs.s3a.path.style.access=true 
+spark.hadoop.fs.s3a.access.key=<access_key> 
+spark.hadoop.fs.s3a.endpoint=<s3_endpoint>
+spark.hadoop.fs.s3a.secret.key=<secret_key>
+spark.kubernetes.authenticate.driver.serviceAccountName=spark
+spark.kubernetes.namespace=spark
+```
+
+That's it. We're now ready to dive head first into Spark!
