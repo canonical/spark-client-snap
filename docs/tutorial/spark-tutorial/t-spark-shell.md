@@ -30,8 +30,60 @@ SparkSession available as 'spark'.
 >>> 
 ```
 
+When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. Let's verify that by fetching the list of pods in the `spark` namespace.
+
+```bash
+kubectl get pods -n spark
+```
+
+You should see output lines similar to the following:
+```bash
+pysparkshell-xxxxxxxxxxxxxxxx-exec-1              1/1     Running            0          xs
+pysparkshell-xxxxxxxxxxxxxxxx-exec-2              1/1     Running            0          xs
+```
+
+As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that your commands will be executed.
+
 A good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
 
+For start, you can print 'hello, world!' just like you'd do in a Python shell.
+
+```python
+>>> print('hello, world!')
+
+hello, world!
+```
+
+
+Let's try reading a file using Spark. Since the executor pods in Kubernetes would all require shared access to the file, we're going to first upload the file to S3 bucket and then proceed to read it using Spark. The file that we're going to use in this tutorial can be downloaded from here. You can upload it to the bucket using Minio UI using AWS CLI tool in a new shell as follows:
+
+```bash
+aws s3 cp ~/Downloads/lines.txt s3://spark-tutorial/lines.txt --profile spark-tutorial
+```
+
+Now, let's try reading this file from Spark. In the PySpark shell, this is as easy as running the following:
+
+```python
+>>> df = spark.read.text("s3://spark-tutorial/lines.txt")
+```
+
+Make sure to provide the correct path for `lines.txt` to where you have downloaded them.
+
+Let's write some lines to a file named `/tmp/lines.txt`. We'll then read the contents of this file from the PySpark shell. Writing lines is as easy as the following in Python.
+
+```python
+lines = """Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
+You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
+Spark on Kubernetes is a complex environment with many moving parts.
+Sometimes, small mistakes can take a lot of time to debug and figure out.
+"""
+
+with open("/tmp/lines.txt", "w") as f:
+  f.write(lines)
+```
+
+Let's try to load a file
 Let's open a new shell and create a dummy text file at `/tmp/somelines.txt` and add a few lines to it. We'll then read the contents of this file from the PySpark shell.
 
 ```bash

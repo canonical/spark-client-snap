@@ -134,6 +134,16 @@ The list of the buckets currently in our S3 storage is empty. That's because we 
 
 Click "Create Bucket +" button on the top right. On the next screen, let's choose "spark-tutorial" for the name of the bucket and click "Create Bucket". That's it. We now have a S3 bucket available locally on our system!
 
+In the next sections, you're required to upload some sample files into the S3 bucket. This can either be done using the MinIO UI (just like you created the bucket above) or more conviniently by using AWS CLI. Let's setup the AWS CLI as follows:
+
+```bash
+sudo snap install aws-cli --classic
+
+aws configure set aws_access_key_id $ACCESS_KEY #--profile spark-tutorial
+aws configure set aws_secret_access_key $SECRET_KEY #--profile spark-tutorial
+aws configure set region "us-west-2" #--profile spark-tutorial
+aws configure set endpoint_url "http://$S3_ENDPOINT" #--profile spark-tutorial
+```
 
 ### Setup Juju
 
