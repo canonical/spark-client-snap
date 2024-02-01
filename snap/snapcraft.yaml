@@ -57,6 +57,15 @@ apps:
         - network-bind
         - home
         - dot-kube-config
+  spark-sql:
+    command: lib/python3.10/site-packages/spark8t/cli/spark_sql.py
+    environment:
+      PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+    plugs:
+        - network
+        - network-bind
+        - home
+        - dot-kube-config
 
 parts:
 
