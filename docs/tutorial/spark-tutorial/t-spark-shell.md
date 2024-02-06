@@ -54,7 +54,93 @@ For start, you can print 'hello, world!' just like you'd do in a Python shell.
 hello, world!
 ```
 
+Let's try a simple example of counting the number of vowel characters in a string. The following is the string that we are going to use:
 
+```python
+lines = """Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
+You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
+Spark on Kubernetes is a complex environment with many moving parts.
+Sometimes, small mistakes can take a lot of time to debug and figure out.
+"""
+```
+
+The following is a function that returns the number of vowel characters in the string:
+
+```python
+def count_vowels(text: str) -> int:
+  count = 0
+  for char in text:
+    if char.lower() in "aeiou":
+      count += 1
+  return count
+```
+
+The string `lines` can now be passed into this function and the number of vowels can be printed as:
+
+```python
+>>> count_vowels(lines)
+128
+```
+
+Since Spark is a distributed processing framework, we can split up this task and parallellize it over multiple executor pods. This parallelization can be done as simply as:
+
+```python
+>>> from operator import add
+>>> spark.sparkContext.parallelize(lines.splitlines(), 2).map(count_vowels).reduce(add)
+128
+```
+
+Here, we parallelize the the tax into two executors, where each line is processed by an executor pod. The number of vowels in each line is then added up to calculate the total number of occurrences of vowel characters in the string. This kind of parallelization of task is useful in processing very large data sets which helps in reducing the processing time significantly.
+
+
+### Scala Shell
+Spark comes with a built-in interactive Scala shell as well. Enter the following command to enter an interactive Scala shell:
+
+```bash
+spark-client.spark-shell --username spark --namespace spark
+```
+
+Once the shell is open and ready, you should see a prompt simlar to the following:
+
+```
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.4.1
+      /_/
+         
+Using Scala version 2.12.17 (OpenJDK 64-Bit Server VM, Java 11.0.20.1)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+```
+
+Just as in PySpark shell, the spark context and spark session are readily available in the shell as `sc` and `spark` respectively. Moreover, new executor pods are created in `spark` namespace in order to execute the commands, just like in the PySpark shell.
+
+The example of counting the vowel characters can be equivalently run in Scala with the following lines:
+
+```scala
+val lines = """Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
+You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
+Spark on Kubernetes is a complex environment with many moving parts.
+Sometimes, small mistakes can take a lot of time to debug and figure out.
+"""
+
+def countVowels(text: String): Int = {
+  text.toLowerCase.count("aeiou".contains(_))
+}
+
+sc.parallelize(lines.split("\n"), 2).map(countVowels).reduce(_ + _)
+```
+
+When these lines are executed, the result should be the same as the one using Python shell.
+
+Interactive shells are a great way to try out experiments and to learn the basics of the Spark. For a more advanced use case, jobs can be submitted to the Spark cluster as scripts using `spark-submit`. That's what we will do in the next section.
+<!-- 
 Let's try reading a file using Spark. Since the executor pods in Kubernetes would all require shared access to the file, we're going to first upload the file to S3 bucket and then proceed to read it using Spark. The file that we're going to use in this tutorial can be downloaded from here. You can upload it to the bucket using Minio UI using AWS CLI tool in a new shell as follows:
 
 ```bash
@@ -86,14 +172,12 @@ with open("/tmp/lines.txt", "w") as f:
 Let's try to load a file
 Let's open a new shell and create a dummy text file at `/tmp/somelines.txt` and add a few lines to it. We'll then read the contents of this file from the PySpark shell.
 
-```bash
-cat <<EOT >> /tmp/somelines.txt
+```txt
 Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
 You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
 The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
 Spark on Kubernetes is a complex environment with many moving parts.
 Sometimes, small mistakes can take a lot of time to debug and figure out.
-EOT
 ```
 
 ```python
@@ -167,4 +251,4 @@ count = spark.sparkContext.parallelize(range(n), partitions).filter(f).count()
 print("Pi is roughly %f" % (4.0 * count / n))
 ```
 
-After the last command is executed, the value of Pi can be seen as an output in the console.
+After the last command is executed, the value of Pi can be seen as an output in the console. -->

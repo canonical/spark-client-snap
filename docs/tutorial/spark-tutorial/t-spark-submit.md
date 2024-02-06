@@ -1,36 +1,154 @@
-The Charmed Spark solution offers several ways to interact with the Spark cluster. They are:
-1. Using Spark Submit
-2. Using Spark Shell
+## Submitting Jobs using Spark Submit
 
-In this section, we'll run a sample job using `spark-submit` CLI command provided with `spark-client` snap. The sample Python program that we are going to run have already been uploaded to S3 in the earlier section. Also, the sample data file has also been uploaded to `data/data.csv.gz` in the same S3 bucket. Run the Python script with `spark-submit` as follows:
+Spark comes with a built-in binary `spark-submit` which can be used to submit jobs as script written in high level languages like Python, Java, Scala and R. For a quick example, let's gather the statements that we ran in the Python shell earlier and put then together in a script. The script looks like the following:
+
+
+```python
+from operator import add
+from pyspark.sql import SparkSession
+
+
+def count_vowels(text: str) -> int:
+  count = 0
+  for char in text:
+    if char.lower() in "aeiou":
+      count += 1
+  return count
+
+# Create a Spark session 
+spark = SparkSession\
+        .builder\
+        .appName("SubmitExample")\
+        .getOrCreate()
+
+lines = """Canonical's Charmed Data Platform solution for Apache Spark runs Spark jobs on your Kubernetes cluster.
+You can get started right away with MicroK8s - the mightiest tiny Kubernetes distro around! 
+The spark-client snap simplifies the setup to run Spark jobs against your Kubernetes cluster. 
+Spark on Kubernetes is a complex environment with many moving parts.
+Sometimes, small mistakes can take a lot of time to debug and figure out.
+"""
+
+n = spark.sparkContext.parallelize(lines.splitlines(), 2).map(count_vowels).reduce(add)
+print(f"The number of vowels in the string is {n}")
+
+spark.stop()
+```
+
+We've added a few more lines to what we've executed so far. The Spark session, which would be available by default in a PySpark shell, needs to be explicitly created. Also, we've added `spark.stop` at the end of the file to stop the Spark session.
+
+Let's save the aforementioned script in a file named `count_vowels.py`. Once saved, let's copy it to the S3 bucket because it needs to accessible to all executor pods that will process the task. Copying to S3 bucket named `spark-tutorial` that we created in earlier section can be done by the following command.
+
+```bash
+aws s3 cp ~/count_vowels.py s3://spark-tutorial/count_vowels.py
+#
+# upload: ./count_vowels.py to s3://spark-tutorial/count_vowels.py 
+```
+
+You can verify whether the file has been copied to S3 bucket either using the MinIO Console UI or using the following command:
+
+```bash
+aws s3 ls spark-tutorial
+# 
+# 2024-02-05 05:09:44        927 count_vowels.py
+```
+
+Now that the script has been uploaded to S3, we can now run `spark-submit` and specify the script in S3 as an argument.
 
 ```bash
 spark-client.spark-submit \
-  --username spark --namespace spark \
-  --deploy-mode cluster \
-  s3a://$S3_BUCKET/scripts/stock_country_report.py \
-    --input  s3a://$S3_BUCKET/data/data.csv.gz \
-    --output s3a://$S3_BUCKET/data/output_report_microk8s
+    --username spark --namespace spark \
+    --deploy-mode cluster \
+    s3a://spark-tutorial/count_vowels.py
 ```
 
-The variable `$S3_BUCKET` has been set in the earlier section to the MinIO bucket URL.
-
-As the command gets executed, open a new shell and see newly created pods in the `spark` namespace:
+Once you run the command, you'll see a bunch of log outputs in the console informing about the state of the pods executing the task. The state of the pods transition from `ContainerCreating` to `Running` and then finally to `Completed`. The state of the pods can also be viewed using the `kubectl` command in a new shell. 
 
 ```bash
-kubectl get pods -n spark
+watch -n1 "kubectl get pods -n spark"
 ```
 
-You can see that a new driver pod and a couple of executor pods get spawned and they start processing the data. Once the job is completed, the driver as well as executor pods are transitioned to Completed state.
+You should see an output similar to the following:
+```
+NAME                                      READY   STATUS      RESTARTS   AGE
+...
+count-vowels-py-f6af998d77ce02d0-driver   1/1     Running     0          17s
+submitexample-2975f78d77ce2e6f-exec-2     1/1     Running     0          6s
+submitexample-2975f78d77ce2e6f-exec-1     1/1     Running     0          6s
+```
 
-To see the result of the job that was executed before, first find the pod identifier of the driver pod, and then use `kubectl logs` to view logs for that pod.
+Among these pods, the one containing the word "driver" is the driver pod and the other two are the executor pods. If you observe closely at the status of the pods while the job is submitted, it is the driver pod that gets created at first. The driver pod spawns executor pods to execute the jobs. Once the job completes, the exector pods are purged while the driver pod is transitioned to `Completed` state. We can see the job execution logs by viewing pod logs of the driver pod.
+
+To view the pod logs, first we need to identify the name of the driver pod. You can do that with `kubectl` and some filtering as:
 
 ```bash
-kubectl get pods -n spark # Note the ID of the driver pod.
-
-kubectl logs <pod_identier> -n spark
+pod_name=$(kubectl get pods -n spark | grep "count-vowels-.*-driver" | tail -n 1 | cut -d' ' -f1)
 ```
 
-In the logs, you can see a line that begins with "The value of Pi is roughly ...". This value was computed in Spark.
+Once we have identified the pod name, we can see the pod logs with `kubectl logs` command. To filter out just the output line from the logs, `grep` can be used together with `kubectl logs`.
 
-In the next section, we will see how we can interact with Spark using interactive shell.
+```bash
+kubectl logs $pod_name -n spark 
+
+kubectl logs $pod_name -n spark | grep "The number of vowels in the string is"
+# 
+# 2024-02-05T05:47:09.183Z [entrypoint] The number of vowels in the string is 128
+```
+
+Often times, the data file that's to be processed contains huge amount of data, and it is common to store it in S3 and then write jobs to read data from there to process it. The example program we have discussed earlier can be extended so that the text for which vowel characters are to be counted is now fetched directly from a file in S3. For that, let's download a sample file and then copy it to S3 bucket as follows:
+
+```bash
+# Download a sample text file
+wget "https://raw.githubusercontent.com/canonical/spark-client-snap/3.4/edge/README.md"
+
+aws s3 cp README.md s3://spark-tutorial/README.md
+```
+
+Now, let's modify the Python script `count_words.py` to process the lines read from S3 instead.
+
+
+```python
+from operator import add
+from pyspark.sql import SparkSession
+
+
+def count_vowels(text: str) -> int:
+  count = 0
+  for char in text:
+    if char.lower() in "aeiou":
+      count += 1
+  return count
+
+# Create a Spark session 
+spark = SparkSession\
+        .builder\
+        .appName("SubmitExample")\
+        .getOrCreate()
+
+lines = spark.sparkContext.textFile("s3a://spark-tutorial/README.md")
+
+n = lines.map(count_vowels).reduce(add)
+print(f"The number of vowels in the string is {n}")
+
+spark.stop()
+```
+
+Now, let's copy this script to S3 with the same command as before, and run it with `spark-submit`
+
+```bash
+aws s3 cp ~/count_vowels.py s3://spark-tutorial/count_vowels.py
+
+spark-client.spark-submit \
+    --username spark --namespace spark \
+    --deploy-mode cluster \
+    s3a://spark-tutorial/count_vowels.py
+```
+
+As before, you can get the results from pod logs with the following commands:
+
+```bash
+pod_name=$(kubectl get pods -n spark | grep "count-vowels-.*-driver" | tail -n 1 | cut -d' ' -f1)
+
+kubectl logs $pod_name -n spark | grep "The number of vowels in the string is"
+```
+
+We learnt how to submit jobs using `spark-submit` in this section. In the next section, we'll learn how to process streams of data in Spark.
