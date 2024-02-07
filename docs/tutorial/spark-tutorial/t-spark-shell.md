@@ -6,7 +6,7 @@ Spark comes with an interactive shell that provides a simple way to learn the AP
 
 Spark comes with a built-in Python shell where we can execute commands interactively against Spark cluster using Python programming language.
 
-Let's launch a PySpark shell. This can be done with `spark-client` snap as:
+PySpark shell can be launched with `spark-client` snap as:
 
 ```bash
 spark-client.pyspark \
@@ -30,7 +30,7 @@ SparkSession available as 'spark'.
 >>> 
 ```
 
-When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. Let's verify that by fetching the list of pods in the `spark` namespace.
+When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. You can see them by fetching the list of pods in the `spark` namespace.
 
 ```bash
 kubectl get pods -n spark
@@ -42,9 +42,9 @@ pysparkshell-xxxxxxxxxxxxxxxx-exec-1              1/1     Running            0  
 pysparkshell-xxxxxxxxxxxxxxxx-exec-2              1/1     Running            0          xs
 ```
 
-As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that your commands will be executed.
+As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that your commands will be executed. Since we opened the PySpark shell using `spark-client` snap installed in the host machine, the driver program is running in the host machine itself.
 
-A good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
+One good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
 
 For start, you can print 'hello, world!' just like you'd do in a Python shell.
 
@@ -76,7 +76,7 @@ def count_vowels(text: str) -> int:
   return count
 ```
 
-The string `lines` can now be passed into this function and the number of vowels can be printed as:
+To test this function, the string `lines` can now be passed into it and the number of vowels is printed to the console as follows:
 
 ```python
 >>> count_vowels(lines)
@@ -91,7 +91,9 @@ Since Spark is a distributed processing framework, we can split up this task and
 128
 ```
 
-Here, we parallelize the the tax into two executors, where each line is processed by an executor pod. The number of vowels in each line is then added up to calculate the total number of occurrences of vowel characters in the string. This kind of parallelization of task is useful in processing very large data sets which helps in reducing the processing time significantly.
+Here, we parallelize the the tax into two executors (passed as an argument to `parallelize` function), where each line is processed by an executor pod. The number of vowels in each line is then added up to calculate the total number of occurrences of vowel characters in the string. This kind of parallelization of task is particularly useful in processing very large data sets which helps in reducing the processing time significantly.
+
+To exit from PySpark shell, you can simply run `exit()` or press `Ctrl` + Z key combination.
 
 
 ### Scala Shell
@@ -137,7 +139,7 @@ def countVowels(text: String): Int = {
 sc.parallelize(lines.split("\n"), 2).map(countVowels).reduce(_ + _)
 ```
 
-When these lines are executed, the result should be the same as the one using Python shell.
+To exit from the Scala shell, simply press Ctrl + C key combination.
 
 Interactive shells are a great way to try out experiments and to learn the basics of the Spark. For a more advanced use case, jobs can be submitted to the Spark cluster as scripts using `spark-submit`. That's what we will do in the next section.
 <!-- 

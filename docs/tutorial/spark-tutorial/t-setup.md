@@ -59,7 +59,7 @@ addons:
 ...
 ```
 
-Let's generate the Kubernetes configuration file using MicroK8s and write it to `~/.kube/config`.
+Let's generate the Kubernetes configuration file using MicroK8s and write it to `~/.kube/config`. This is where Kubernetes looks for the Kubeconfig file by default.
 
 ```bash
 microk8s config | tee ~/.kube/config
@@ -96,7 +96,7 @@ addons:
 
 ### Setup MinIO
 
-Spark can be configured to use S3 for object storage. However, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket running locally which is more convinient than AWS S3 for experimentation purposes. Let's enable the `minio` addon for MicroK8s.
+Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. Let's enable the `minio` addon for MicroK8s.
 
 ```bash
 sudo microk8s enable minio
@@ -139,11 +139,22 @@ In the next sections, you're required to upload some sample files into the S3 bu
 ```bash
 sudo snap install aws-cli --classic
 
-aws configure set aws_access_key_id $ACCESS_KEY #--profile spark-tutorial
-aws configure set aws_secret_access_key $SECRET_KEY #--profile spark-tutorial
-aws configure set region "us-west-2" #--profile spark-tutorial
-aws configure set endpoint_url "http://$S3_ENDPOINT" #--profile spark-tutorial
+aws configure set aws_access_key_id $ACCESS_KEY 
+aws configure set aws_secret_access_key $SECRET_KEY 
+aws configure set region "us-west-2" 
+aws configure set endpoint_url "http://$S3_ENDPOINT"
 ```
+
+The proper configuration of AWS CLI can be verified by listing the S3 buckets using the following command:
+
+```bash
+aws s3 ls
+# 
+# 2024-02-07 07:47:05 spark-tutorial
+```
+
+With the access key, secret key and the endpoint properly configured, you should `spark-tutorial` bucket listed in the output.
+
 
 ### Setup Juju
 
@@ -158,7 +169,6 @@ mkdir -p ~/.local/share
 Juju has a built-in knowledge of MicroK8s and can detect MicroK8s cluster installed in our system automatically without the need of additional setup or configuration. You can verify this by running `juju clouds` command. You should see an output similar to the following:
 
 ```
-Since Juju 3 is being run for the first time, it has downloaded the latest public cloud information.
 Only clouds with registered credentials are shown.
 There are more clouds, use --all to see them.
 You can bootstrap a new controller using one of these clouds...
@@ -184,9 +194,9 @@ Controller       Model  User   Access     Cloud/Region        Models  Nodes  HA 
 spark-tutorial*  -      admin  superuser  microk8s/localhost       1      1   -  3.1.7
 ```
 
-### Setup spark-client snap
+### Setup spark-client snap and service accounts
 
-When Spark jobs are run on top of Kubernetes a set of Kubernetes, resources like service account, associated roles, role bindings and other configurations needs to be created and configured. Luckily, we have a `spark-client` snap as part of Charmed Spark solution to do all of that. Let's install the `spark-client` snap:
+When Spark jobs are run on top of Kubernetes, a set of Kubernetes resources like service account, associated roles, role bindings etc. need to be created and configured. Luckily, we have a `spark-client` snap as part of Charmed Spark solution to do all of that. Let's install the `spark-client` snap at first:
 
 ```bash
 sudo snap install spark-client --channel 3.4/edge
@@ -198,7 +208,7 @@ Let's create a Kubernetes namespace for us to use as a playground in this tutori
 kubectl create namespace spark
 ```
 
-We will now create a Kubernetes service account that will be used to run the Spark workloads. The creation of the service account can be done using the `spark-client` snap, which will create necessary roles, rolebindings and configurations along with the service account.
+We will now create a Kubernetes service account that will be used to run the Spark jobs. The creation of the service account can be done using the `spark-client` snap, which will create necessary roles, rolebindings and other necessary configurations along with the creation of service account.
 
 ```bash
 spark-client.service-account-registry create \
@@ -213,7 +223,7 @@ kubectl get roles -n spark
 kubectl get rolebindings -n spark
 ```
 
-For Spark to be able to access and use our local S3 bucket, we need to provide a few Spark configurations including the bucket endpoint, access key, secret key, etc. In Charmed Spark solution, we bind these configurations to a Kubernetes service account such that when Spark jobs are executed with that service account, all the configurations binded to that service account are supplied to Spark automatically.
+For Spark to be able to access and use our local S3 bucket, we need to provide a few Spark configurations including the bucket endpoint, access key and secret key. In Charmed Spark solution, we bind these configurations to a Kubernetes service account such that when Spark jobs are executed with that service account, all the configurations binded to that service account are supplied to Spark automatically.
 
 The S3 configurations can be added to the `spark` service account we just created with the following command:
 
@@ -232,19 +242,21 @@ The list of configurations binded for the service account `spark` can be verifie
 
 ```bash
 spark-client.service-account-registry get-config \
-  --username spark --namespace spark \
+  --username spark --namespace spark 
 ```
 
 You should see the following list of configurations in the output:
 ```bash
+spark.hadoop.fs.s3a.access.key=<access_key> 
 spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider 
 spark.hadoop.fs.s3a.connection.ssl.enabled=false 
-spark.hadoop.fs.s3a.path.style.access=true 
-spark.hadoop.fs.s3a.access.key=<access_key> 
 spark.hadoop.fs.s3a.endpoint=<s3_endpoint>
+spark.hadoop.fs.s3a.path.style.access=true 
 spark.hadoop.fs.s3a.secret.key=<secret_key>
 spark.kubernetes.authenticate.driver.serviceAccountName=spark
 spark.kubernetes.namespace=spark
 ```
 
 That's it. We're now ready to dive head first into Spark!
+
+In the next section, we'll start submitting commands to Spark using the built-in interactive shell.
