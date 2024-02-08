@@ -76,7 +76,7 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.3/spark8t-0.0.3-py3-none-any.whl
+        - git+https://github.com/theoctober19th/spark-k8s-toolkit-py.git@spark-sql
     source: .
     build-packages:
         - python3
