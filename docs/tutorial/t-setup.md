@@ -158,7 +158,7 @@ With the access key, secret key and the endpoint properly configured, you should
 
 ### Setup Juju
 
-Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy `kafka`, `zookeeper`, `prometheus`, Spark history server and a bunch of other applications later to use together with Spark. For that reason, let's install and configure `juju`.
+Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy and manage the Spark History Server and a number of other applications later to be integrated with Spark. Let's therefore let's install and configure a `juju` client using a snap.
 
 ```bash
 sudo snap install juju --channel 3.1/stable

@@ -154,4 +154,4 @@ pod_name=$(kubectl get pods -n spark | grep "count-vowels-.*-driver" | tail -n 1
 kubectl logs $pod_name -n spark | grep "The number of vowels in the string is"
 ```
 
-In this section, we learnt how to submit jobs using `spark-submit`. In the next section, we'll learn how to process streams of data in Spark.
+In this section, we learnt how to submit jobs using `spark-submit`. In the next section, we'll learn how to process streaming data in Spark.

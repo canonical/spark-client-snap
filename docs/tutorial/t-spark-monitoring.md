@@ -1,4 +1,4 @@
-### Monitoring
+## Monitoring the Spark Cluster
 
 By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which gets lost if the pods are deleted. Spark provides us with the feature to store these logs in S3 so that they can later be retrieved and visualized.
 
@@ -44,13 +44,13 @@ We've configured Spark to write event logs to `spark-events` directory in the `s
 aws s3api put-object --bucket spark-tutorial --key spark-events/ # / at the end is requied
 ```
 
-Now, let's deploy the Spark History Server charm in our Juju model. 
+Now, let's deploy the [`spark-history-server-k8s`](https://github.com/canonical/spark-history-server-k8s-operator) charm in our Juju model. 
 
 ```bash
 juju deploy spark-history-server-k8s -n1 --channel 3.4/stable
 ```
 
-Spark History Server needs to connect to the S3 bucket for it to be able to read the event logs. This integration is provided to Spark History server charm by the `s3-integrator` charm. Let's deploy `s3-integrator` charm, configure it and integrate it with `spark-history-server-k8s`.
+Spark History Server needs to connect to the S3 bucket for it to be able to read the event logs. This integration is provided to Spark History server charm by the [`s3-integrator`](https://github.com/canonical/s3-integrator) charm. Let's deploy `s3-integrator` charm, configure it and integrate it with `spark-history-server-k8s`.
 
 ```bash
 # Deploy s3-integrator
@@ -97,7 +97,7 @@ spark-client.spark-submit \
     s3a://spark-tutorial/count_vowels.py
 ```
 
-The Spark History Server comes with a Web UI for us to view and monitor the jobs submitted to Spark Cluster. The web UI can be accessed at port 18080 of the IP address of the `spark-history-server-k8s/0` unit. However, it is a good practice to access it via Ingress rather than directly accessing the unit IP address. Using an Ingress will allow us to have a common entrypoint to the apps running in the Juju model. We can add an Ingress by deploying and integrating `traefik-k8s` charm with `spark-history-server-k8s`.
+The Spark History Server comes with a Web UI for us to view and monitor the jobs submitted to Spark Cluster. The web UI can be accessed at port 18080 of the IP address of the `spark-history-server-k8s/0` unit. However, it is a good practice to access it via Ingress rather than directly accessing the unit IP address. Using an Ingress will allow us to have a common entrypoint to the apps running in the Juju model. We can add an Ingress by deploying and integrating [`traefik-k8s`](https://charmhub.io/traefik-k8s) charm with `spark-history-server-k8s`.
 
 ```bash
 # Deploy traefik charm
@@ -244,7 +244,7 @@ spark-client.service-account-registry add-config \
       --conf spark.metrics.conf.executor.sink.prometheus.metrics-name-replacement=\$2
 ```
 
-Now that Prometheus is configured, let's move on to configure Grafana. For this tutorial, we are going to use a basic Grafana dashboard which is available [here](https://github.com/canonical/charmed-spark-rock/blob/dashboard/dashboards/prod/grafana/spark_dashboard.json). We're going to use `cos-configuration-k8s` charm to specify this dashboard to be used by Grafana, and then integrate it with the `grafana` charm. 
+Now that Prometheus is configured, let's move on to configure Grafana. For this tutorial, we are going to use a basic Grafana dashboard which is available [here](https://github.com/canonical/charmed-spark-rock/blob/dashboard/dashboards/prod/grafana/spark_dashboard.json). We're going to use [`cos-configuration-k8s`](https://github.com/canonical/cos-configuration-k8s-operator) charm to specify this dashboard to be used by Grafana, and then integrate it with the `grafana` charm. 
 
 ```bash
 # Deploy cos configuration charm to import the grafana dashboard

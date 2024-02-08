@@ -2,7 +2,7 @@
 
 Spark comes with a built-in support for streaming workloads and Charmed Spark takes it a step further by making it easy to integrate with streaming platforms like Kafka.
 
-In this section, we are going to generate some streaming data in Kafka, and then process this stream of data in Spark. We are going to use `juju` to deploy a Kafka setup, where a Juju charm will generate events to Kafka, and a Spark job will consume these in real time to process it. We have already installed and configured `juju` in earlier sections.
+In this section, we are going to generate some streaming data in Kafka, and then process this stream of data in Spark. We are going to use `juju` to deploy a Kafka setup, where a Juju charm will generate events to Kafka, and a Spark job will consume these in real time to process it.
 
 First of all, let's start by creating a fresh `juju` model to be used as an experimental workspace.
 
@@ -19,7 +19,7 @@ The service account `spark` we created in the earlier section is in the `spark` 
 spark-client.service-account-registry get-config \
   --username spark --namespace spark > properties.conf
 
-# Add an extra configuration
+# Add an extra configuration for the path to cache dependency jars
 echo "spark.jars.ivy=/tmp" >> properties.conf
 
 # Create a new service account and load configurations from the file
@@ -28,7 +28,7 @@ spark-client.service-account-registry create \
   --properties-file properties.conf
 ```
 
-Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using `zookeeper-k8s` and `kafka-k8s` charms. Single units of these charms running in our model should be enough.
+Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using [`zookeeper-k8s`](https://github.com/canonical/zookeeper-k8s-operator) and [`kafka-k8s`](https://charmhub.io/kafka-k8s) charms. Single units of these charms running in our model should be enough.
 
 ```bash
 # Deploy Zookeper
@@ -106,7 +106,7 @@ kafka-test-app/0*  active    idle   10.1.29.185         Topic spark-streaming-st
 zookeeper-k8s/0*   active    idle   10.1.29.182  
 ```
 
-Now the messages will be generated and written to Kafka periodically by `kafka-test-app`. However, in order to establish a connection and actually consume these messages from Kafka, Spark needs to authenticate with Kafka using the credentials. For the retreival of these credentials, we are going to use the `data-integrator` charm. Let's deploy `data-integrator` and integrate it with `kafka-k8s` with the following commands:
+Now the messages will be generated and written to Kafka periodically by `kafka-test-app`. However, in order to establish a connection and actually consume these messages from Kafka, Spark needs to authenticate with Kafka using the credentials. For the retreival of these credentials, we are going to use the [`data-integrator`](https://github.com/canonical/data-integrator) charm. Let's deploy `data-integrator` and integrate it with `kafka-k8s` with the following commands:
 
 ```bash
 juju deploy data-integrator --series=jammy --channel=edge --config extra-user-roles=consumer,admin --config topic-name=spark-streaming-store
@@ -159,7 +159,7 @@ kafka:
 ok: "True"
 ```
 
-As you can see, the endpoint, username and password to be used to authenticate with Kafka are displayed next to "endpoints", "username" and "password" respectively. It would be easier for us to store the username and password as variables so that they can be used later in the tutorial. For that, we can specify `--format=json` when running the `get-credentials` action, and then filter out username and password using `yq`. Please note that we have already installed `yq` during the Setup section.
+As you can see, the endpoint, username and password to be used to authenticate with Kafka are displayed next to "endpoints", "username" and "password" respectively. It would be easier for us to store the username and password as variables so that they can be used later in the tutorial. For that, we can specify `--format=json` when running the `get-credentials` action, and then filter out username and password using `jq`.
 
 ```bash
 KAFKA_USERNAME=$(juju run data-integrator/0 get-credentials --format=json | jq -r '.["data-integrator/0"].results.kafka.username')
