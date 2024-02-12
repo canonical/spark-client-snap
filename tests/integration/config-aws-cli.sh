@@ -7,7 +7,7 @@ sudo snap install aws-cli --classic
 ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
 SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
 
-S3_BUCKET="spark"
+S3_BUCKET="test"
 DEFAULT_REGION="us-east-2"
 
 # Configure AWS CLI credentials

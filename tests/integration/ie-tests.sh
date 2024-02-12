@@ -70,6 +70,19 @@ copy_file_to_s3_bucket(){
   echo "Copied file ${FILE_PATH} to S3 bucket ${BUCKET_NAME}"
 }
 
+list_s3_bucket(){
+  # Copies a file from local to S3 bucket.
+  # The bucket name and the path to file that is to be uploaded is to be provided as arguments
+  BUCKET_NAME=$1
+
+  # If file path is '/foo/bar/file.ext', the basename is 'file.ext'
+  S3_ENDPOINT=$(get_s3_endpoint)
+
+  # Copy the file to S3 bucket
+  aws --endpoint-url "http://$S3_ENDPOINT" s3 ls s3://"$BUCKET_NAME/"
+  echo "Listed file for bucket: ${BUCKET_NAME}"
+}
+
 run_example_job() {
 
   KUBE_CONFIG=/home/${USER}/.kube/config
@@ -171,7 +184,7 @@ run_pyspark() {
   validate_pi_value $pi
 }
 
-run_pyspark() {
+run_pyspark_s3() {
   echo "run_pyspark_s3 ${1} ${2}"
 
   NAMESPACE=$1
@@ -188,6 +201,8 @@ run_pyspark() {
   ACCESS_KEY="$(get_s3_access_key)"
   SECRET_KEY="$(get_s3_secret_key)"
   S3_ENDPOINT="$(get_s3_endpoint)"
+
+  list_s3_bucket test
 
   echo -e "$(cat ./tests/integration/resources/test-pyspark-s3.py | spark-client.pyspark \
       --username=${USERNAME} \
