@@ -17,9 +17,9 @@ validate_pi_value() {
 
 validate_file_length() {
   number_of_lines=$1
-
-  if [ "${number_of_lines}" != "wc -l /tests/integration/resources/example.txt" ]; then
-      echo "ERROR: Number of lines is $number_of_lines, Expected Value: ${wc -l /tests/integration/resources/example.txt}. Aborting with exit code 1."
+  l=$(wc -l ./tests/integration/resources/example.txt | cut -d' ' -f1)
+  if [ "${number_of_lines}" != "$l" ]; then
+      echo "ERROR: Number of lines is $number_of_lines, Expected Value: $l. Aborting with exit code 1."
       exit 1
   fi
 }
@@ -216,10 +216,10 @@ run_pyspark_s3() {
       --namespace ${NAMESPACE} --conf spark.executor.instances=2)" \
       > pyspark.out
   cat pyspark.out
-  pi=$(cat pyspark.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
-  echo -e "Pyspark Pi Job Output: \n ${pi}"
+  l=$(cat pyspark.out  | grep "Number of lines" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  echo -e "Number of lines: \n ${l}"
   rm pyspark.out
-  validate_pi_value $pi
+  validate_file_length $l
 }
 
 test_pyspark() {
@@ -418,7 +418,7 @@ run_pyspark_in_pod() {
 
 
 run_pyspark_s3_in_pod() {
-  echo "run_pyspark_in_pod ${1} ${2}"
+  echo "run_pyspark_s3_in_pod ${1} ${2}"
 
   NAMESPACE=$1
   USERNAME=$2
@@ -450,7 +450,7 @@ run_pyspark_s3_in_pod() {
 
   cat pyspark.out
   l=$(cat pyspark.out | grep "Number of lines" | tail -n 1 | rev | cut -d' ' -f1 | rev | cut -c 1-3)
-  echo -e "Pyspark Pi Job Output: \n ${pi}"
+  echo -e "Number of lines: \n ${l}"
   rm pyspark.out
   validate_file_length $l
 }
