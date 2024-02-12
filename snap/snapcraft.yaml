@@ -8,6 +8,14 @@ description: |
 grade: stable
 confinement: strict
 
+hooks:
+  install:
+    plugs:
+        - network
+        - network-bind
+        - home
+        - dot-kube-config
+
 plugs:
   dot-kube-config:
     interface: personal-files
@@ -21,6 +29,7 @@ environment:
   SPARK_HOME: $SNAP/opt/spark
   SPARK_CONFS: $SNAP_DATA/etc/spark8t/
   SPARK_USER_DATA: $HOME
+  SPARK8T_VERSION: 0.0.3
 
 apps:
   service-account-registry:
@@ -40,18 +49,20 @@ apps:
         - home
         - dot-kube-config
   spark-shell:
-    command: lib/python3.10/site-packages/spark8t/cli/spark_shell.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_shell.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: "--conf spark.driver.extraJavaOptions=-Duser.home=$SNAP_USER_DATA --conf spark.jars.ivy=/tmp"
     plugs:
         - network
         - network-bind
         - home
         - dot-kube-config
   pyspark:
-    command: lib/python3.10/site-packages/spark8t/cli/pyspark.py
+    command: lib/python3.10/site-packages/spark8t/cli/pyspark.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: "--conf spark.driver.extraJavaOptions=-Duser.home=$SNAP_USER_DATA --conf spark.jars.ivy=/tmp"
     plugs:
         - network
         - network-bind
@@ -67,7 +78,7 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.3/spark8t-0.0.3-py3-none-any.whl
+        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v${SPARK8T_VERSION}/spark8t-${SPARK8T_VERSION}-py3-none-any.whl
     source: .
     build-packages:
         - python3

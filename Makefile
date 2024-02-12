@@ -18,6 +18,7 @@ pre_deps_tag := $(package_dir)/.pre_deps
 build_tag := $(package_dir)/.build_tag
 install_tag := $(package_dir)/.install_tag
 k8s_tag := $(package_dir)/.k8s_tag
+aws_tag := $(package_dir)/.aws_tag
 
 # ======================
 # Rules and Dependencies
@@ -60,6 +61,11 @@ $(k8s_tag):
 	/bin/bash ./tests/integration/setup-microk8s.sh
 	sg microk8s ./tests/integration/config-microk8s.sh
 	touch $(k8s_tag)
+
+$(aws_tag): $(k8s_tag)
+	@echo "=== Setting up and configure AWS CLI ==="
+	/bin/bash ./tests/integration/config-aws-cli.sh
+	touch $(aws_tag)
 
 microk8s: $(k8s_tag)
 
