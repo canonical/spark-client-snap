@@ -29,7 +29,6 @@ environment:
   SPARK_HOME: $SNAP/opt/spark
   SPARK_CONFS: $SNAP_DATA/etc/spark8t/
   SPARK_USER_DATA: $HOME
-  SPARK8T_VERSION: 0.0.3
 
 apps:
   service-account-registry:
@@ -78,7 +77,7 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v${SPARK8T_VERSION}/spark8t-${SPARK8T_VERSION}-py3-none-any.whl
+        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.3/spark8t-0.0.3-py3-none-any.whl
     source: .
     build-packages:
         - python3
