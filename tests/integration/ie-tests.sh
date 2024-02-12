@@ -16,6 +16,7 @@ validate_pi_value() {
 }
 
 validate_file_length() {
+  # validate the length of the test file
   number_of_lines=$1
   l=$(wc -l ./tests/integration/resources/example.txt | cut -d' ' -f1)
   if [ "${number_of_lines}" != "$l" ]; then
