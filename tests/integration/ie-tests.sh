@@ -190,6 +190,14 @@ run_pyspark_s3() {
   NAMESPACE=$1
   USERNAME=$2
 
+  ACCESS_KEY="$(get_s3_access_key)"
+  SECRET_KEY="$(get_s3_secret_key)"
+  S3_ENDPOINT="$(get_s3_endpoint)"
+
+  aws configure set aws_access_key_id $ACCESS_KEY
+  aws configure set aws_secret_access_key $SECRET_KEY
+  aws configure set default.region "us-east-2"
+
   # copy sample file to s3
 
   # First create S3 bucket named 'test'
@@ -197,10 +205,6 @@ run_pyspark_s3() {
 
   # Copy 'example.txt' script to 'test' bucket
   copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
-
-  ACCESS_KEY="$(get_s3_access_key)"
-  SECRET_KEY="$(get_s3_secret_key)"
-  S3_ENDPOINT="$(get_s3_endpoint)"
 
   list_s3_bucket test
 
