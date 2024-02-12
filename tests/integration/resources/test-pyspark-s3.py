@@ -5,5 +5,5 @@ from pyspark.sql.session import SparkSession
 
 sc = SparkContext()
 spark = SparkSession(sc)
-text_file = spark.read.text("s3a://test/lines.txt")
+text_file = spark.read.text("s3a://test/example.txt")
 print(f"Number of lines {text_file.count()}")
