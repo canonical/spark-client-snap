@@ -64,7 +64,7 @@ $(k8s_tag):
 
 $(aws_tag): $(k8s_tag)
 	@echo "=== Setting up and configure AWS CLI ==="
-	/bin/bash ./tests/integration/-aws-cli.sh
+	/bin/bash ./tests/integration/config-aws-cli.sh
 	touch $(aws_tag)
 
 microk8s: $(k8s_tag)
