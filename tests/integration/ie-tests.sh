@@ -15,6 +15,74 @@ validate_pi_value() {
   fi
 }
 
+validate_file_length() {
+  # validate the length of the test file
+  number_of_lines=$1
+  l=$(wc -l ./tests/integration/resources/example.txt | cut -d' ' -f1)
+  if [ "${number_of_lines}" != "$l" ]; then
+      echo "ERROR: Number of lines is $number_of_lines, Expected Value: $l. Aborting with exit code 1."
+      exit 1
+  fi
+}
+
+get_s3_access_key(){
+  # Prints out S3 Access Key by reading it from K8s secret
+  kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d
+}
+
+get_s3_secret_key(){
+  # Prints out S3 Secret Key by reading it from K8s secret
+  kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d
+}
+
+get_s3_endpoint(){
+  # Prints out the endpoint S3 bucket is exposed on.
+  kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}'
+}
+
+create_s3_bucket(){
+  # Creates a S3 bucket with the given name.
+  S3_ENDPOINT=$(get_s3_endpoint)
+  BUCKET_NAME=$1
+  aws --endpoint-url "http://$S3_ENDPOINT" s3api create-bucket --bucket "$BUCKET_NAME"
+  echo "Created S3 bucket ${BUCKET_NAME}"
+}
+
+delete_s3_bucket(){
+  # Deletes a S3 bucket with the given name.
+  S3_ENDPOINT=$(get_s3_endpoint)
+  BUCKET_NAME=$1
+  aws --endpoint-url "http://$S3_ENDPOINT" s3 rb "s3://$BUCKET_NAME" --force
+  echo "Deleted S3 bucket ${BUCKET_NAME}"
+}
+
+copy_file_to_s3_bucket(){
+  # Copies a file from local to S3 bucket.
+  # The bucket name and the path to file that is to be uploaded is to be provided as arguments
+  BUCKET_NAME=$1
+  FILE_PATH=$2
+
+  # If file path is '/foo/bar/file.ext', the basename is 'file.ext'
+  BASE_NAME=$(basename "$FILE_PATH")
+  S3_ENDPOINT=$(get_s3_endpoint)
+
+  # Copy the file to S3 bucket
+  aws --endpoint-url "http://$S3_ENDPOINT" s3 cp $FILE_PATH s3://"$BUCKET_NAME"/"$BASE_NAME"
+  echo "Copied file ${FILE_PATH} to S3 bucket ${BUCKET_NAME}"
+}
+
+list_s3_bucket(){
+  # List files in a bucket.
+  # The bucket name and the path to file that is to be uploaded is to be provided as arguments
+  BUCKET_NAME=$1
+
+  S3_ENDPOINT=$(get_s3_endpoint)
+
+  # List files in the S3 bucket
+  aws --endpoint-url "http://$S3_ENDPOINT" s3 ls s3://"$BUCKET_NAME/"
+  echo "Listed files for bucket: ${BUCKET_NAME}"
+}
+
 run_example_job() {
 
   KUBE_CONFIG=/home/${USER}/.kube/config
@@ -116,8 +184,52 @@ run_pyspark() {
   validate_pi_value $pi
 }
 
+run_pyspark_s3() {
+  echo "run_pyspark_s3 ${1} ${2}"
+
+  NAMESPACE=$1
+  USERNAME=$2
+
+  ACCESS_KEY="$(get_s3_access_key)"
+  SECRET_KEY="$(get_s3_secret_key)"
+  S3_ENDPOINT="$(get_s3_endpoint)"
+
+  aws configure set aws_access_key_id $ACCESS_KEY
+  aws configure set aws_secret_access_key $SECRET_KEY
+  aws configure set default.region "us-east-2"
+
+  # First create S3 bucket named 'test'
+  create_s3_bucket test
+
+  # Copy 'example.txt' script to 'test' bucket
+  copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
+
+  list_s3_bucket test
+
+  echo -e "$(cat ./tests/integration/resources/test-pyspark-s3.py | spark-client.pyspark \
+      --username=${USERNAME} \
+      --conf spark.kubernetes.container.image=$SPARK_IMAGE \
+      --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+      --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+      --conf spark.hadoop.fs.s3a.path.style.access=true \
+      --conf spark.hadoop.fs.s3a.endpoint=$S3_ENDPOINT \
+      --conf spark.hadoop.fs.s3a.access.key=$ACCESS_KEY \
+      --conf spark.hadoop.fs.s3a.secret.key=$SECRET_KEY \
+      --namespace ${NAMESPACE} --conf spark.executor.instances=2)" \
+      > pyspark.out
+  cat pyspark.out
+  l=$(cat pyspark.out  | grep "Number of lines" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  echo -e "Number of lines: \n ${l}"
+  rm pyspark.out
+  validate_file_length $l
+}
+
 test_pyspark() {
   run_pyspark tests spark
+}
+
+test_pyspark_s3() {
+  run_pyspark_s3 tests spark
 }
 
 test_restricted_account() {
@@ -306,6 +418,50 @@ run_pyspark_in_pod() {
   validate_pi_value $pi
 }
 
+
+run_pyspark_s3_in_pod() {
+  echo "run_pyspark_s3_in_pod ${1} ${2}"
+
+  NAMESPACE=$1
+  USERNAME=$2
+
+  PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark-s3.py)
+
+  # Check output of pyspark process with s3 
+
+  echo -e "$(kubectl exec testpod -- \
+    env \
+      UU="$USERNAME" \
+      NN="$NAMESPACE" \
+      CMDS="$PYSPARK_COMMANDS" \
+      IM="$SPARK_IMAGE" \
+      ACCESS_KEY="$(get_s3_access_key)" \
+      SECRET_KEY="$(get_s3_secret_key)" \
+      S3_ENDPOINT="$(get_s3_endpoint)" \
+    /bin/bash -c 'echo "$CMDS" | spark-client.pyspark \
+      --username $UU \
+      --namespace $NN \
+      --conf spark.kubernetes.container.image=$IM \
+      --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+      --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+      --conf spark.hadoop.fs.s3a.path.style.access=true \
+      --conf spark.hadoop.fs.s3a.endpoint=$S3_ENDPOINT \
+      --conf spark.hadoop.fs.s3a.access.key=$ACCESS_KEY \
+      --conf spark.hadoop.fs.s3a.secret.key=$SECRET_KEY 
+    ')" > pyspark.out
+
+  cat pyspark.out
+  l=$(cat pyspark.out | grep "Number of lines" | tail -n 1 | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  echo -e "Number of lines: \n ${l}"
+  rm pyspark.out
+  validate_file_length $l
+}
+
+test_pyspark_s3_in_pod() {
+  run_pyspark_s3_in_pod tests spark
+}
+
+
 test_pyspark_in_pod() {
   run_pyspark_in_pod tests spark
 }
@@ -330,6 +486,8 @@ setup_tests
 
 (setup_user_admin_context && test_pyspark && cleanup_user_success) || cleanup_user_failure
 
+(setup_user_admin_context && test_pyspark_s3 && cleanup_user_success) || cleanup_user_failure
+
 (setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
 
 setup_test_pod
@@ -339,6 +497,8 @@ setup_test_pod
 (setup_user_admin_context && test_spark_shell_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
 (setup_user_admin_context && test_pyspark_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
+
+(setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
 #(setup_user_restricted_context && test_restricted_account_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
