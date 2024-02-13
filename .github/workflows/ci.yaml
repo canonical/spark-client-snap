@@ -17,7 +17,7 @@ jobs:
     steps:
       - id: checkout
         name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - id: build-snap
         name: Build snap
         uses: snapcore/action-build@2ee46bc29d163c9c836f2820cc46b39664bf0de2
@@ -25,7 +25,7 @@ jobs:
           snapcraft-channel: 7.x/candidate
       - id: upload
         name: Upload built snap job artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.build-snap.outputs.snap }}
           path: ${{ steps.build-snap.outputs.snap }}
@@ -37,7 +37,7 @@ jobs:
     needs: build
     steps:
       - name: Download snap file
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.snap-file }}
           path: .
@@ -47,7 +47,7 @@ jobs:
           sudo snap install ${{ needs.build.outputs.snap-file }} --dangerous
 
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run Integration Tests
         run: |
