@@ -72,16 +72,15 @@ copy_file_to_s3_bucket(){
 }
 
 list_s3_bucket(){
-  # Copies a file from local to S3 bucket.
+  # List files in a bucket.
   # The bucket name and the path to file that is to be uploaded is to be provided as arguments
   BUCKET_NAME=$1
 
-  # If file path is '/foo/bar/file.ext', the basename is 'file.ext'
   S3_ENDPOINT=$(get_s3_endpoint)
 
-  # Copy the file to S3 bucket
+  # List files in the S3 bucket
   aws --endpoint-url "http://$S3_ENDPOINT" s3 ls s3://"$BUCKET_NAME/"
-  echo "Listed file for bucket: ${BUCKET_NAME}"
+  echo "Listed files for bucket: ${BUCKET_NAME}"
 }
 
 run_example_job() {
@@ -198,8 +197,6 @@ run_pyspark_s3() {
   aws configure set aws_access_key_id $ACCESS_KEY
   aws configure set aws_secret_access_key $SECRET_KEY
   aws configure set default.region "us-east-2"
-
-  # copy sample file to s3
 
   # First create S3 bucket named 'test'
   create_s3_bucket test
