@@ -10,11 +10,8 @@ confinement: strict
 
 hooks:
   install:
-    plugs:
-        - network
-        - network-bind
-        - home
-        - dot-kube-config
+    plugs: 
+      - home
 
 plugs:
   dot-kube-config:
