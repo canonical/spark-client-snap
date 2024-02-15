@@ -6,3 +6,5 @@ __pycache__
 *.tar
 env/
 .vscode/
+derby.log
+metastore_db/

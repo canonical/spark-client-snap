@@ -58,13 +58,14 @@ apps:
     command: lib/python3.10/site-packages/spark8t/cli/pyspark.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
     plugs:
         - network
         - network-bind
         - home
         - dot-kube-config
   spark-sql:
-    command: lib/python3.10/site-packages/spark8t/cli/spark_sql.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_sql.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
       SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
