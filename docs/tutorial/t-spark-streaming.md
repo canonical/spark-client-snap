@@ -334,4 +334,4 @@ The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you
 
 Bravo! We were successful in processing streaming data with Charmed Spark solution.
 
-In the next section, we will learn to monitor the status of the job using Spark History Server and the Canonical Observability Stack.
+In the next section, we will learn how to monitor the status of the job using Spark History Server and the Canonical Observability Stack.
