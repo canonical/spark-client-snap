@@ -1,4 +1,4 @@
-## Monitoring the Spark Cluster
+## Monitoring the Spark cluster
 
 By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which gets lost if the pods are deleted. Spark provides us with the feature to store these logs in S3 so that they can later be retrieved and visualized.
 
