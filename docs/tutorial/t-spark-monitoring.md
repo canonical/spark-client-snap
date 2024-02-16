@@ -198,7 +198,7 @@ traefik:peers                       traefik:peers                traefik_peers  
 traefik:traefik-route               grafana:ingress              traefik_route          regular  
 ```
 
-At this point, the observability stack has been deployed but Charmed Spark knows nothing about it. Since Charmed Spark comes with a built in spark metrics exporter that exports metric logs to a Prometheus gateway, we need to deploy a Prometheus gateway and then add Spark options to connect to it. The Prometheus gateway in turn will then be integrated with Prometheus. Let's deploy `prometheus-pushgateway-k8s` charm and integrate it with `prometheus` charm.
+At this point, the observability stack has been deployed but Charmed Spark is not wired to it yet. Generally, Prometheus collects metrics of services by regularly scraping dedicated endpoints. However, Spark jobs can be ephemeral processes that may last not so long to be scraped. Moreover, the IPs/hostnames of pods are likely to change among runs, therefore requiring a self-discoverable automation. This is the reason why we decided to provide support for jobs run with Charmed Spark to push metrics (rather than having Prometheus pulling them) to a caching service, called Prometheus pushgateway, that stores the metrics and exposed them to Prometheus for regular scraping, even when the Spark job has finished. Therefore, to wire Spark jobs with the observability stack, we need to deploy a Prometheus pushgateway and then add Spark options to connect to it. The Prometheus pushgateway in turn will then be integrated with Prometheus. Let's deploy `prometheus-pushgateway-k8s` charm and integrate it with `prometheus` charm.
 
 ```bash
 juju deploy prometheus-pushgateway-k8s --channel edge
