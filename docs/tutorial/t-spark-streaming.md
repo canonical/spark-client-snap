@@ -12,15 +12,12 @@ juju add-model spark-streaming
 
 When you add a Juju model, a Kubernetes namespace of the same name is created automatically. You can verify that by running `kubectl get namespaces` and there you should see a namespace named `spark-streaming`.
 
-The service account `spark` we created in the earlier section is in the `spark` namespace. Let's create a similar service account but now in the `spark-streaming` namespace. We can copy the existing config options from the old service account to the new service account with an addition of `spark.jars.ivy` configuration.
+The service account `spark` we created in the earlier section is in the `spark` namespace. Let's create a similar service account but now in the `spark-streaming` namespace. We can copy the existing config options from the old service account to the new service account.
 
 ```bash
 # Get config from old service account and store in a file
 spark-client.service-account-registry get-config \
   --username spark --namespace spark > properties.conf
-
-# Add an extra configuration for the path to cache dependency jars
-echo "spark.jars.ivy=/tmp" >> properties.conf
 
 # Create a new service account and load configurations from the file
 spark-client.service-account-registry create \
