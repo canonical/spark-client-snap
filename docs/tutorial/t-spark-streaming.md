@@ -1,6 +1,6 @@
 # Streaming workloads with Charmed Spark
 
-Spark comes with a built-in support for streaming workloads via Spark Streaming and Charmed Spark takes it a step further by making it easy to integrate with Kafka, using juju. Kafka is an distributed event-store with a producer/consumer, designed to achieve large throughput while allowing horizontal scalability and high-availability. For more information about Kafka, please refer to [here](https://kafka.apache.org/), and about Spark Streaming, please refer [here](https://spark.apache.org/docs/latest/streaming-programming-guide.html). 
+Spark comes with a built-in support for streaming workloads via Spark Streaming. Charmed Spark takes it a step further by making it easy to integrate with Kafka using Juju. Kafka is an distributed event-store with a producer/consumer, designed to achieve large throughput while allowing horizontal scalability and high-availability. For more information about Kafka, please refer to [here](https://kafka.apache.org/), and about Spark Streaming, please refer [here](https://spark.apache.org/docs/latest/streaming-programming-guide.html). 
 
 In this section, we are going to generate some streaming data in Kafka, and then process this stream of data in Spark. We are going to use `juju` to deploy a Kafka setup, where a Juju charm will generate events to Kafka, and a Spark job will consume these in real time to process it.
 
