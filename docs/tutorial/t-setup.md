@@ -215,7 +215,7 @@ spark-client.service-account-registry create \
   --username spark --namespace spark
 ```
 
-This command does a bunch of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. These resources can be viewed as:
+This command does a number of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. These resources can be viewed as:
 
 ```bash
 kubectl get serviceaccounts -n spark
