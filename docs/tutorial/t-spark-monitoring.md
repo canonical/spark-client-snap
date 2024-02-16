@@ -38,10 +38,10 @@ spark-client.service-account-registry create \
   --properties-file properties.conf
 ```
 
-We've configured Spark to write event logs to `spark-events` directory in the `spark-tutorial` bucket. However, that directory doesn't exist yet. Let's create that directory in S3.
+We've configured Spark to write event logs to `spark-events` directory in the `spark-tutorial` bucket. However, that directory doesn't exist yet. Let's create that directory in S3. (Note that the / at the end is required.)
 
 ```bash
-aws s3api put-object --bucket spark-tutorial --key spark-events/ # / at the end is requied
+aws s3api put-object --bucket spark-tutorial --key spark-events/
 ```
 
 Now, let's deploy the [`spark-history-server-k8s`](https://github.com/canonical/spark-history-server-k8s-operator) charm in our Juju model. 
