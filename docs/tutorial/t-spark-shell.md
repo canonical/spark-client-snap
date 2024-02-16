@@ -30,7 +30,7 @@ SparkSession available as 'spark'.
 >>> 
 ```
 
-When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. You can see them by fetching the list of pods in the `spark` namespace.
+When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. You can see them by fetching the list of pods in the `spark` namespace in a separate shell.
 
 ```bash
 kubectl get pods -n spark
@@ -42,7 +42,7 @@ pysparkshell-xxxxxxxxxxxxxxxx-exec-1              1/1     Running            0  
 pysparkshell-xxxxxxxxxxxxxxxx-exec-2              1/1     Running            0          xs
 ```
 
-As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that your commands will be executed. Since we opened the PySpark shell using `spark-client` snap installed in the host machine, the driver program is running in the host machine itself.
+As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that the data is cached and the computation will be executed, therefore creating an computational architecture that can horizontally scale to large datasets (BigData). On the other hand, the PySpark shell started by the `spark-client` snap will act as a `driver`, controlling and orchestrating the operations of the executors. More information about the Spark architecture can be found [here](https://spark.apache.org/docs/latest/cluster-overview.html).
 
 One good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
 
@@ -91,7 +91,7 @@ Since Spark is a distributed processing framework, we can split up this task and
 128
 ```
 
-Here, we parallelize the the tax into two executors (passed as an argument to `parallelize` function), where each line is processed by an executor pod. The number of vowels in each line is then added up to calculate the total number of occurrences of vowel characters in the string. This kind of parallelization of task is particularly useful in processing very large data sets which helps in reducing the processing time significantly.
+Here, we split the data into the two executors (passed as an argument to `parallelize` function), generating a distributed data structure, e.g. RDD[str], where each line is stored in one of the (possibly many) executors. The number of vowels in each line is then computed, line by line, with the `map` function, and then the numbers are aggregated and added up to calculate the total number of occurrences of vowel characters in the entire dataset. This kind of parallelization of task is particularly useful in processing very large data sets which helps in reducing the processing time significantly, and it is generally referred as the MapReduce pattern.
 
 To exit from PySpark shell, you can simply run `exit()` or press `Ctrl` + Z key combination.
 

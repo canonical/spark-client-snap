@@ -65,17 +65,19 @@ Let's generate the Kubernetes configuration file using MicroK8s and write it to 
 microk8s config | tee ~/.kube/config
 ```
 
-Now let's enable a few addons for using features like role based access control, load balancing and usage of local volume for storage.
+Now let's enable a few addons for using features like role based access control, usage of local volume for storage, and load balancing
 
 ```bash
-sudo microk8s enable rbac storage hostpath-storage
+# Enable rbac
+sudo microk8s enable rbac
 
+# Enable storage
+sudo microk8s enable storage hostpath-storage
+
+# Enabling metallb for load balancing
 sudo apt install -y jq
-
-# Get IP address
 IPADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 sudo microk8s enable metallb:$IPADDR-$IPADDR
-```
 
 Once done, the list of enabled addons can be seen via `microk8s status --wait-ready` command. The output of the command should look similar to the following:
 
@@ -96,14 +98,15 @@ addons:
 
 ### Setup MinIO
 
-Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. Let's enable the `minio` addon for MicroK8s.
+Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. 
 
+Let's enable the `minio` addon for MicroK8s.
 ```bash
 sudo microk8s enable minio
-```
 
-Authentication with MinIO is managed with an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled. Let's fetch these credentials and export them as environment variables in order to use them later.
+Authentication with MinIO is managed with an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled.
 
+Let's fetch these credentials and export them as environment variables in order to use them later.
 ```bash
 export ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
 export SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
@@ -156,7 +159,7 @@ aws s3 ls
 With the access key, secret key and the endpoint properly configured, you should `spark-tutorial` bucket listed in the output.
 
 
-### Setup Juju
+### Set up Juju
 
 Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy and manage the Spark History Server and a number of other applications later to be integrated with Spark. Let's therefore let's install and configure a `juju` client using a snap.
 
@@ -194,7 +197,7 @@ Controller       Model  User   Access     Cloud/Region        Models  Nodes  HA 
 spark-tutorial*  -      admin  superuser  microk8s/localhost       1      1   -  3.1.7
 ```
 
-### Setup spark-client snap and service accounts
+### Set up spark-client snap and service accounts
 
 When Spark jobs are run on top of Kubernetes, a set of resources like service account, associated roles, role bindings etc. need to be created and configured. To simplify this task, the Charmed Spark solution offers the `spark-client`. Let's install the `spark-client` snap at first:
 
@@ -215,7 +218,7 @@ spark-client.service-account-registry create \
   --username spark --namespace spark
 ```
 
-This command does a bunch of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. These resources can be viewed as:
+This command does a number of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. These resources can be viewed as:
 
 ```bash
 kubectl get serviceaccounts -n spark
