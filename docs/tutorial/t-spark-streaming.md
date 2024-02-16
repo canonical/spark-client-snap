@@ -1,4 +1,4 @@
-## Streaming workloads with Charmed Spark
+# Streaming workloads with Charmed Spark
 
 Spark comes with a built-in support for streaming workloads and Charmed Spark takes it a step further by making it easy to integrate with streaming platforms like Kafka.
 

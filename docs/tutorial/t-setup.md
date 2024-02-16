@@ -1,7 +1,7 @@
-## Set up the environment for the tutorial
+# Set up the environment for the tutorial
 
 
-### Minimum requirements
+## Minimum requirements
 Before we start, make sure your machine meets the following requirements:
 * Ubuntu 22.04 (jammy) or later (the tutorial has been prepared and tested to work on 22.04)
 * 8 GB of RAM
@@ -9,7 +9,7 @@ Before we start, make sure your machine meets the following requirements:
 * At least 20GB of available storage.
 * Access to the internet for downloading the required snaps and charms.
 
-### Prepare MicroK8s
+## Prepare MicroK8s
 
 Charmed Spark is developed to be run on top of a Kubernetes cluster. For the purpose of this tutorial, we are going to use [MicroK8s](https://microk8s.io/), a very simple production-grade conformant K8s that can run locally. 
 
@@ -97,7 +97,7 @@ addons:
 ...
 ```
 
-### Setup MinIO
+## Setup MinIO
 
 Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library [`minio`](https://min.io/), an [add-on](https://microk8s.io/docs/addon-minio) for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. 
 
@@ -161,7 +161,7 @@ aws s3 ls
 With the access key, secret key and the endpoint properly configured, you should `spark-tutorial` bucket listed in the output.
 
 
-### Set up Juju
+## Set up Juju
 
 Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy and manage the Spark History Server and a number of other applications later to be integrated with Spark. Let's therefore let's install and configure a `juju` client using a snap.
 

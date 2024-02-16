@@ -1,4 +1,4 @@
-## Submitting Jobs using Spark Submit
+# Submitting Jobs using Spark Submit
 
 Spark comes with a built-in binary `spark-submit` which can be used to submit jobs as script written in high level languages like Python, Java, Scala and R. For a quick example, let's gather the statements that we ran in the Python shell earlier and put them together in a script. The script looks like the following:
 

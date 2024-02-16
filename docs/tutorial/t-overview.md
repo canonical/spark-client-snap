@@ -1,4 +1,4 @@
-## Charmed Spark Solution Tutorial
+# Charmed Spark Solution Tutorial
 
 The Charmed Spark solution delivers Spark utility client applications, that allow for simple and seamless usage of Apache Spark on Kubernetes.
 

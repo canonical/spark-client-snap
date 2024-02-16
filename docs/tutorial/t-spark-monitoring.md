@@ -1,4 +1,4 @@
-## Monitoring the Spark cluster
+# Monitoring the Spark cluster
 
 By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which gets lost if the pods are deleted. Spark provides us with the feature to store these logs in S3 so that they can later be retrieved and visualized.
 
@@ -8,7 +8,7 @@ Charmed Spark provides native support and integration for two monitoring systems
 
 Let's explore each one of these options.
 
-### Monitoring with Spark History Server
+## Monitoring with Spark History Server
 
 Spark History Server is a user interface to monitor the metrics and performance of completed and running Spark applications. The Spark History Server is offered as a charm in the Charmed Spark solution, which can be deployed via Juju.
 
@@ -124,7 +124,7 @@ When you click on the app ID, you can see the event timeline for the particular 
 
 In the similar way, you can view information about various stages in the job by navigating to the "Stages" menu. The value of different properties used to run the job can be viewed in the "Environment" page. Finally, you can also view stats about the individual executors in "Executors" page. Spend some time exploring the various pages. You may even submit additional sample jobs and view their status.
 
-### Monitoring with Canonical Observability Stack 
+## Monitoring with Canonical Observability Stack 
 
 The Charmed Spark solution comes with the [spark-metrics](https://github.com/banzaicloud/spark-metrics) exporter embedded in the [Charmed Spark OCI image](https://github.com/canonical/charmed-spark-rock) which is used as a base image for driver and executors pods.
 This exporter is designed to push metrics to the [prometheus pushgateway](https://github.com/prometheus/pushgateway), which in turn is integrated with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack). 

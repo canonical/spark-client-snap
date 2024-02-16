@@ -1,8 +1,8 @@
-## Interacting with Spark using Interactive Shell
+# Interacting with Spark using Interactive Shell
 
 Spark comes with an interactive shell that provides a simple way to learn the API. It is available in either Scala or Python. In this section, we're going to play around a bit with Spark's shell to interact directly with the Spark cluster.
 
-### PySpark Shell
+## PySpark Shell
 
 Spark comes with a built-in Python shell where we can execute commands interactively against Spark cluster using Python programming language.
 
@@ -96,7 +96,7 @@ Here, we split the data into the two executors (passed as an argument to `parall
 To exit from PySpark shell, you can simply run `exit()` or press `Ctrl` + Z key combination.
 
 
-### Scala Shell
+## Scala Shell
 Spark comes with a built-in interactive Scala shell as well. Enter the following command to enter an interactive Scala shell:
 
 ```bash

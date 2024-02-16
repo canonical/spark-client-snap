@@ -1,6 +1,6 @@
-## Wrapping Up
+# Wrapping Up
 
-### Cleanup
+## Cleanup
 
 Let's clean up the resources we created during the tutorial.
 
@@ -26,7 +26,7 @@ aws s3 rb  s3://spark-tutorial --force
 ```
 
 
-### Going Further
+## Going Further
 
 Parts of this tutorial were originally covered in a talk of the Ubuntu Summit 2023, recording of which is available [here on YouTube](https://www.youtube.com/watch?v=nu1ll7VRqbI).
 
