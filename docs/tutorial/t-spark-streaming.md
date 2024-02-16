@@ -315,7 +315,7 @@ pod_name=$(kubectl get pods -n spark-streaming | grep "spark-streaming-.*-driver
 kubectl logs -n spark-streaming -f $pod_name | grep "Batch: " -A 10 # filter out line starting with "Batch: " and next 10 lines after that line
 ```
 
-The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you observe carefully, you can see that new logs are appended every ten seconds, including the results containing the number of events grouped by the origin similar to the following:
+The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you observe carefully, you can see that new logs are appended every roughly ten seconds, including the results containing the number of events grouped by the origin, similar to the following:
 
 
 ```
