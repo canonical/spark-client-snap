@@ -65,16 +65,16 @@ Let's generate the Kubernetes configuration file using MicroK8s and write it to 
 microk8s config | tee ~/.kube/config
 ```
 
-Now let's enable a few addons for using features like role based access control, usage of local volume for storage, and load balancing
+Now let's enable a few addons for using features like role based access control, usage of local volume for storage, and load balancing.
 
 ```bash
-# Enable rbac
+# Enable rbac for role based access control
 sudo microk8s enable rbac
 
-# Enable storage
+# Enable storage and hostpath-storage
 sudo microk8s enable storage hostpath-storage
 
-# Enabling metallb for load balancing
+# Enable metallb for load balancing
 sudo apt install -y jq
 IPADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 sudo microk8s enable metallb:$IPADDR-$IPADDR
@@ -126,7 +126,7 @@ MINIO_UI_PORT=$(kubectl get service microk8s-console -n minio-operator -o jsonpa
 export MINIO_UI_URL=$MINIO_UI_IP:$MINIO_UI_PORT
 ```
 
-The MinIO web UI URL is a combination of an IP address and port. Print it by running
+The MinIO web UI URL is a combination of an IP address and port. Print it by running:
 ```bash
 echo $MINIO_UI_URL
 ```
@@ -239,6 +239,8 @@ kubectl get serviceaccounts -n spark
 kubectl get roles -n spark
 kubectl get rolebindings -n spark
 ```
+
+You should see the output of the commands similar to the following:
 
 For Spark to be able to access and use our local S3 bucket, we need to provide a few Spark configurations including the bucket endpoint, access key and secret key. In Charmed Spark solution, we bind these configurations to a Kubernetes service account such that when Spark jobs are executed with that service account, all the configurations binded to that service account are supplied to Spark automatically.
 

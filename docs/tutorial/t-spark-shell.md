@@ -44,7 +44,7 @@ pysparkshell-xxxxxxxxxxxxxxxx-exec-2              1/1     Running            0  
 
 As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that the data is cached and the computation will be executed, therefore creating an computational architecture that can horizontally scale to large datasets (BigData). On the other hand, the PySpark shell started by the `spark-client` snap will act as a `driver`, controlling and orchestrating the operations of the executors. More information about the Spark architecture can be found [here](https://spark.apache.org/docs/latest/cluster-overview.html).
 
-One good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
+One good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. You can even see this printed in the logs above, where upon initialization, the PySpark shell says `Spark context available as 'sc'` and `SparkSession available as 'spark'`. This shell is just like a regular Python shell, with Spark context loaded on top of it.
 
 For start, you can print 'hello, world!' just like you'd do in a Python shell.
 
@@ -100,10 +100,10 @@ To exit from PySpark shell, you can simply run `exit()` or press `Ctrl` + Z key 
 Spark comes with a built-in interactive Scala shell as well. Enter the following command to enter an interactive Scala shell:
 
 ```bash
-spark-client.spark-shell --username spark --namespace spark
+spark-client.spark-shell --username spark --namespace spark --num-executors 4
 ```
 
-Once the shell is open and ready, you should see a prompt simlar to the following:
+Notice how we can specify the number of executors when initializing the Spark Shell (which by default would be 2). Once the shell is open and ready, you should see a prompt simlar to the following:
 
 ```
 Welcome to
