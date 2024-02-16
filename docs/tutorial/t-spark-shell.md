@@ -30,7 +30,7 @@ SparkSession available as 'spark'.
 >>> 
 ```
 
-When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. You can see them by fetching the list of pods in the `spark` namespace.
+When you open the PySpark shell, Spark spawns a couple of executor pods in the background to process the commands. You can see them by fetching the list of pods in the `spark` namespace in a separate shell.
 
 ```bash
 kubectl get pods -n spark
