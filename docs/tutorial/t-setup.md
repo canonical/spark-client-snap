@@ -116,7 +116,20 @@ export S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.
 export S3_BUCKET="spark-tutorial"
 ```
 
-The MinIO add-on offers access to a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. 
+Later during the tutorial, we will need to create a S3 bucket and upload some sample files into this bucket. The MinIO add-on offers access to a built-in Web UI which can be used to interact with the local S3 object storage. Alternatively, we can also use AWS CLI if we prefer to use CLI commands over a graphical user interface.
+
+To set up the AWS CLI, let's run the following commands:
+
+```bash
+sudo snap install aws-cli --classic
+
+aws configure set aws_access_key_id $ACCESS_KEY 
+aws configure set aws_secret_access_key $SECRET_KEY 
+aws configure set region "us-west-2" 
+aws configure set endpoint_url "http://$S3_ENDPOINT"
+```
+
+For us to be able to open MinIO web UI in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. 
 
 Let's fetch the MinIO web interface URL as follows:
 
@@ -145,20 +158,14 @@ Once you're logged in, you'll see the MinIO console as shown below.
 
 The list of the buckets currently in our S3 storage is empty. That's because we have not created any buckets yet! Let's proceed to create a new bucket now.
 
-Click "Create Bucket +" button on the top right. On the next screen, let's choose "spark-tutorial" for the name of the bucket and click "Create Bucket". That's it. We now have a S3 bucket available locally on our system!
+Click "Create Bucket +" button on the top right. On the next screen, let's choose "spark-tutorial" for the name of the bucket and click "Create Bucket". 
 
-In the next sections, you're required to upload some sample files into the S3 bucket. This can either be done using the MinIO UI (just like you created the bucket above) or more conviniently by using AWS CLI. Let's setup the AWS CLI as follows:
-
+Alternatively, if you prefer to use AWS CLI, the same task of creating the bucket can be done with the following command:
 ```bash
-sudo snap install aws-cli --classic
-
-aws configure set aws_access_key_id $ACCESS_KEY 
-aws configure set aws_secret_access_key $SECRET_KEY 
-aws configure set region "us-west-2" 
-aws configure set endpoint_url "http://$S3_ENDPOINT"
+aws s3 mb s3://spark-tutorial
 ```
 
-The proper configuration of AWS CLI can be verified by listing the S3 buckets using the following command:
+That's it. We now have a S3 bucket available locally on our system! This can be verified by listing the S3 buckets using the following command:
 
 ```bash
 aws s3 ls
@@ -166,7 +173,7 @@ aws s3 ls
 # 2024-02-07 07:47:05 spark-tutorial
 ```
 
-With the access key, secret key and the endpoint properly configured, you should `spark-tutorial` bucket listed in the output.
+With the access key, secret key and the endpoint properly configured, you should see `spark-tutorial` bucket listed in the output.
 
 
 ## Set up Juju
@@ -232,15 +239,22 @@ spark-client.service-account-registry create \
 
 This command does a number of things in the background. First, it creates a service account in the `spark` namespace with the name `spark`. Then it creates a role with name `spark-role` with all the required RBAC permissions and binds that role to the service account by creating a role binding. 
 
-These resources can be viewed as:
+These resources can be viewed with `kubectl get` commands as follows:
 
 ```bash
 kubectl get serviceaccounts -n spark
-kubectl get roles -n spark
-kubectl get rolebindings -n spark
-```
+# NAME      SECRETS   AGE
+# default   0         50s
+# spark     0         15s
 
-You should see the output of the commands similar to the following:
+kubectl get roles -n spark
+# NAME         CREATED AT
+# spark-role   2024-02-16T12:08:55Z
+
+kubectl get rolebindings -n spark
+# NAME                 ROLE              AGE
+# spark-role-binding   Role/spark-role   69s
+```
 
 For Spark to be able to access and use our local S3 bucket, we need to provide a few Spark configurations including the bucket endpoint, access key and secret key. In Charmed Spark solution, we bind these configurations to a Kubernetes service account such that when Spark jobs are executed with that service account, all the configurations binded to that service account are supplied to Spark automatically.
 

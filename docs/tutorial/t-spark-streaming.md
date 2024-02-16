@@ -80,9 +80,9 @@ As you can see, both Kafka and Zookeeper charms are in "active" status. However,
 
 For us to experiment with the streaming feature, we would want some sample streaming data to be generated in Kafka continuously in real time. For that, we can use the `kafka-test-app` charm as a producer of events. 
 
-Let's deploy the charm, and integrate it with `kafka-k8s` so that it is able to write messages to Kafka.
+Let's deploy the charm with 3 units, and integrate it with `kafka-k8s` so that it is able to write messages to Kafka.
 ```bash
-juju deploy kafka-test-app --series=jammy --channel=edge --config role=producer --config topic_name=spark-streaming-store --config num_messages=100000
+juju deploy kafka-test-app -n 3 --series=jammy --channel=edge --config role=producer --config topic_name=spark-streaming-store --config num_messages=100000
 
 juju integrate kafka-test-app kafka-k8s
 ```
@@ -317,15 +317,17 @@ The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you
 
 ```
 ...
-2024-02-05T16:04:05.189Z [entrypoint] -------------------------------------------
-2024-02-05T16:04:05.189Z [entrypoint] Batch: 13
-2024-02-05T16:04:05.189Z [entrypoint] -------------------------------------------
-2024-02-05T16:04:05.228Z [entrypoint] +--------------------+-----+
-2024-02-05T16:04:05.228Z [entrypoint] |              origin|count|
-2024-02-05T16:04:05.228Z [entrypoint] +--------------------+-----+
-2024-02-05T16:04:05.228Z [entrypoint] |kafka-test-app-0 ...|  272|
-2024-02-05T16:04:05.228Z [entrypoint] +--------------------+-----+
-2024-02-05T16:04:05.228Z [entrypoint] 
+2024-02-16T12:50:12.886Z [sparkd] Batch: 13
+2024-02-16T12:50:12.886Z [sparkd] -------------------------------------------
+...
+2024-02-16T12:50:12.963Z [sparkd] +--------------------+-----+
+2024-02-16T12:50:12.963Z [sparkd] |              origin|count|
+2024-02-16T12:50:12.963Z [sparkd] +--------------------+-----+
+2024-02-16T12:50:12.963Z [sparkd] |kafka-test-app-1 ...|   38|
+2024-02-16T12:50:12.963Z [sparkd] |kafka-test-app-0 ...|   38|
+2024-02-16T12:50:12.963Z [sparkd] |kafka-test-app-2 ...|   39|
+2024-02-16T12:50:12.963Z [sparkd] +--------------------+-----+
+
 ...
 ```
 
