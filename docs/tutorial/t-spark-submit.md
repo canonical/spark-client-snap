@@ -76,7 +76,7 @@ countvowels-2975f78d77ce2e6f-exec-2       1/1     Running     0          6s
 countvowels-2975f78d77ce2e6f-exec-1       1/1     Running     0          6s
 ```
 
-Among these pods, the one containing the word "driver" is the driver pod and the other two are the executor pods. If you observe closely at the status of the pods while the job is submitted, it is the driver pod that gets created at first. The driver pod spawns executor pods to execute the jobs. Once the job completes, the driver and the exector pods are transitioned to `Completed` state. We can see the job execution logs by viewing pod logs of the driver pod.
+Among these pods, as explained before, we have a "driver" pod, that will be executing the script and orchestrating/coordinating the other two executor pods. If you observe closely at the status of the pods while the job is submitted, it is the driver pod that gets created at first. The driver pod spawns executor pods to execute the jobs. Once the job completes, the driver and the exector pods are transitioned to `Completed` state. We can see the job execution logs by viewing pod logs of the driver pod.
 
 To view the pod logs, we first need to identify the name of the driver pod. You can do that with `kubectl` and some text filtering as:
 
