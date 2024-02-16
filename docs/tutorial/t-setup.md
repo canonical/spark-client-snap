@@ -166,7 +166,7 @@ sudo snap install juju --channel 3.1/stable
 mkdir -p ~/.local/share
 ```
 
-Juju has a built-in knowledge of MicroK8s and can detect MicroK8s cluster installed in our system automatically without the need of additional setup or configuration. You can verify this by running `juju clouds` command. You should see an output similar to the following:
+Juju can automatically detect all available clouds on our local machine without the need of additional setup or configuration. You can verify this by running `juju clouds` command. You should see an output similar to the following:
 
 ```
 Only clouds with registered credentials are shown.
