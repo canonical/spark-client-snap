@@ -306,7 +306,7 @@ We can view the status of the pods with the following command in a new shell:
 watch -n1 "kubectl get pods -n spark-streaming | grep 'spark-streaming-.*-driver' "
 ```
 
-The results are that are written to the console in the program we wrote earlier are actually written to the pod logs. To fetch the pod logs, we first need to know the name of the driver pod. Let's find the name of the driver pod and then fetch pod logs as:
+The streaming output - directed to the console - are there being written to the pod logs. To fetch the pod logs, we first need to know the name of the driver pod. Let's find its name to then fetch the logs as:
 
 
 ```bash
