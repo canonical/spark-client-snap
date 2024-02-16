@@ -197,7 +197,7 @@ Controller       Model  User   Access     Cloud/Region        Models  Nodes  HA 
 spark-tutorial*  -      admin  superuser  microk8s/localhost       1      1   -  3.1.7
 ```
 
-### Setup spark-client snap and service accounts
+### Set up spark-client snap and service accounts
 
 When Spark jobs are run on top of Kubernetes, a set of resources like service account, associated roles, role bindings etc. need to be created and configured. To simplify this task, the Charmed Spark solution offers the `spark-client`. Let's install the `spark-client` snap at first:
 
