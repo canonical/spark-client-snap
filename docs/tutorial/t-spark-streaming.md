@@ -2,7 +2,7 @@
 
 Spark comes with a built-in support for streaming workloads via Spark Streaming. Charmed Spark takes it a step further by making it easy to integrate with Kafka using Juju. Kafka is an distributed event-store with a producer/consumer, designed to achieve large throughput while allowing horizontal scalability and high-availability. For more information about Kafka, please refer to [here](https://kafka.apache.org/), and about Spark Streaming, please refer [here](https://spark.apache.org/docs/latest/streaming-programming-guide.html). 
 
-In this section, we are going to generate some streaming data in Kafka, and then process this stream of data in Spark. We are going to use `juju` to deploy a Kafka setup, where a Juju charm will generate events to Kafka, and a Spark job will consume these in real time to process it.
+In this section, we are going to generate some streaming data, push it to Kafka, and then consume the stream of data using Spark, producing some aggregation. We are going to use `juju` to deploy both a Kafka cluster as well as a simple Juju charm will generate and push events to Kafka. We will then show how to setup a Spark job to consume events from Kafka in real time and produce some statistics.
 
 First of all, let's start by creating a fresh `juju` model to be used as an experimental workspace.
 
@@ -25,7 +25,7 @@ spark-client.service-account-registry create \
   --properties-file properties.conf
 ```
 
-Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using [`zookeeper-k8s`](https://github.com/canonical/zookeeper-k8s-operator) and [`kafka-k8s`](https://charmhub.io/kafka-k8s) charms. Single units of these charms running in our model should be enough.
+Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using [`zookeeper-k8s`](https://github.com/canonical/zookeeper-k8s-operator) and [`kafka-k8s`](https://charmhub.io/kafka-k8s) charms. Although this setup is not highly-available, using single units for both should be enough to understand the underlying concepts.
 
 ```bash
 # Deploy Zookeper
@@ -76,7 +76,7 @@ kafka-k8s/0*      active    idle   10.1.29.184
 zookeeper-k8s/0*  active    idle   10.1.29.182 
 ```
 
-As you can see, both Kafka and Zookeeper charms are in "active" status. However, it can take some amount of time before the app and units are finally transitioned to active state.
+As you can see, both Kafka and Zookeeper charms are in "active" status. However, it can take some amount of time before the app and units are finally transitioned to active/idle state.
 
 For us to experiment with the streaming feature, we would want some sample streaming data to be generated in Kafka continuously in real time. For that, we can use the `kafka-test-app` charm as a producer of events. 
 
@@ -303,7 +303,7 @@ We can view the status of the pods with the following command in a new shell:
 watch -n1 "kubectl get pods -n spark-streaming | grep 'spark-streaming-.*-driver' "
 ```
 
-The results are that are written to the console in the program we wrote earlier are actually written to the pod logs. To fetch the pod logs, we first need to know the name of the driver pod. Let's find the name of the driver pod and then fetch pod logs as:
+The streaming output - directed to the console - are there being written to the pod logs. To fetch the pod logs, we first need to know the name of the driver pod. Let's find its name to then fetch the logs as:
 
 
 ```bash
@@ -312,7 +312,7 @@ pod_name=$(kubectl get pods -n spark-streaming | grep "spark-streaming-.*-driver
 kubectl logs -n spark-streaming -f $pod_name | grep "Batch: " -A 10 # filter out line starting with "Batch: " and next 10 lines after that line
 ```
 
-The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you observe carefully, you can see that new logs are appended every ten seconds, including the results containing the number of events grouped by the origin similar to the following:
+The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you observe carefully, you can see that new logs are appended every roughly ten seconds, including the results containing the number of events grouped by the origin, similar to the following:
 
 
 ```
@@ -331,4 +331,4 @@ The option `-f` will tail the pod logs until `Ctrl + C` keys are pressed. If you
 
 Bravo! We were successful in processing streaming data with Charmed Spark solution.
 
-In the next section, we will learn to monitor the status of the job using Spark History Server and the Canonical Observability Stack.
+In the next section, we will learn how to monitor the status of the job using Spark History Server and the Canonical Observability Stack.

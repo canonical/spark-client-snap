@@ -1,6 +1,6 @@
 # Monitoring the Spark cluster
 
-By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which gets lost if the pods are deleted. Spark provides us with the feature to store these logs in S3 so that they can later be retrieved and visualized.
+By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which are lost oncepods are deleted. Spark provides us with the feature to store these logs in a persistent object storage, like S3, so that they can later be retrieved and visualized by a componed named Spark History server.
 
 Charmed Spark provides native support and integration for two monitoring systems:
 1. Using Spark History Server, which is a UI that most Spark users are accustomed to, to analyze their jobs, at a more business level (e.g. jobs separated by the different steps and so on). Spark History server does not support authentication yet.
