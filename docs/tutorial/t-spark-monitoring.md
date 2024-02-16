@@ -2,7 +2,7 @@
 
 By default, Spark stores the logs of drivers and executors as pod logs in the local file system, which gets lost if the pods are deleted. Spark provides us with the feature to store these logs in S3 so that they can later be retrieved and visualized.
 
-Monitoring of Spark cluster can be done in two ways,
+Charmed Spark provides native support and integration for two monitoring systems:
 1. Using Spark History Server 
 2. Using Canonical Observability Stack (COS)
 
