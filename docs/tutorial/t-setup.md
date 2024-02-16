@@ -111,7 +111,7 @@ export S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.
 export S3_BUCKET="spark-tutorial"
 ```
 
-The MinIO add-on also provides with a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. Let's fetch the MinIO web interface URL as follows:
+The MinIO add-on offers access to a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. Let's fetch the MinIO web interface URL as follows:
 
 ```bash
 MINIO_UI_IP=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.clusterIP}')
