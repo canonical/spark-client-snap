@@ -96,11 +96,11 @@ addons:
 
 ### Setup MinIO
 
-Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. Let's enable the `minio` addon for MicroK8s.
+Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. 
 
+Let's enable the `minio` addon for MicroK8s.
 ```bash
 sudo microk8s enable minio
-```
 
 For Spark to be able to access the local S3 bucket, we'll need to authenticate to MinIO using an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled. Let's fetch these credentials and export them as environment variables in order to use them later.
 
