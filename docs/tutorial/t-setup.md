@@ -1,4 +1,4 @@
-## Setup Environment for the Tutorial
+## Set up the environment for the tutorial
 
 
 ### Minimum requirements
