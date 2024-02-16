@@ -196,7 +196,7 @@ spark-tutorial*  -      admin  superuser  microk8s/localhost       1      1   - 
 
 ### Setup spark-client snap and service accounts
 
-When Spark jobs are run on top of Kubernetes, a set of Kubernetes resources like service account, associated roles, role bindings etc. need to be created and configured. Luckily, we have a `spark-client` snap as part of Charmed Spark solution to do all of that. Let's install the `spark-client` snap at first:
+When Spark jobs are run on top of Kubernetes, a set of resources like service account, associated roles, role bindings etc. need to be created and configured. To simplify this task, the Charmed Spark solution offers the `spark-client`. Let's install the `spark-client` snap at first:
 
 ```bash
 sudo snap install spark-client --channel 3.4/edge
