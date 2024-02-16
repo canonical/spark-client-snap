@@ -159,7 +159,7 @@ aws s3 ls
 With the access key, secret key and the endpoint properly configured, you should `spark-tutorial` bucket listed in the output.
 
 
-### Setup Juju
+### Set up Juju
 
 Juju is an Operator Lifecycle Manager (OLM) for clouds, bare metal, LXD or Kubernetes. We'll use `juju` to deploy and manage the Spark History Server and a number of other applications later to be integrated with Spark. Let's therefore let's install and configure a `juju` client using a snap.
 
