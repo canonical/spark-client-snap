@@ -104,8 +104,9 @@ Let's enable the `minio` addon for MicroK8s.
 ```bash
 sudo microk8s enable minio
 
-For Spark to be able to access the local S3 bucket, we'll need to authenticate to MinIO using an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled. Let's fetch these credentials and export them as environment variables in order to use them later.
+For Spark to be able to access the local S3 bucket, we'll need to authenticate to MinIO using an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled. 
 
+Let's fetch these credentials and export them as environment variables in order to use them later.
 ```bash
 export ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
 export SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
