@@ -91,7 +91,7 @@ Since Spark is a distributed processing framework, we can split up this task and
 128
 ```
 
-Here, we parallelize the the tax into two executors (passed as an argument to `parallelize` function), where each line is processed by an executor pod. The number of vowels in each line is then added up to calculate the total number of occurrences of vowel characters in the string. This kind of parallelization of task is particularly useful in processing very large data sets which helps in reducing the processing time significantly.
+Here, we split the data into the two executors (passed as an argument to `parallelize` function), generating a distributed data structure, e.g. RDD[str], where each line is stored in one of the (possibly many) executors. The number of vowels in each line is then computed, line by line, with the `map` function, and then the numbers are aggregated and added up to calculate the total number of occurrences of vowel characters in the entire dataset. This kind of parallelization of task is particularly useful in processing very large data sets which helps in reducing the processing time significantly, and it is generally referred as the MapReduce pattern.
 
 To exit from PySpark shell, you can simply run `exit()` or press `Ctrl` + Z key combination.
 
