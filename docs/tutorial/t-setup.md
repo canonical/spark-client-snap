@@ -78,6 +78,7 @@ sudo microk8s enable storage hostpath-storage
 sudo apt install -y jq
 IPADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 sudo microk8s enable metallb:$IPADDR-$IPADDR
+```
 
 Once done, the list of enabled addons can be seen via `microk8s status --wait-ready` command. The output of the command should look similar to the following:
 
@@ -98,11 +99,12 @@ addons:
 
 ### Setup MinIO
 
-Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library `minio`, an add-on for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. 
+Spark can be configured to use S3 for object storage. However for simplicity, instead of using AWS S3, we're going to use an S3 compliant object storage library [`minio`](https://min.io/), an [add-on](https://microk8s.io/docs/addon-minio) for which is shipped by default in `microk8s` installation. Using MinIO, we can have an S3 compliant bucket created locally which is more convinient than AWS S3 for experimentation purposes. 
 
 Let's enable the `minio` addon for MicroK8s.
 ```bash
 sudo microk8s enable minio
+```
 
 Authentication with MinIO is managed with an access key and a secret key. These credentials are generated and stored as Kubernetes secret when the `minio` add-on is enabled.
 

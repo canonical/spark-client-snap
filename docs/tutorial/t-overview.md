@@ -16,5 +16,6 @@ This tutorial can be divided into the following sections:
 
 While this tutorial intends to guide and teach you along the way, it will be most beneficial if you already have a familiarity with:
 * Basic terminal commands.
+* General familiarity with Kubernetes commands and concepts (e.g. `kubectl` general usage)
 
 Let's proceed to set up the environment needed for this tutorial in the next section.
