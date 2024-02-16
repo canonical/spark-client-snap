@@ -28,7 +28,7 @@ spark-client.service-account-registry create \
   --properties-file properties.conf
 ```
 
-Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using [`zookeeper-k8s`](https://github.com/canonical/zookeeper-k8s-operator) and [`kafka-k8s`](https://charmhub.io/kafka-k8s) charms. Single units of these charms running in our model should be enough.
+Now, let's create a minimal Kafka and Zookeeper setup. This can be done both easily and quickly using [`zookeeper-k8s`](https://github.com/canonical/zookeeper-k8s-operator) and [`kafka-k8s`](https://charmhub.io/kafka-k8s) charms. Although this setup is not highly-available, using single units for both should be enough to understand the underlying concepts.
 
 ```bash
 # Deploy Zookeper
