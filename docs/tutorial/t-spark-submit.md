@@ -36,7 +36,7 @@ spark.stop()
 
 We've added a few more lines to what we've executed so far. The Spark session, which would be available by default in a PySpark shell, needs to be explicitly created. Also, we've added `spark.stop` at the end of the file to stop the Spark session after completion of the job.
 
-Let's save the aforementioned script in a file named `count_vowels.py`. Once saved, let's copy it to the S3 bucket because it needs to accessible to all executor pods that will process the task. Copying the file to the S3 bucket can be done by the following command.
+Let's save the aforementioned script in a file named `count_vowels.py`. Once saved, let's copy it to the S3 bucket because it needs to be accessible to pods in kubernetes. In fact, when submitting the job, the driver won't be running in the local machine but on a K8s pod, hence the script needs to be downloaded and then executed remotely in a dedicated Pod. Copying the file to the S3 bucket can be done by the following command.
 
 ```bash
 aws s3 cp count_vowels.py s3://spark-tutorial/count_vowels.py
