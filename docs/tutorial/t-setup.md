@@ -65,17 +65,19 @@ Let's generate the Kubernetes configuration file using MicroK8s and write it to 
 microk8s config | tee ~/.kube/config
 ```
 
-Now let's enable a few addons for using features like role based access control, load balancing and usage of local volume for storage.
+Now let's enable a few addons for using features like role based access control, usage of local volume for storage, and load balancing
 
 ```bash
-sudo microk8s enable rbac storage hostpath-storage
+# Enable rbac
+sudo microk8s enable rbac
 
+# Enable storage
+sudo microk8s enable storage hostpath-storage
+
+# Enabling metallb for load balancing
 sudo apt install -y jq
-
-# Get IP address
 IPADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
 sudo microk8s enable metallb:$IPADDR-$IPADDR
-```
 
 Once done, the list of enabled addons can be seen via `microk8s status --wait-ready` command. The output of the command should look similar to the following:
 
