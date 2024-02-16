@@ -42,7 +42,7 @@ pysparkshell-xxxxxxxxxxxxxxxx-exec-1              1/1     Running            0  
 pysparkshell-xxxxxxxxxxxxxxxx-exec-2              1/1     Running            0          xs
 ```
 
-As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that your commands will be executed. Since we opened the PySpark shell using `spark-client` snap installed in the host machine, the driver program is running in the host machine itself.
+As you can see, PySpark spawned two executor pods within the `spark` namespace. This is the namespace that we provided as a value to `--namespace` argument when launching `pyspark`. It is in these executor pods that the data is cached and the computation will be executed, therefore creating an computational architecture that can horizontally scale to large datasets (BigData). On the other hand, the PySpark shell started by the `spark-client` snap will act as a `driver`, controlling and orchestrating the operations of the executors. More information about the Spark architecture can be found [here](https://spark.apache.org/docs/latest/cluster-overview.html).
 
 One good thing about the shell is that the Spark context and session is already pre-loaded onto the shell and can be easily accessed with variables `sc` and `spark` respectively. This shell is just like a regular Python shell, with Spark context loaded on top of it.
 
