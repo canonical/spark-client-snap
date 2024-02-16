@@ -116,16 +116,24 @@ export S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.
 export S3_BUCKET="spark-tutorial"
 ```
 
-The MinIO add-on offers access to a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. Let's fetch the MinIO web interface URL as follows:
+The MinIO add-on offers access to a Web UI which can be used to interact with the local S3 object storage. For us to be able to open it in the browser, we will need the IP address and port at which the MinIO Web UI is exposed. 
+
+Let's fetch the MinIO web interface URL as follows:
 
 ```bash
 MINIO_UI_IP=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.clusterIP}')
 MINIO_UI_PORT=$(kubectl get service microk8s-console -n minio-operator -o jsonpath='{.spec.ports[0].port}')
 export MINIO_UI_URL=$MINIO_UI_IP:$MINIO_UI_PORT
+```
+
+The MinIO web UI URL is a combination of an IP address and port. Print it by running
+```bash
 echo $MINIO_UI_URL
 ```
 
-On running the command above, you should see a combination of IP address and port. Let's open the URL in a web browser. In the login page that appears, the username is the access key and the password is the secret key we fetched earlier. These credentials can now be viewed simply by `echo`ing the variables `ACCESS_KEY` and `SECRET_KEY`:
+Let's open this URL in a web browser. In the login page, the username is the access key and the password is the secret key we fetched earlier.
+
+These credentials can now be viewed simply by echoing the variables `ACCESS_KEY` and `SECRET_KEY`:
 
 ```bash
 echo $ACCESS_KEY
