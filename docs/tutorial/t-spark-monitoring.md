@@ -101,7 +101,7 @@ The Spark History Server comes with a Web UI for us to view and monitor the jobs
 
 ```bash
 # Deploy traefik charm
-juju deploy traefik-k8s --channel latest/candidate --trust
+juju deploy traefik-k8s --channel latest/stable --trust
 
 # Integrate traefik with spark-history-server-k8s
 juju integrate traefik-k8s spark-history-server-k8s
