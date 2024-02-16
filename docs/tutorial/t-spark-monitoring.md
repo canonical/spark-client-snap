@@ -6,7 +6,7 @@ Monitoring of Spark cluster can be done in two ways,
 1. Using Spark History Server 
 2. Using Canonical Observability Stack (COS)
 
-Let's explore each one of these.
+Let's explore each one of these options.
 
 ### Monitoring with Spark History Server
 
