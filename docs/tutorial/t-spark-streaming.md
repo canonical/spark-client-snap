@@ -81,8 +81,9 @@ zookeeper-k8s/0*  active    idle   10.1.29.182
 
 As you can see, both Kafka and Zookeeper charms are in "active" status. However, it can take some amount of time before the app and units are finally transitioned to active state.
 
-For us to experiment with the streaming feature, we would want some sample streaming data to be generated in Kafka continuously in real time. For that, we can use the `kafka-test-app` charm as a producer of events. Let's deploy the charm, and integrate it with `kafka-k8s` so that it is able to write messages to Kafka.
+For us to experiment with the streaming feature, we would want some sample streaming data to be generated in Kafka continuously in real time. For that, we can use the `kafka-test-app` charm as a producer of events. 
 
+Let's deploy the charm, and integrate it with `kafka-k8s` so that it is able to write messages to Kafka.
 ```bash
 juju deploy kafka-test-app --series=jammy --channel=edge --config role=producer --config topic_name=spark-streaming-store --config num_messages=100000
 
