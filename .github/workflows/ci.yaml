@@ -49,9 +49,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-
       - name: Run Integration Tests
         run: |
           sg microk8s -c "make integration-tests"
