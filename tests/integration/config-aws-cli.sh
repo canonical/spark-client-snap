@@ -3,14 +3,21 @@
 # Install AWS CLI
 sudo snap install aws-cli --classic
 
-newgrp microk8s
-
 # Get Access key and secret key from MinIO
 ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
 SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
 
-# Get S3 endpoint from MinIO
-S3_ENDPOINT=$(kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}')
+get_s3_endpoint(){
+    # Get S3 endpoint from MinIO
+    kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}'
+}
+
+# Wait for `minio` service to be ready and S3 endpoint to be available
+until get_s3_endpoint; do
+    sleep 5
+done
+
+S3_ENDPOINT=$(get_s3_endpoint)
 
 DEFAULT_REGION="us-east-2"
 
