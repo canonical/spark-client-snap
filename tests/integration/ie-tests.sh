@@ -579,7 +579,7 @@ setup_tests
 
 # (setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
 
-# setup_test_pod
+setup_test_pod
 
 # (setup_user_admin_context && test_example_job_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
@@ -591,4 +591,4 @@ setup_tests
 
 # (setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
-# teardown_test_pod
+teardown_test_pod

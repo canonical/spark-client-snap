@@ -53,9 +53,6 @@ jobs:
         run: |
           make microk8s
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-
       - name: Run Integration Tests
         run: |
           sg microk8s -c "make integration-tests"
