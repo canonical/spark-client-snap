@@ -593,3 +593,5 @@ setup_tests
 # (setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
 # teardown_test_pod
+
+echo "Completed"
