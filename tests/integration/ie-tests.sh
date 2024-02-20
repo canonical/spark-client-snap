@@ -42,9 +42,8 @@ get_s3_endpoint(){
 
 create_s3_bucket(){
   # Creates a S3 bucket with the given name.
-  S3_ENDPOINT=$(get_s3_endpoint)
   BUCKET_NAME=$1
-  aws s3api create-bucket --bucket "$BUCKET_NAME"
+  aws s3 mb "s3://$BUCKET_NAME"
   echo "Created S3 bucket ${BUCKET_NAME}"
 }
 
