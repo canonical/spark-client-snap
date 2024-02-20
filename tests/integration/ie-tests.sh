@@ -230,6 +230,10 @@ run_spark_sql() {
   NAMESPACE=$1
   USERNAME=$2
 
+  ACCESS_KEY="$(get_s3_access_key)"
+  SECRET_KEY="$(get_s3_secret_key)"
+  S3_ENDPOINT="$(get_s3_endpoint)"
+
   # First create S3 bucket named 'test'
   create_s3_bucket test
 
@@ -584,7 +588,7 @@ setup_tests
 
 # (setup_user_admin_context && test_pyspark_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
-# (setup_user_admin_context && test_spark_sql_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
+(setup_user_admin_context && test_spark_sql_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
 # (setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
