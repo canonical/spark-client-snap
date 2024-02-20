@@ -52,3 +52,6 @@ jobs:
       - name: Run Integration Tests
         run: |
           make integration-tests
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
