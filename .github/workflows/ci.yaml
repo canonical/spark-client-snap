@@ -49,6 +49,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup MicroK8s
+        run: |
+          make microk8s
+
       - name: Run Integration Tests
         run: |
           sg microk8s -c "make integration-tests"
