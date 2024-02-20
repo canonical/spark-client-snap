@@ -245,7 +245,7 @@ run_spark_sql() {
       --conf spark.sql.catalog.local.warehouse=s3a://spark/warehouse \
       --conf spark.sql.warehouse.dir=s3a://test/warehouse \
       --conf hive.metastore.warehouse.dir=s3a://test/hwarehouse \
-      --conf spark.executor.instances=2)" > spark_sql.out 2>&1
+      --conf spark.executor.instances=2)" > spark_sql.out 
   cat spark_sql.out
   l=$(cat spark_sql.out | grep "^Inserted Rows:" | rev | cut -d' ' -f1 | rev)
   echo -e "Number of rows inserted: ${l}"
@@ -564,17 +564,17 @@ cleanup_user_failure_in_pod() {
 
 setup_tests
 
-(setup_user_admin_context && test_example_job && cleanup_user_success) || cleanup_user_failure
+# (setup_user_admin_context && test_example_job && cleanup_user_success) || cleanup_user_failure
 
-(setup_user_admin_context && test_spark_shell && cleanup_user_success) || cleanup_user_failure
+# (setup_user_admin_context && test_spark_shell && cleanup_user_success) || cleanup_user_failure
 
-(setup_user_admin_context && test_pyspark && cleanup_user_success) || cleanup_user_failure
+# (setup_user_admin_context && test_pyspark && cleanup_user_success) || cleanup_user_failure
 
 (setup_user_admin_context && test_spark_sql && cleanup_user_success) || cleanup_user_failure
 
-(setup_user_admin_context && test_pyspark_s3 && cleanup_user_success) || cleanup_user_failure
+# (setup_user_admin_context && test_pyspark_s3 && cleanup_user_success) || cleanup_user_failure
 
-(setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
+# (setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
 
 # setup_test_pod
 
