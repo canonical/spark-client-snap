@@ -14,6 +14,7 @@ get_s3_endpoint(){
 
 # Wait for `minio` service to be ready and S3 endpoint to be available
 until get_s3_endpoint &> /dev/null ; do
+    echo "Waiting for minio service to be up and running..."
     sleep 5
 done
 
