@@ -3,6 +3,8 @@
 # Install AWS CLI
 sudo snap install aws-cli --classic
 
+newgrp microk8s
+
 # Get Access key and secret key from MinIO
 ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
 SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
