@@ -5,3 +5,5 @@ __pycache__
 .vscode
 env/
 *.snap
+derby.log
+metastore_db/
