@@ -21,12 +21,13 @@ Spark Client Snap is an official distribution of Apache Spark. It’s an open-so
 |-------|--------------------------------|----------------------------------------------------------------------------------------------------------------------|
 | 1     | overview                       | [Overview](/t/spark-client-snap-documentation/8963)                                                                  | 
 | 1     | tutorial                       | [Tutorial]()                                                                                                         |
-| 2     | t-overview                     | [1. Introduction](/t/spark-client-snap-tutorial/8957)                                                                |
-| 2     | t-setup-environment            | [2. Set up the environment](/t/spark-client-snap-tutorial-setup-environment/8951)                                    |
-| 2     | t-spark-service-accounts       | [3. Manage Spark service accounts](/t/spark-client-snap-tutorial-setup-environment/8952)                             |
-| 2     | t-spark-job                    | [4. Submit a Spark Job](/t/spark-client-snap-tutorial-spark-submit/8953)                                             |
-| 2     | t-spark-shells                 | [5. Use interactive shells](/t/spark-client-snap-tutorial-interactive-mode/8954)                                     |
-| 2     | t-tips-and-tricks              | [6. Tips and Tricks](/t/spark-client-snap-tutorial-common-gotchas/8955)                                              |
+| 2     | t-overview                     | [1. Introduction](/t/charmed-spark-documentation-tutorial-introduction/13234)                                                                |
+| 2     | t-setup-environment            | [2. Set up the environment for the tutorial](/t/charmed-spark-documentation-tutorial-setup-environment/13233)        |
+| 2     | t-spark-shell                  | [2. Interacting with Spark using Interactive Shell](/t/charmed-spark-documentation-tutorial-spark-shell/13232)       |
+| 2     | t-spark-submit                 | [3. Submitting Jobs using Spark Submit](/t/charmed-spark-documentation-tutorial-spark-submit/13231)                  |
+| 2     | t-spark-streaming              | [4. Streaming workloads with Charmed Spark](/t/charmed-spark-documentation-tutorial-streaming/13230)                 |
+| 2     | t-spark-monitoring             | [5. Monitoring the Spark cluster](/t/charmed-spark-documentation-tutorial-monitoring/13225)                          |
+| 2     | t-wrapping-up                  | [6. Wrapping Up](/t/charmed-spark-documentation-tutorial-wrapping-up/13224)                                          |
 | 1     | how-to                         | [How To]()                                                                                                           |
 | 2     | h-setup-k8s                    | [Setup Environment](/t/charmed-spark-k8s-documentation-how-to-setup-k8s-environment/11618)                           |
 | 2     | h-manage-service-accounts      | [Manage Service Accounts](/t/spark-client-snap-how-to-manage-spark-accounts/8959)                                    |
