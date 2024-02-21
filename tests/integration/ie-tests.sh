@@ -70,6 +70,18 @@ copy_file_to_s3_bucket(){
   echo "Copied file ${FILE_PATH} to S3 bucket ${BUCKET_NAME}"
 }
 
+list_s3_bucket(){
+  # List files in a bucket.
+  # The bucket name and the path to file that is to be uploaded is to be provided as arguments
+  BUCKET_NAME=$1
+
+  S3_ENDPOINT=$(get_s3_endpoint)
+
+  # List files in the S3 bucket
+  aws --endpoint-url "http://$S3_ENDPOINT" s3 ls s3://"$BUCKET_NAME/"
+  echo "Listed files for bucket: ${BUCKET_NAME}"
+}
+
 run_example_job() {
 
   KUBE_CONFIG=/home/${USER}/.kube/config
@@ -191,6 +203,8 @@ run_pyspark_s3() {
   # Copy 'example.txt' script to 'test' bucket
   copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
 
+  list_s3_bucket test
+
   echo -e "$(cat ./tests/integration/resources/test-pyspark-s3.py | spark-client.pyspark \
       --username=${USERNAME} \
       --conf spark.kubernetes.container.image=$SPARK_IMAGE \
@@ -206,7 +220,6 @@ run_pyspark_s3() {
   l=$(cat pyspark.out  | grep "Number of lines" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Number of lines: \n ${l}"
   rm pyspark.out
-  delete_s3_bucket test
   validate_file_length $l
 }
 
@@ -495,12 +508,6 @@ run_pyspark_s3_in_pod() {
 
   NAMESPACE=$1
   USERNAME=$2
-
-  # Create bucket
-  create_s3_bucket test
-
-  # Copy example.txt file to the bucket
-  copy_file_to_s3_bucket test ./resources/example.txt
 
   PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark-s3.py)
 
