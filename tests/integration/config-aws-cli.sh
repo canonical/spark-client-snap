@@ -27,9 +27,9 @@ aws configure set aws_access_key_id $ACCESS_KEY
 aws configure set aws_secret_access_key $SECRET_KEY
 aws configure set default.region $DEFAULT_REGION
 aws configure set endpoint_url "http://$S3_ENDPOINT"
-echo "AWS CLI credentials set successfully"
 
 until aws s3 ls &> /dev/null; do
-    echo "Waiting for AWS CLI to work..."
+    echo "Waiting for MinIO credentials to be set..."
     sleep 5
 done
+echo "AWS CLI credentials set successfully"
