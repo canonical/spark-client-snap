@@ -221,7 +221,6 @@ run_spark_sql() {
   S3_ENDPOINT="$(get_s3_endpoint)"
 
   # First create S3 bucket named 'test'
-  sleep 120
   create_s3_bucket test
 
   echo -e "$(cat ./tests/integration/resources/test-spark-sql.sql | spark-client.spark-sql \
