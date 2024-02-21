@@ -9,7 +9,7 @@ SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{
 
 get_s3_endpoint(){
     # Get S3 endpoint from MinIO
-    kubectl get service minioo -n minio-operator -o jsonpath='{.spec.clusterIP}' 
+    kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}' 
 }
 
 # Wait for `minio` service to be ready and S3 endpoint to be available
