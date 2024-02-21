@@ -2,3 +2,9 @@
 .make_cache
 __pycache__
 .coverage
+*.snap
+*.tar
+env/
+.vscode/
+derby.log
+metastore_db/

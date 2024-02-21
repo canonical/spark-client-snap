@@ -42,9 +42,8 @@ get_s3_endpoint(){
 
 create_s3_bucket(){
   # Creates a S3 bucket with the given name.
-  S3_ENDPOINT=$(get_s3_endpoint)
   BUCKET_NAME=$1
-  aws --endpoint-url "http://$S3_ENDPOINT" s3api create-bucket --bucket "$BUCKET_NAME"
+  aws s3 mb "s3://$BUCKET_NAME"
   echo "Created S3 bucket ${BUCKET_NAME}"
 }
 
@@ -52,7 +51,7 @@ delete_s3_bucket(){
   # Deletes a S3 bucket with the given name.
   S3_ENDPOINT=$(get_s3_endpoint)
   BUCKET_NAME=$1
-  aws --endpoint-url "http://$S3_ENDPOINT" s3 rb "s3://$BUCKET_NAME" --force
+  aws s3 rb "s3://$BUCKET_NAME" --force
   echo "Deleted S3 bucket ${BUCKET_NAME}"
 }
 
@@ -69,18 +68,6 @@ copy_file_to_s3_bucket(){
   # Copy the file to S3 bucket
   aws --endpoint-url "http://$S3_ENDPOINT" s3 cp $FILE_PATH s3://"$BUCKET_NAME"/"$BASE_NAME"
   echo "Copied file ${FILE_PATH} to S3 bucket ${BUCKET_NAME}"
-}
-
-list_s3_bucket(){
-  # List files in a bucket.
-  # The bucket name and the path to file that is to be uploaded is to be provided as arguments
-  BUCKET_NAME=$1
-
-  S3_ENDPOINT=$(get_s3_endpoint)
-
-  # List files in the S3 bucket
-  aws --endpoint-url "http://$S3_ENDPOINT" s3 ls s3://"$BUCKET_NAME/"
-  echo "Listed files for bucket: ${BUCKET_NAME}"
 }
 
 run_example_job() {
@@ -204,8 +191,6 @@ run_pyspark_s3() {
   # Copy 'example.txt' script to 'test' bucket
   copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
 
-  list_s3_bucket test
-
   echo -e "$(cat ./tests/integration/resources/test-pyspark-s3.py | spark-client.pyspark \
       --username=${USERNAME} \
       --conf spark.kubernetes.container.image=$SPARK_IMAGE \
@@ -221,7 +206,45 @@ run_pyspark_s3() {
   l=$(cat pyspark.out  | grep "Number of lines" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Number of lines: \n ${l}"
   rm pyspark.out
+  delete_s3_bucket test
   validate_file_length $l
+}
+
+run_spark_sql() {
+  echo "run_spark_sql ${1} ${2}"
+
+  NAMESPACE=$1
+  USERNAME=$2
+
+  ACCESS_KEY="$(get_s3_access_key)"
+  SECRET_KEY="$(get_s3_secret_key)"
+  S3_ENDPOINT="$(get_s3_endpoint)"
+
+  # First create S3 bucket named 'test'
+  create_s3_bucket test
+
+  echo -e "$(cat ./tests/integration/resources/test-spark-sql.sql | spark-client.spark-sql \
+      --username=${USERNAME} --namespace ${NAMESPACE} \
+      --conf spark.kubernetes.container.image=$SPARK_IMAGE \
+      --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+      --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+      --conf spark.hadoop.fs.s3a.path.style.access=true \
+      --conf spark.hadoop.fs.s3a.endpoint=$S3_ENDPOINT \
+      --conf spark.hadoop.fs.s3a.access.key=$ACCESS_KEY \
+      --conf spark.hadoop.fs.s3a.secret.key=$SECRET_KEY \
+      --conf spark.sql.catalog.local.warehouse=s3a://spark/warehouse \
+      --conf spark.sql.warehouse.dir=s3a://test/warehouse \
+      --conf hive.metastore.warehouse.dir=s3a://test/hwarehouse \
+      --conf spark.executor.instances=2)" > spark_sql.out 
+  cat spark_sql.out
+  l=$(cat spark_sql.out | grep "^Inserted Rows:" | rev | cut -d' ' -f1 | rev)
+  echo -e "Number of rows inserted: ${l}"
+  rm spark_sql.out
+  delete_s3_bucket test
+  if [ "$l" != "3" ]; then
+      echo "ERROR: Number of rows inserted: $l, Expected: 3. Aborting with exit code 1."
+      exit 1
+  fi
 }
 
 test_pyspark() {
@@ -230,6 +253,10 @@ test_pyspark() {
 
 test_pyspark_s3() {
   run_pyspark_s3 tests spark
+}
+
+test_spark_sql() {
+  run_spark_sql tests spark
 }
 
 test_restricted_account() {
@@ -418,12 +445,61 @@ run_pyspark_in_pod() {
   validate_pi_value $pi
 }
 
+run_spark_sql_in_pod() {
+  echo "run_spark_sql_in_pod ${1} ${2}"
+
+  NAMESPACE=$1
+  USERNAME=$2
+
+  create_s3_bucket test
+
+  SPARK_SQL_COMMANDS=$(cat ./tests/integration/resources/test-spark-sql.sql)
+
+  echo -e "$(kubectl exec testpod -- \
+    env \
+      UU="$USERNAME" \
+      NN="$NAMESPACE" \
+      CMDS="$SPARK_SQL_COMMANDS" \
+      IM="$SPARK_IMAGE" \
+      ACCESS_KEY="$(get_s3_access_key)" \
+      SECRET_KEY="$(get_s3_secret_key)" \
+      S3_ENDPOINT="$(get_s3_endpoint)" \
+    /bin/bash -c 'echo "$CMDS" | spark-client.spark-sql \
+      --username $UU \
+      --namespace $NN \
+      --conf spark.kubernetes.container.image=$IM \
+      --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+      --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+      --conf spark.hadoop.fs.s3a.path.style.access=true \
+      --conf spark.hadoop.fs.s3a.endpoint=$S3_ENDPOINT \
+      --conf spark.hadoop.fs.s3a.access.key=$ACCESS_KEY \
+      --conf spark.hadoop.fs.s3a.secret.key=$SECRET_KEY \
+      --conf spark.sql.warehouse.dir=s3a://test/warehouse \
+      --conf spark.driver.extraJavaOptions='-Dderby.system.home=/tmp/derby' \
+    ')" > spark_sql.out
+  cat spark_sql.out
+  num_rows=$(cat spark_sql.out  | grep "^Inserted Rows:" | rev | cut -d' ' -f1 | rev )
+  echo -e "Inserted Rows: ${num_rows}"
+  rm spark_sql.out
+  delete_s3_bucket test
+  if [ "$num_rows" != "3" ]; then
+      echo "ERROR: Number of rows inserted: $num_rows, Expected: 3. Aborting with exit code 1."
+      exit 1
+  fi
+}
+
 
 run_pyspark_s3_in_pod() {
   echo "run_pyspark_s3_in_pod ${1} ${2}"
 
   NAMESPACE=$1
   USERNAME=$2
+
+  # Create bucket
+  create_s3_bucket test
+
+  # Copy example.txt file to the bucket
+  copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
 
   PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark-s3.py)
 
@@ -466,6 +542,10 @@ test_pyspark_in_pod() {
   run_pyspark_in_pod tests spark
 }
 
+test_spark_sql_in_pod() {
+  run_spark_sql_in_pod tests spark
+}
+
 test_restricted_account_in_pod() {
 
   kubectl config set-context spark-context --namespace=tests --cluster=prod --user=spark
@@ -486,6 +566,8 @@ setup_tests
 
 (setup_user_admin_context && test_pyspark && cleanup_user_success) || cleanup_user_failure
 
+(setup_user_admin_context && test_spark_sql && cleanup_user_success) || cleanup_user_failure
+
 (setup_user_admin_context && test_pyspark_s3 && cleanup_user_success) || cleanup_user_failure
 
 (setup_user_restricted_context && test_restricted_account && cleanup_user_success) || cleanup_user_failure
@@ -498,8 +580,8 @@ setup_test_pod
 
 (setup_user_admin_context && test_pyspark_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
-(setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
+(setup_user_admin_context && test_spark_sql_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
-#(setup_user_restricted_context && test_restricted_account_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
+(setup_user_admin_context && test_pyspark_s3_in_pod && cleanup_user_success) || cleanup_user_failure_in_pod
 
 teardown_test_pod
