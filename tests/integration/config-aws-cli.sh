@@ -14,7 +14,7 @@ get_s3_endpoint(){
 
 # Wait for `minio` service to be ready and S3 endpoint to be available
 retries=0
-max_retries=20
+max_retries=50
 until [ "$retries" -ge $max_retries ]
 do
     get_s3_endpoint &> /dev/null && break
@@ -39,7 +39,7 @@ aws configure set endpoint_url "http://$S3_ENDPOINT"
 
 
 retries=0
-max_retries=20
+max_retries=50
 until [ "$retries" -ge $max_retries ]
 do
     aws s3 ls &> /dev/null && break
