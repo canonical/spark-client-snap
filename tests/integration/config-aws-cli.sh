@@ -12,21 +12,29 @@ get_s3_endpoint(){
     kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}' 
 }
 
-# Wait for `minio` service to be ready and S3 endpoint to be available
-retries=0
-max_retries=50
-until [ "$retries" -ge $max_retries ]
-do
-    get_s3_endpoint &> /dev/null && break
-    retries=$((retries+1)) 
-    echo "Waiting for minio service to be up and running..."
-    sleep 5
-done
-if [ "$retries" -ge $max_retries ]; then
-    echo "Maximum number of retries ($max_retries) reached. Service 'minio' is not available."
-    exit 1
-fi
+wait_and_retry(){
+    # Retry a command for a number of times by waiting a few seconds.
 
+    command="$@"
+    retries=0
+    max_retries=50
+    until [ "$retries" -ge $max_retries ]
+    do
+        $command &> /dev/null && break
+        retries=$((retries+1)) 
+        echo "Trying to execute command ${command}..."
+        sleep 5
+    done
+
+    # If the command was not successful even on maximum retries
+    if [ "$retries" -ge $max_retries ]; then
+        echo "Maximum number of retries ($max_retries) reached. ${command} returned with non zero status."
+        exit 1
+    fi
+}
+
+# Wait for `minio` service to be ready and S3 endpoint to be available
+wait_and_retry get_s3_endpoint
 S3_ENDPOINT=$(get_s3_endpoint)
 
 DEFAULT_REGION="us-east-2"
@@ -37,19 +45,5 @@ aws configure set aws_secret_access_key $SECRET_KEY
 aws configure set default.region $DEFAULT_REGION
 aws configure set endpoint_url "http://$S3_ENDPOINT"
 
-
-retries=0
-max_retries=50
-until [ "$retries" -ge $max_retries ]
-do
-    aws s3 ls &> /dev/null && break
-    retries=$((retries+1)) 
-    echo "Waiting for MinIO credentials to be set..."
-    sleep 5
-done
-if [ "$retries" -ge $max_retries ]; then
-    echo "Maximum number of retries ($max_retries) reached. AWS CLI credentials could not be set."
-    exit 1
-fi
-
+wait_and_retry aws s3 ls
 echo "AWS CLI credentials set successfully"
