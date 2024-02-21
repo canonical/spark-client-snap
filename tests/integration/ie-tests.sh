@@ -500,7 +500,7 @@ run_pyspark_s3_in_pod() {
   create_s3_bucket test
 
   # Copy example.txt file to the bucket
-  copy_file_to_s3_bucket test ./resources/example.txt
+  copy_file_to_s3_bucket test ./tests/integration/resources/example.txt
 
   PYSPARK_COMMANDS=$(cat ./tests/integration/resources/test-pyspark-s3.py)
 
