@@ -8,6 +8,11 @@ description: |
 grade: stable
 confinement: strict
 
+hooks:
+  install:
+    plugs: 
+      - home
+
 plugs:
   dot-kube-config:
     interface: personal-files
@@ -40,18 +45,20 @@ apps:
         - home
         - dot-kube-config
   spark-shell:
-    command: lib/python3.10/site-packages/spark8t/cli/spark_shell.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_shell.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
     plugs:
         - network
         - network-bind
         - home
         - dot-kube-config
   pyspark:
-    command: lib/python3.10/site-packages/spark8t/cli/pyspark.py
+    command: lib/python3.10/site-packages/spark8t/cli/pyspark.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
     plugs:
         - network
         - network-bind
@@ -67,7 +74,7 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.3/spark8t-0.0.3-py3-none-any.whl
+        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.4/spark8t-0.0.4-py3-none-any.whl
     source: .
     build-packages:
         - python3
