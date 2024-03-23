@@ -37,9 +37,11 @@ apps:
         - home
         - dot-kube-config
   spark-submit:
-    command: lib/python3.10/site-packages/spark8t/cli/spark_submit.py
+    command: lib/python3.10/site-packages/spark8t/cli/spark_submit.py $SPARK8T_EXTRA_CONF
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
+      SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA"
+      _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA -Djavax.net.ssl.trustStore=$SNAP_DATA/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     plugs:
         - network
         - home
@@ -75,16 +77,31 @@ apps:
         - home
         - dot-kube-config
 
+  import-certificate:
+    command: etc/spark8t/bin/import-certificate.sh
+    environment:
+      _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA"
+    plugs:
+        - network
+        - network-bind
+        - home
+        - dot-kube-config
+
 parts:
 
   spark8t-conf:
     plugin: dump
     source: snap/local
+    override-prime: |
+      craftctl default
+      chmod +x etc/spark8t/bin/import-certificate.sh
+      mkdir -p home/ubuntu
+      chmod u+x home/ubuntu/
 
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.5/spark8t-0.0.5-py3-none-any.whl
+        -  git+https://github.com/canonical/spark-k8s-toolkit-py.git@dpe-3519
     source: .
     build-packages:
         - python3
@@ -105,8 +122,8 @@ parts:
         - openjdk-11-jre-headless
     override-build: |
         SPARK_HADOOP_VERSION='3'
-        AWS_JAVA_SDK_BUNDLE_VERSION='1.11.874'
-        HADOOP_AWS_VERSION='3.2.2'
+        AWS_JAVA_SDK_BUNDLE_VERSION='1.12.540'
+        HADOOP_AWS_VERSION='3.3.6'
         SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
         TAG=$( echo ${SPARK_VERSION%-*} )
         TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
@@ -130,6 +147,11 @@ parts:
         fi
         tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
         cd "spark-${SPARK_VERSION}-bin-k8s/jars"
+
+        # remove old version of the libraries
+        rm aws-java-sdk-bundle-*.jar
+        rm hadoop-aws-*.jar
+
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
         wget "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1"        
         echo "`cat aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar.sha1`  aws-java-sdk-bundle-${AWS_JAVA_SDK_BUNDLE_VERSION}.jar" | sha1sum --check
@@ -146,6 +168,8 @@ parts:
             echo "DOWNLOAD ERROR: hadoop-aws-${HADOOP_AWS_VERSION}.jar could not be downloaded properly! Exiting...."
             exit 1
         fi
+
+        rm *.jar.sha1
         cd ..
         SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
         mkdir -p $SPARK_DIR/bin
@@ -157,8 +181,10 @@ parts:
 
     override-prime: |
         snapcraftctl prime
-        rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs
-
+        rm -vf usr/lib/jvm/java-11-openjdk-*/lib/security/blacklisted.certs 
+        mv etc/ssl/certs/java/cacerts etc/cacerts
+        # ln -s /var/snap/spark-client/current/etc/ssl/certs/java/cacerts etc/ssl/certs/java/cacerts
+        # ln -sf $SNAP_DATA/etc/ssl/certs/java/cacerts etc/ssl/certs/java/cacerts
   kubectl:
     plugin: nil
     build-packages:
