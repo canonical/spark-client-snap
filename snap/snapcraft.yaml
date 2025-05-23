@@ -134,7 +134,7 @@ parts:
       TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
       CHECKSUM_URL="${TARBALL_URL}.sha512"
 
-      STATUSCODE=$(curl --silent --head $TARBALL_URL | head -n 1 | cut -d' ' -f2)
+      STATUSCODE=$(curl -o /dev/null -s -w "%{http_code}\n" $TARBALL_URL)
 
       if  [[ ${STATUSCODE} -gt 400 ]]
         then
