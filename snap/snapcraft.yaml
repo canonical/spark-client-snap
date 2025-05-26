@@ -1,6 +1,6 @@
 name: spark-client
 base: core22
-version: "3.5.1"
+version: "3.5.4"
 summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
@@ -89,7 +89,7 @@ apps:
       - dot-kube-config
 
   beeline:
-    command: /opt/kyuubi/bin/kyuubi-beeline
+    command: /opt/spark/bin/beeline
     environment:
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA"
     plugs:
@@ -165,41 +165,6 @@ parts:
       rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/blacklisted.certs
       # move base certs data
       mv etc/ssl/certs/java/cacerts etc/cacerts
-
-  kyuubi-beeline:
-    plugin: nil
-    build-packages:
-      - wget
-    override-build: |
-      KYUUBI_ARTIFACT="https://dlcdn.apache.org/kyuubi/kyuubi-1.10.1/apache-kyuubi-1.10.1-bin.tgz"
-      KYUUBI_512_CHECKSUM="9b565bb7c628a50ecd394741eedb9a5154590709603e26f81de88ffd3b5256603215e71160de61360b8f2e2842116026c2f9ed3a60a8f0356388e3dd2c00b84c"
-      KYUUBI_TARFILE="kyuubi.tar.tgz"
-
-      # Download and verify Kyuubi
-      wget -O $KYUUBI_TARFILE $KYUUBI_ARTIFACT
-      echo "$KYUUBI_512_CHECKSUM  $KYUUBI_TARFILE" | sha512sum -c -
-
-      # Create the target directories and extract the tarball for Kyuubi
-      KYUUBI_DIR=$CRAFT_PART_INSTALL/opt/kyuubi
-      mkdir -p $KYUUBI_DIR/bin
-      mkdir -p $KYUUBI_DIR/logs
-      mkdir -p $KYUUBI_DIR/work
-      mkdir -p $KYUUBI_DIR/pid
-      mkdir -p $KYUUBI_DIR/externals/kyuubi-download/target
-      mkdir kyuubi
-      tar -xzvf $KYUUBI_TARFILE -C kyuubi/ --strip-components=1
-
-      # Resolve beeline jars symlinks, save ~50MB compared to copying kyuubi jars folder
-      for f in $(find kyuubi/beeline-jars -maxdepth 1 -type l)
-      do
-          cp --remove-destination $(readlink -e $f) $f
-      done
-
-      # Stage beeline files
-      cp -r kyuubi/beeline-jars $KYUUBI_DIR
-      cp kyuubi/bin/kyuubi-beeline $KYUUBI_DIR/bin
-      cp kyuubi/bin/load-kyuubi-env.sh $KYUUBI_DIR/bin
-      chmod -R +x $KYUUBI_DIR/bin
 
   kubectl:
     plugin: nil
