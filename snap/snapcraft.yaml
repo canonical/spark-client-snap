@@ -154,6 +154,7 @@ parts:
       cd "spark-${SPARK_VERSION}-bin-k8s/"
       SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
       mkdir -p $SPARK_DIR/bin
+      rm bin/beeline
       cp -r bin/* $SPARK_DIR/bin
       mkdir -p $SPARK_DIR/jars
       cp -r jars/* $SPARK_DIR/jars
