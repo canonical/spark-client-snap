@@ -8,8 +8,9 @@ description: |
 grade: stable
 confinement: strict
 
-platforms:
-  amd64:
+architectures:
+  - build-on: [amd64]
+    build-for: [amd64]
   
 hooks:
   install:
