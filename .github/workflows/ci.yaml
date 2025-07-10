@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     needs:
-      - lint
       - build
     steps:
       - name: Download snap file
