@@ -8,10 +8,6 @@ on:
         value: ${{ jobs.build.outputs.snap-file }}
 
 jobs:
-  lint:
-    name: Lint
-    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v32.0.0
-
   build:
     name: Build snap
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
