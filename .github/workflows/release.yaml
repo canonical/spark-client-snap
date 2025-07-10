@@ -42,6 +42,9 @@ jobs:
   build:
     name: Build snap
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
+    with:
+      path-to-snap-project-directory: snap
+
 
   release:
     name: Release snap
