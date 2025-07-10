@@ -22,9 +22,9 @@ jobs:
       - name: Download snap file
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.artifact-prefix }}
-          path: .
-
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
+          merge-multiple: true
+          
       - name: Install snap file
         run: |
           sudo snap install ${{ needs.build.outputs.artifact-prefix }} --dangerous
