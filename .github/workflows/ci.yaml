@@ -8,43 +8,31 @@ on:
         value: ${{ jobs.build.outputs.snap-file }}
 
 jobs:
+  lint:
+    name: Lint
+    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v32.0.0
+
   build:
-    name: Build Snap
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30 
-    outputs:
-      snap-file: ${{ steps.build-snap.outputs.snap }}
-    steps:
-      - id: checkout
-        name: Checkout repo
-        uses: actions/checkout@v4
-      - id: build-snap
-        name: Build snap
-        uses: snapcore/action-build@v1
-        with:
-          snapcraft-channel: 8.x/stable
-      - id: upload
-        name: Upload built snap job artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build-snap.outputs.snap }}
-          path: ${{ steps.build-snap.outputs.snap }}
+    name: Build snap
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
 
   test:
     name: Test Snap
     runs-on: ubuntu-22.04
     timeout-minutes: 90
-    needs: build
+    needs:
+      - lint
+      - build
     steps:
       - name: Download snap file
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.snap-file }}
+          name: ${{ needs.build.outputs.artifact-prefix }}
           path: .
 
       - name: Install snap file
         run: |
-          sudo snap install ${{ needs.build.outputs.snap-file }} --dangerous
+          sudo snap install ${{ needs.build.outputs.artifact-prefix }} --dangerous
 
       - name: Checkout repo
         uses: actions/checkout@v4

@@ -40,26 +40,19 @@ jobs:
       risk: ${{ steps.branch_metadata.outputs.risk }}
 
   build:
-    uses: ./.github/workflows/ci.yaml
-    secrets: inherit
+    name: Build snap
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
 
-  publish:
-    name: Publish Snap
-    runs-on: ubuntu-22.04
-    timeout-minutes: 15
+  release:
+    name: Release snap
     needs:
       - build
       - release_checks
-    steps:
-      - name: Download built snap file
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build.outputs.snap-file }}
-          path: .
-      - name: Publish built snap to Store
-        uses: snapcore/action-publish@v1
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.STORE_LOGIN }}
-        with:
-          snap: ${{ needs.build.outputs.snap-file }}
-          release: ${{ needs.release_checks.outputs.track }}/${{ needs.release_checks.outputs.risk }}
+    uses: canonical/data-platform-workflows/.github/workflows/release_snap.yaml@v32.0.0
+    with:
+      channel: ${{ needs.release_checks.outputs.track }}/${{ needs.release_checks.outputs.risk }}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+    secrets:
+      snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
+    permissions:
+      contents: write  # Needed to create GitHub release
