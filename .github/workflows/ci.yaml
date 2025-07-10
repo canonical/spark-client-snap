@@ -27,7 +27,8 @@ jobs:
           
       - name: Install snap file
         run: |
-          sudo snap install ${{ needs.build.outputs.artifact-prefix }} --dangerous
+          FILE=$(ls -1 *.snap | tail -n1)
+          sudo snap install $FILE --dangerous
 
       - name: Checkout repo
         uses: actions/checkout@v4
