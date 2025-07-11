@@ -9,40 +9,26 @@ on:
 
 jobs:
   build:
-    name: Build Snap
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30 
-    outputs:
-      snap-file: ${{ steps.build-snap.outputs.snap }}
-    steps:
-      - id: checkout
-        name: Checkout repo
-        uses: actions/checkout@v4
-      - id: build-snap
-        name: Build snap
-        uses: snapcore/action-build@v1
-      - id: upload
-        name: Upload built snap job artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build-snap.outputs.snap }}
-          path: ${{ steps.build-snap.outputs.snap }}
+    name: Build snap
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
 
   test:
     name: Test Snap
     runs-on: ubuntu-22.04
     timeout-minutes: 90
-    needs: build
+    needs:
+      - build
     steps:
       - name: Download snap file
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.snap-file }}
-          path: .
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
+          merge-multiple: true
 
       - name: Install snap file
         run: |
-          sudo snap install ${{ needs.build.outputs.snap-file }} --dangerous
+          FILE=$(ls -1 *.snap | tail -n1)
+          sudo snap install $FILE --dangerous
 
       - name: Checkout repo
         uses: actions/checkout@v4
