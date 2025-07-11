@@ -93,7 +93,7 @@ apps:
       - dot-kube-config
 
   beeline:
-    command: /opt/spark/bin/beeline
+    command: opt/spark/bin/beeline
     environment:
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA"
     plugs:
