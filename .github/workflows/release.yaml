@@ -43,7 +43,6 @@ jobs:
     name: Build snap
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
 
-
   release:
     name: Release snap
     needs:
@@ -56,4 +55,4 @@ jobs:
     secrets:
       snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
     permissions:
-      contents: write  # Needed to create GitHub release
+      contents: write # Needed to create GitHub release
