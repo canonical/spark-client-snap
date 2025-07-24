@@ -24,7 +24,7 @@ jobs:
         with:
           pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
-          
+
       - name: Install snap file
         run: |
           FILE=$(ls -1 *.snap | tail -n1)
@@ -37,17 +37,18 @@ jobs:
         id: microceph
         uses: canonical/microceph-action@v0.2
         with:
-          channel: 'latest/stable'
-          accesskey: 'accesskey'
-          secretkey: 'secretkey'
-          bucket: 'testbucket'
-          osdsize: '3G'
+          channel: "latest/stable"
+          accesskey: "accesskey"
+          secretkey: "secretkey"
+          bucket: "testbucket"
+          osdsize: "3G"
 
       - name: Install Java
+        # Needed to have 'keytool' for integration tests
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Setup MicroK8s
         run: |
