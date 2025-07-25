@@ -8,16 +8,20 @@ description: |
 grade: stable
 confinement: strict
 
+architectures:
+  - build-on: [amd64]
+    build-for: [amd64]
+  
 hooks:
   install:
-    plugs: 
+    plugs:
       - home
 
 plugs:
   dot-kube-config:
     interface: personal-files
     read:
-    - $HOME/.kube/config
+      - $HOME/.kube/config
 
 environment:
   JAVA_HOME: $SNAP/usr/lib/jvm/java-17-openjdk-amd64
@@ -32,18 +36,18 @@ apps:
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$SNAP/local/lib/dist-packages/:$SNAP/local/lib/dist-packages/spark8t/cli:$PYTHONPATH
     plugs:
-        - network
-        - home
-        - dot-kube-config
+      - network
+      - home
+      - dot-kube-config
   spark-submit:
-    command:  etc/spark8t/launcher.sh $SNAP/lib/python3.10/site-packages/spark8t/cli/spark_submit.py
+    command: etc/spark8t/launcher.sh $SNAP/lib/python3.10/site-packages/spark8t/cli/spark_submit.py
     environment:
       PYTHONPATH: $SNAP/python:$SNAP/lib/python3.10/site-packages:$PYTHONPATH
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA -Djavax.net.ssl.trustStore=$SNAP_DATA/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     plugs:
-        - network
-        - home
-        - dot-kube-config
+      - network
+      - home
+      - dot-kube-config
   spark-shell:
     command: etc/spark8t/launcher.sh $SNAP/lib/python3.10/site-packages/spark8t/cli/spark_shell.py $SPARK8T_EXTRA_CONF
     environment:
@@ -51,10 +55,10 @@ apps:
       SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA -Djavax.net.ssl.trustStore=$SNAP_DATA/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     plugs:
-        - network
-        - network-bind
-        - home
-        - dot-kube-config
+      - network
+      - network-bind
+      - home
+      - dot-kube-config
   pyspark:
     command: etc/spark8t/launcher.sh $SNAP/lib/python3.10/site-packages/spark8t/cli/pyspark.py $SPARK8T_EXTRA_CONF
     environment:
@@ -62,10 +66,10 @@ apps:
       SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA -Djavax.net.ssl.trustStore=$SNAP_DATA/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     plugs:
-        - network
-        - network-bind
-        - home
-        - dot-kube-config
+      - network
+      - network-bind
+      - home
+      - dot-kube-config
   spark-sql:
     command: etc/spark8t/launcher.sh $SNAP/lib/python3.10/site-packages/spark8t/cli/spark_sql.py $SPARK8T_EXTRA_CONF
     environment:
@@ -73,23 +77,30 @@ apps:
       SPARK8T_EXTRA_CONF: --conf spark.driver.extraJavaOptions="-Duser.home=$SNAP_USER_DATA" --conf spark.jars.ivy=/tmp
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA -Djavax.net.ssl.trustStore=$SNAP_DATA/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
     plugs:
-        - network
-        - network-bind
-        - home
-        - dot-kube-config
+      - network
+      - network-bind
+      - home
+      - dot-kube-config
 
   import-certificate:
     command: etc/spark8t/bin/import-certificate.sh
     environment:
       _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA"
     plugs:
-        - network
-        - network-bind
-        - home
-        - dot-kube-config
+      - network
+      - network-bind
+      - home
+      - dot-kube-config
+
+  beeline:
+    command: opt/spark/bin/beeline
+    environment:
+      _JAVA_OPTIONS: "-Duser.home=$SNAP_USER_DATA"
+    plugs:
+      - network
+      - network-bind
 
 parts:
-
   spark8t-conf:
     plugin: dump
     source: snap/local
@@ -102,66 +113,68 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-        - https://github.com/canonical/spark-k8s-toolkit-py/releases/download/v0.0.10/spark8t-0.0.10-py3-none-any.whl
+      - spark8t==1.0.0
     source: .
     build-packages:
-        - python3
-        - pip
+      - python3
+      - pip
     override-build: |
-        craftctl default
-        # Scripts must be executable
-        chmod -R 755 $CRAFT_PART_INSTALL/lib/python3.10/site-packages/spark8t/cli/
+      craftctl default
+      # Scripts must be executable
+      chmod -R 755 $CRAFT_PART_INSTALL/lib/python3.10/site-packages/spark8t/cli/
 
   spark:
     plugin: nil
     build-packages:
-        - ca-certificates
-        - ca-certificates-java
-        - openjdk-17-jre-headless
-        - wget
+      - ca-certificates
+      - ca-certificates-java
+      - openjdk-17-jre-headless
+      - wget
     stage-packages:
-        - openjdk-17-jre-headless
+      - openjdk-17-jre-headless
     override-build: |
-        SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
-        TAG=$( echo ${SPARK_VERSION%-*} )
-        TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
-        CHECKSUM_URL="${TARBALL_URL}.sha512"
+      SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
+      TAG=$( echo ${SPARK_VERSION%-*} )
+      TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
+      CHECKSUM_URL="${TARBALL_URL}.sha512"
 
-        STATUSCODE=$(curl --silent --head $TARBALL_URL | head -n 1 | cut -d' ' -f2)
-        
-        if  [[ ${STATUSCODE} -gt 400 ]]
-          then
-            echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
-            exit 1
-        fi
-        echo "Downloading latest available Spark version spark-${SPARK_VERSION}."
-        wget $TARBALL_URL
-        wget $CHECKSUM_URL
-        sha512sum --check "spark-${SPARK_VERSION}-bin-k8s.tgz.sha512"
-        if  [[ $? -ne 0 ]]
-          then
-            echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
-            exit 1
-        fi
-        tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
-        cd "spark-${SPARK_VERSION}-bin-k8s/"
-        SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
-        mkdir -p $SPARK_DIR/bin
-        cp -r bin/* $SPARK_DIR/bin
-        mkdir -p $SPARK_DIR/jars
-        cp -r jars/* $SPARK_DIR/jars
-        mkdir -p $SPARK_DIR/python
-        cp -r python/* $SPARK_DIR/python/
+      STATUSCODE=$(curl -o /dev/null -s -w "%{http_code}\n" $TARBALL_URL)
+
+      if  [[ ${STATUSCODE} -gt 400 ]]
+        then
+          echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
+          exit 1
+      fi
+      echo "Downloading latest available Spark version spark-${SPARK_VERSION}."
+      wget $TARBALL_URL
+      wget $CHECKSUM_URL
+      sha512sum --check "spark-${SPARK_VERSION}-bin-k8s.tgz.sha512"
+      if  [[ $? -ne 0 ]]
+        then
+          echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
+          exit 1
+      fi
+      tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
+      cd "spark-${SPARK_VERSION}-bin-k8s/"
+      SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
+      mkdir -p $SPARK_DIR/bin
+      rm bin/beeline
+      cp -r bin/* $SPARK_DIR/bin
+      mkdir -p $SPARK_DIR/jars
+      cp -r jars/* $SPARK_DIR/jars
+      mkdir -p $SPARK_DIR/python
+      cp -r python/* $SPARK_DIR/python/
 
     override-prime: |
-        snapcraftctl prime
-        rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/blacklisted.certs 
-        # move base certs data
-        mv etc/ssl/certs/java/cacerts etc/cacerts
+      snapcraftctl prime
+      rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/blacklisted.certs
+      # move base certs data
+      mv etc/ssl/certs/java/cacerts etc/cacerts
+
   kubectl:
     plugin: nil
     build-packages:
-        - curl
+      - curl
     source: .
     source-type: local
     override-build: |
