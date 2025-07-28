@@ -424,8 +424,8 @@ run_spark_submit_custom_certificate(){
       --conf spark.driver.extraJavaOptions="-Djavax.net.ssl.trustStore=/spark-truststore/spark.truststore -Djavax.net.ssl.trustStorePassword=changeit" \
       --conf spark.kubernetes.executor.secrets.spark-truststore=/spark-truststore \
       --conf spark.kubernetes.driver.secrets.spark-truststore=/spark-truststore \
-      --conf spark.kubernetes.container.image=$SPARK_IMAGE
-
+      --conf spark.kubernetes.container.image=${SPARK_IMAGE}
+  
   echo "Print current config."
   spark-client.service-account-registry get-config --username hello
 
