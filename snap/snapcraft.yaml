@@ -29,6 +29,7 @@ environment:
   SPARK_HOME: $SNAP/opt/spark
   SPARK_CONFS: $SNAP_DATA/etc/spark8t/
   SPARK_USER_DATA: $HOME
+  AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: "true"
 
 apps:
   service-account-registry:
