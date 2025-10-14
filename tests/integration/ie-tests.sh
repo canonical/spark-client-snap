@@ -7,8 +7,8 @@ source ./tests/integration/utils/s3-utils.sh
 source ./tests/integration/utils/azure-utils.sh
 
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.5-22.04_edge'
-readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.5.5.jar'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:4.0-22.04_edge'
+readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.13-4.0.1.jar'
 
 S3_BUCKET=test-snap-$(uuidgen)
 SERVICE_ACCOUNT=spark
@@ -43,7 +43,7 @@ setup_s3_properties(){
   # Setup S3 related Spark properties in the service account
   spark-client.service-account-registry add-config \
     --username $SERVICE_ACCOUNT --namespace $NAMESPACE \
-    --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+    --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
     --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
     --conf spark.hadoop.fs.s3a.path.style.access=true \
     --conf spark.hadoop.fs.s3a.endpoint=$(get_s3_endpoint) \
@@ -387,7 +387,7 @@ run_spark_submit_custom_certificate(){
     --conf spark.hadoop.fs.s3a.access.key=$S3_ACCESS_KEY \
     --conf spark.hadoop.fs.s3a.secret.key=$S3_SECRET_KEY \
     --conf spark.hadoop.fs.s3a.endpoint=$S3_SERVER_URL \
-    --conf spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider \
+    --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
     --conf spark.hadoop.fs.s3a.connection.ssl.enabled=true \
     --conf spark.hadoop.fs.s3a.path.style.access=true \
     --conf spark.eventLog.enabled=true \
