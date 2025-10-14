@@ -155,7 +155,7 @@ parts:
           echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
           exit 1
       fi
-      tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz" -C spark-${SPARK_VERSION}-bin-k8s --strip-components=1
+      tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz" --one-top-level=spark-${SPARK_VERSION}-bin-k8s --strip-components=1
       cd "spark-${SPARK_VERSION}-bin-k8s/"
       SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
       mkdir -p $SPARK_DIR/bin
