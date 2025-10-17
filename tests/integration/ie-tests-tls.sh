@@ -53,7 +53,7 @@ run_spark_submit_custom_certificate(){
   aws --no-verify-ssl --endpoint-url "$S3_SERVER_URL" s3 mb "s3://history-server"
 
   # create service account 
-  spark-client.service-account-registry create --username hello \
+  spark-client.service-account-registry create --username hello --namespace=${NAMESPACE} \
     --conf spark.hadoop.fs.s3a.access.key=$S3_ACCESS_KEY \
     --conf spark.hadoop.fs.s3a.secret.key=$S3_SECRET_KEY \
     --conf spark.hadoop.fs.s3a.endpoint=$S3_SERVER_URL \
@@ -71,7 +71,7 @@ run_spark_submit_custom_certificate(){
   aws --no-verify-ssl --endpoint-url "$S3_SERVER_URL" s3 ls
 
   echo "Actual configs"
-  spark-client.service-account-registry get-config --username hello
+  spark-client.service-account-registry get-config --username hello --namespace=${NAMESPACE}
 
   echo "Generate truststore"
   # create certificate for running the Spark Job
@@ -80,14 +80,14 @@ run_spark_submit_custom_certificate(){
   mv cacerts spark.truststore
 
   echo "Create secret for truststore"
-  sudo microk8s.kubectl create secret generic spark-truststore --from-file spark.truststore
+  sudo microk8s.kubectl create secret generic spark-truststore --from-file spark.truststore --namespace ${NAMESPACE}
 
   # Import certificate
   # echo "Import certificate"
   spark-client.import-certificate ceph-cert $CA_CERT
 
   echo "Configure spark job with the new certificate"
-  spark-client.service-account-registry add-config --username hello \
+  spark-client.service-account-registry add-config --username hello --namespace=${NAMESPACE} \
       --conf spark.executor.extraJavaOptions="-Djavax.net.ssl.trustStore=/spark-truststore/spark.truststore -Djavax.net.ssl.trustStorePassword=changeit" \
       --conf spark.driver.extraJavaOptions="-Djavax.net.ssl.trustStore=/spark-truststore/spark.truststore -Djavax.net.ssl.trustStorePassword=changeit" \
       --conf spark.kubernetes.executor.secrets.spark-truststore=/spark-truststore \
@@ -95,17 +95,23 @@ run_spark_submit_custom_certificate(){
       --conf spark.kubernetes.container.image=${SPARK_IMAGE}
   
   echo "Print current config."
-  spark-client.service-account-registry get-config --username hello
+  spark-client.service-account-registry get-config --username hello --namespace=${NAMESPACE}
 
   echo "Run Spark job"
   spark-client.spark-submit \
     --username hello -v \
+    --namespace ${NAMESPACE} \
     --conf spark.hadoop.fs.s3a.connection.ssl.enabled=true \
     --conf spark.kubernetes.executor.request.cores=0.1 \
+    --conf spark.kubernetes.driver.service.deleteOnTermination=false \
     --files="./tests/integration/resources/example.txt" \
     --class org.apache.spark.examples.SparkPi \
     local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
   echo "Job executed!"
+
+  #
+  PODS=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE})
+  echo "PODS: $PODS"
   # retrieve driver logs
   DRIVER_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)
   echo "Driver job: $DRIVER_JOB"
