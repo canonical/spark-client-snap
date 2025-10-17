@@ -188,6 +188,8 @@ run_spark_shell() {
       --conf spark.executor.instances=2 \
       --namespace ${NAMESPACE})" \
       > spark-shell.out
+  echo "Print output"
+  cat spark-shell.out
   pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   rm spark-shell.out
