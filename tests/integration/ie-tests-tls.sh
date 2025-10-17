@@ -2,10 +2,6 @@
 
 # Copyright 2025 Canonical Ltd.
 
-# Import reusable utilities
-source ./tests/integration/utils/s3-utils.sh
-
-
 readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:4.0-22.04_edge'
 readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.13-4.0.1.jar'
 
@@ -38,11 +34,8 @@ run_spark_submit_custom_certificate(){
 
   # delete username if it exist
   spark-client.service-account-registry delete --username hello
-  !!!HERE!!!
-  # source configuration for microceph 
 
-  source microceph.source
-  echo "MICRO-CEPH credentials"
+  # Microceph credentials
   CA_CERT="/home/${USER}/certs/ca.crt"
   IP=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
   S3_SERVER_URL="https://$IP"
