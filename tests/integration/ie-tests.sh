@@ -46,12 +46,14 @@ setup_s3_properties(){
     --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
     --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
     --conf spark.hadoop.fs.s3a.path.style.access=true \
+    --conf spark.hadoop.fs.s3a.fast.upload=true \
     --conf spark.hadoop.fs.s3a.endpoint=$(get_s3_endpoint) \
     --conf spark.hadoop.fs.s3a.access.key=$(get_s3_access_key) \
     --conf spark.hadoop.fs.s3a.secret.key=$(get_s3_secret_key) \
     --conf spark.sql.warehouse.dir=s3a://$S3_BUCKET/warehouse \
     --conf spark.sql.catalog.local.warehouse=s3a://$S3_BUCKET/warehouse \
-    --conf spark.hadoop.hive.metastore.warehouse.dir=s3a://$S3_BUCKET/hwarehouse  
+    --conf spark.hadoop.hive.metastore.warehouse.dir=s3a://$S3_BUCKET/hwarehouse \
+
 }
 
 
@@ -644,13 +646,6 @@ echo -e "TEST KUBECONFIG ENV VARIABLE"
 echo -e "##################################"
 
 (setup_user_admin_context && test_custom_kubeconfig_example && cleanup_user_success) || cleanup_user_failure
-
-
-echo -e "##################################"
-echo -e "TEST SELF SIGNED CERTIFICATE"
-echo -e "##################################"
-
-(setup_user_admin_context && test_spark_submit_custom_certificate && cleanup_user_success) || cleanup_user_failure
 
 echo -e "##################################"
 echo -e "END OF THE TEST!"

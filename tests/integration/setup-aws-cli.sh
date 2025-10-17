@@ -4,12 +4,13 @@
 sudo snap install aws-cli --classic
 
 # Get Access key and secret key from MinIO
-ACCESS_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_ACCESS_KEY}' | base64 -d)
-SECRET_KEY=$(kubectl get secret -n minio-operator microk8s-user-1 -o jsonpath='{.data.CONSOLE_SECRET_KEY}' | base64 -d)
+ACCESS_KEY=foo
+SECRET_KEY=bar
 
 get_s3_endpoint(){
     # Get S3 endpoint from MinIO
-    kubectl get service minio -n minio-operator -o jsonpath='{.spec.clusterIP}' 
+    ip=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
+    echo $ip
 }
 
 wait_and_retry(){
@@ -37,7 +38,7 @@ wait_and_retry(){
 wait_and_retry get_s3_endpoint
 S3_ENDPOINT=$(get_s3_endpoint)
 
-DEFAULT_REGION="us-east-2"
+DEFAULT_REGION="us-east-1"
 
 # Configure AWS CLI credentials
 aws configure set aws_access_key_id $ACCESS_KEY
@@ -45,5 +46,5 @@ aws configure set aws_secret_access_key $SECRET_KEY
 aws configure set default.region $DEFAULT_REGION
 aws configure set endpoint_url "http://$S3_ENDPOINT"
 
-wait_and_retry aws s3 ls
+wait_and_retry aws --no-verify-ssl s3 ls
 echo "AWS CLI credentials set successfully"
