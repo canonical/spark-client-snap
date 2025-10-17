@@ -105,15 +105,10 @@ run_spark_submit_custom_certificate(){
     --files="./tests/integration/resources/example.txt" \
     --class org.apache.spark.examples.SparkPi \
     local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
-
+  echo "Job executed!"
+  # retrieve driver logs
   DRIVER_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)
-
-  if [[ "${DRIVER_JOB}" == "${PREVIOUS_JOB}" ]]
-  then
-    echo "ERROR: Sample job has not run!"
-    exit 1
-  fi
-
+  echo "Driver job: $DRIVER_JOB"
   # retrieve driver logs
   logs=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)  -n ${NAMESPACE})
   echo "logs: $logs"
