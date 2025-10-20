@@ -32,10 +32,10 @@ run_spark_submit_custom_certificate(){
   
   KUBE_CONFIG=/home/${USER}/.kube/config
 
-  # delete username if it exist
+  # selete service account if it exist
   spark-client.service-account-registry delete --username hello
 
-  # Microceph credentials
+  # microceph credentials
   CA_CERT="/home/${USER}/certs/ca.crt"
   IP=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
   S3_SERVER_URL="https://$IP"
@@ -43,7 +43,7 @@ run_spark_submit_custom_certificate(){
   S3_SECRET_KEY="bar"
  
 
-  # reconfigure the aws lib to work with local instance of microceph behind haproxy
+  # reconfigure the aws lib to work with local instance of microceph
   aws configure set aws_access_key_id $S3_ACCESS_KEY
   aws configure set aws_secret_access_key $S3_SECRET_KEY
   aws configure set default.region "us-east-1"
@@ -66,7 +66,7 @@ run_spark_submit_custom_certificate(){
     --conf spark.eventLog.dir=s3a://history-server/ \
     --conf spark.history.fs.logDirectory=s3a://history-server/
 
-  # list buckets 
+  # list current buckets 
   echo "Current buckets:"
   aws --no-verify-ssl --endpoint-url "$S3_SERVER_URL" s3 ls
 
@@ -82,8 +82,7 @@ run_spark_submit_custom_certificate(){
   echo "Create secret for truststore"
   sudo microk8s.kubectl create secret generic spark-truststore --from-file spark.truststore --namespace ${NAMESPACE}
 
-  # Import certificate
-  # echo "Import certificate"
+  # import certificate
   spark-client.import-certificate ceph-cert $CA_CERT
 
   echo "Configure spark job with the new certificate"
@@ -109,15 +108,14 @@ run_spark_submit_custom_certificate(){
     local:///opt/spark/examples/jars/$SPARK_EXAMPLES_JAR_NAME 100
   echo "Job executed!"
 
-  #
-  PODS=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE})
-  echo "PODS: $PODS"
   # retrieve driver logs
   DRIVER_JOB=$(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)
   echo "Driver job: $DRIVER_JOB"
+  
   # retrieve driver logs
   logs=$(kubectl --kubeconfig=${KUBE_CONFIG} logs $(kubectl --kubeconfig=${KUBE_CONFIG} get pods -n ${NAMESPACE} | grep driver | tail -n 1 | cut -d' ' -f1)  -n ${NAMESPACE})
   echo "logs: $logs"
+  
   # Check job output
   # Sample output
   # "Pi is roughly 3.13956232343"
@@ -178,12 +176,12 @@ cleanup_user() {
 
 cleanup_user_success() {
   echo "cleanup_user_success()......"
-  cleanup_user 0 spark tests
+  cleanup_user 0 spark ${NAMESPACE}
 }
 
 cleanup_user_failure() {
   echo "cleanup_user_failure()......"
-  cleanup_user 1 spark tests
+  cleanup_user 1 spark ${NAMESPACE}
 }
 
 echo -e "##################################"

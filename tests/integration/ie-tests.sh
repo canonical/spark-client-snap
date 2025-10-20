@@ -52,8 +52,7 @@ setup_s3_properties(){
     --conf spark.hadoop.fs.s3a.secret.key=$(get_s3_secret_key) \
     --conf spark.sql.warehouse.dir=s3a://$S3_BUCKET/warehouse \
     --conf spark.sql.catalog.local.warehouse=s3a://$S3_BUCKET/warehouse \
-    --conf spark.hadoop.hive.metastore.warehouse.dir=s3a://$S3_BUCKET/hwarehouse \
-
+    --conf spark.hadoop.hive.metastore.warehouse.dir=s3a://$S3_BUCKET/warehouse 
 }
 
 

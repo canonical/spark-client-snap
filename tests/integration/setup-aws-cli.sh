@@ -3,12 +3,12 @@
 # Install AWS CLI
 sudo snap install aws-cli --classic
 
-# Get Access key and secret key from MinIO
+# Get Access key and secret key from Microceph
 ACCESS_KEY=foo
 SECRET_KEY=bar
 
 get_s3_endpoint(){
-    # Get S3 endpoint from MinIO
+    # Get S3 endpoint from Microceph
     ip=$(ip route get 1.1.1.1 | awk '{print $7; exit}')
     echo $ip
 }
@@ -34,7 +34,7 @@ wait_and_retry(){
     fi
 }
 
-# Wait for `minio` service to be ready and S3 endpoint to be available
+# Wait for `microceph radosgw` service to be ready and S3 endpoint to be available
 wait_and_retry get_s3_endpoint
 S3_ENDPOINT=$(get_s3_endpoint)
 
