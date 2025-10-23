@@ -32,7 +32,7 @@ run_spark_submit_custom_certificate(){
   
   KUBE_CONFIG=/home/${USER}/.kube/config
 
-  # selete service account if it exist
+  # delete service account if it exist
   spark-client.service-account-registry delete --username hello
 
   # microceph credentials

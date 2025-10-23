@@ -125,9 +125,7 @@ ifndef SNAP_EXISTS
 	@echo "Installing snap first"
 	make install
 endif
-	@export AZURE_STORAGE_ACCOUNT=$(AZURE_STORAGE_ACCOUNT) \
-				AZURE_STORAGE_KEY=$(AZURE_STORAGE_KEY) \
-	&& sg microk8s tests/integration/ie-tests-tls.sh
+	@sg microk8s tests/integration/ie-tests-tls.sh
 
 
 
