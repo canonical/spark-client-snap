@@ -118,6 +118,14 @@ endif
 				AZURE_STORAGE_KEY=$(AZURE_STORAGE_KEY) \
 	&& sg microk8s tests/integration/ie-tests.sh
 
+# Recipe for running integration tests with tls.
+integration-tests-tls: $(k8s_tag) $(aws_tag) $(azure_tag)
+ifndef SNAP_EXISTS
+	@echo "Installing snap first"
+	make install
+endif
+	@sg microk8s tests/integration/ie-tests-tls.sh
+
 
 # Recipe for cleaning the building environment. 
 # Deletes cache files and cleans snapcraft
