@@ -7,8 +7,8 @@ source ./tests/integration/utils/s3-utils.sh
 source ./tests/integration/utils/azure-utils.sh
 
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.5-22.04_edge'
-readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.5.5.jar'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:4.0-22.04_edge'
+readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.13-4.0.1.jar'
 
 S3_BUCKET=test-snap-$(uuidgen)
 SERVICE_ACCOUNT=spark
@@ -186,7 +186,7 @@ run_spark_shell() {
       --conf spark.executor.instances=2 \
       --namespace ${NAMESPACE})" \
       > spark-shell.out
-  pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  pi=$(cat spark-shell.out  | grep "Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   rm spark-shell.out
   validate_pi_value $pi
