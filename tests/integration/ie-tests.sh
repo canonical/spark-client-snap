@@ -3,12 +3,13 @@
 # Copyright 2024 Canonical Ltd.
 
 # Import reusable utilities
+source ./tests/integration/common.sh
 source ./tests/integration/utils/s3-utils.sh
 source ./tests/integration/utils/azure-utils.sh
 
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.5-22.04_edge'
-readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.5.5.jar'
+readonly SPARK_IMAGE="${INTEGRATION_SPARK_IMAGE}"
+readonly SPARK_EXAMPLES_JAR_NAME="${INTEGRATION_SPARK_EXAMPLES_JAR_NAME}"
 
 S3_BUCKET=test-snap-$(uuidgen)
 SERVICE_ACCOUNT=spark
