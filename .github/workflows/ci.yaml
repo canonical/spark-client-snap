@@ -29,7 +29,7 @@ jobs:
       - name: Download snap file
         uses: actions/download-artifact@v6
         with:
-          pattern: ${{ needs.build.outputs.artifact-prefix }}-*${{ matrix.system.arch }}.snap
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
           merge-multiple: true
 
       - name: Install tooling
