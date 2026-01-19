@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v32.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v40.0.2
 
   test:
     name: Test Snap
