@@ -6,10 +6,11 @@ description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
 
-platforms:
-  amd64:
-  arm64:
-
+architectures:
+  - build-on: [amd64]
+    build-for: [amd64]
+  - build-on: [arm64]
+    build-for: [arm64]
 grade: stable
 confinement: strict
   
