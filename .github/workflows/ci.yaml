@@ -29,7 +29,7 @@ jobs:
       - name: Download snap file
         uses: actions/download-artifact@v6
         with:
-          pattern: ${{ needs.build.outputs.artifact-prefix }}-*-${{ matrix.system.arch }}.snap
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*${{ matrix.system.arch }}.snap
           merge-multiple: true
 
       - name: Install tooling
@@ -39,7 +39,7 @@ jobs:
 
       - name: Install snap file
         run: |
-          FILE=$(ls -1 *-${{ matrix.system.arch }}.snap | tail -n1)
+          FILE=$(ls -1 *${{ matrix.system.arch }}.snap | tail -n1)
           sudo snap install $FILE --dangerous
 
       - name: Checkout repo
