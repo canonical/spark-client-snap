@@ -14,24 +14,36 @@ jobs:
 
   test:
     name: Test Snap
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.system.os }}
     timeout-minutes: 90
     needs:
       - build
+    strategy:
+      matrix:
+        system:
+          - os: ubuntu-22.04
+            arch: amd64
+          - os: ubuntu-22.04-arm
+            arch: arm64
     steps:
       - name: Download snap file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
-          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
+          pattern: ${{ needs.build.outputs.artifact-prefix }}-*-${{ matrix.system.arch }}.snap
           merge-multiple: true
+
+      - name: Install tooling
+        run: |
+          sudo apt install pipx -y
+          pipx install azure-cli
 
       - name: Install snap file
         run: |
-          FILE=$(ls -1 *.snap | tail -n1)
+          FILE=$(ls -1 *-${{ matrix.system.arch }}.snap | tail -n1)
           sudo snap install $FILE --dangerous
 
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup microceph
         run: |
