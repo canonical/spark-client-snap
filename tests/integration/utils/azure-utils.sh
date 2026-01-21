@@ -12,7 +12,7 @@ if [[ -z "${AZURE_STORAGE_ACCOUNT}" || -z "${AZURE_STORAGE_KEY}" ]]; then
 fi
 
 # Check if Azure CLI has been installed and the credentials have been configured. If not, exit.
-if ! azcli storage container list > /dev/null 2>&1; then
+if ! az storage container list > /dev/null 2>&1; then
     echo "The Azure CLI and credentials have not been configured properly. Exiting..."
     exit 1
 fi
@@ -37,7 +37,7 @@ create_azure_container(){
   # $1: Name of the container to be created.
 
   name=$1
-  azcli storage container create --fail-on-exist --name $name && echo "Created Azure Storage container '$name'."
+  az storage container create --fail-on-exist --name $name && echo "Created Azure Storage container '$name'."
 }
 
 
@@ -48,7 +48,7 @@ delete_azure_container(){
   # $1: Name of the container to be deleted.
 
   name=$1
-  azcli storage container delete --name $name
+  az storage container delete --name $name
   echo "Deleted Azure Storage container '$name'."
 }
 
@@ -66,7 +66,7 @@ copy_file_to_azure_container(){
   # If file path is '/foo/bar/file.ext', the basename is 'file.ext'
   base_name=$(basename "$file_path")
 
-  azcli storage blob upload --container-name $container --file $file_path --name $base_name
+  az storage blob upload --container-name $container --file $file_path --name $base_name
   echo "Copied file '${file_path}' to Azure container '${container}'."
 }
 

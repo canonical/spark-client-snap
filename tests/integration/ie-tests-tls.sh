@@ -2,7 +2,7 @@
 
 # Copyright 2025 Canonical Ltd.
 
-readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4-22.04_edge'
+readonly SPARK_IMAGE='ghcr.io/canonical/charmed-spark:3.4.4-22.04_edge'
 readonly SPARK_EXAMPLES_JAR_NAME='spark-examples_2.12-3.4.4.jar'
 
 S3_BUCKET=test-snap-$(uuidgen)
