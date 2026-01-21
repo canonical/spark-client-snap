@@ -5,12 +5,14 @@ summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
-grade: stable
-confinement: strict
 
 architectures:
   - build-on: [amd64]
     build-for: [amd64]
+  - build-on: [arm64]
+    build-for: [arm64]
+grade: stable
+confinement: strict
   
 hooks:
   install:
@@ -24,7 +26,7 @@ plugs:
       - $HOME/.kube/config
 
 environment:
-  JAVA_HOME: $SNAP/usr/lib/jvm/java-17-openjdk-amd64
+  JAVA_HOME: $SNAP/usr/lib/jvm/java-17-openjdk-${CRAFT_ARCH_BUILD_FOR}
   PATH: $JAVA_HOME/bin:$PATH:$SNAP:$SNAP/opt/$CRAFT_PROJECT_NAME:$SNAP/opt/k8s:$SNAP/opt/spark
   SPARK_HOME: $SNAP/opt/spark
   SPARK_CONFS: $SNAP_DATA/etc/spark8t/
@@ -180,7 +182,7 @@ parts:
     source-type: local
     override-build: |
       craftctl default
-      curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      curl -LO -s "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/$CRAFT_ARCH_BUILD_FOR/kubectl"
       chmod +x kubectl
       K8S_DIR=$CRAFT_PART_INSTALL/opt/k8s
       mkdir -p $K8S_DIR
