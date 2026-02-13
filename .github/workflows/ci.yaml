@@ -13,7 +13,7 @@ jobs:
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v40.0.2
 
   test:
-    name: Test Snap
+    name: Test Snap (arch: ${{ matrix.system.arch }}, k8s: ${{ matrix.k8s_version }})
     runs-on: ${{ matrix.system.os }}
     timeout-minutes: 90
     needs:
