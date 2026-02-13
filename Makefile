@@ -12,6 +12,7 @@ package_name=$(shell grep 'name:' snap/snapcraft.yaml | tail -n1 | awk '{print $
 
 $(shell mkdir -p $(package_dir))
 
+K8S_VERSION := 1.32
 SNAP_EXISTS := $(shell snap list | grep $(package_name) 2> /dev/null)
 
 pre_deps_tag := $(package_dir)/.pre_deps
@@ -75,7 +76,7 @@ uninstall:
 # A market that signifies that MicroK8s has been installed and
 # configured successfully.
 $(k8s_tag):
-	/bin/bash ./tests/integration/setup-microk8s.sh
+	K8S_VERSION=$(K8S_VERSION) /bin/bash ./tests/integration/setup-microk8s.sh
 	sg microk8s ./tests/integration/config-microk8s.sh
 	touch $(k8s_tag)
 

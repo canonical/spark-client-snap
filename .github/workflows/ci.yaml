@@ -25,6 +25,13 @@ jobs:
             arch: amd64
           - os: ubuntu-22.04-arm
             arch: arm64
+	k8s_version:
+	  - 1.28
+	  - 1.29
+	  - 1.30
+	  - 1.31
+	  - 1.32
+	  - 1.33
     steps:
       - name: Download snap file
         uses: actions/download-artifact@v6
@@ -62,7 +69,7 @@ jobs:
 
       - name: Setup MicroK8s
         run: |
-          make microk8s
+          make microk8s K8S_VERSION=${{ matrix.k8s_version }}
 
       - name: Run Integration Tests
         env:
