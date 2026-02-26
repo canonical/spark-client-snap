@@ -5,7 +5,6 @@ summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
 
-
 architectures:
   - build-on: [amd64]
     build-for: [amd64]
@@ -13,7 +12,7 @@ architectures:
     build-for: [arm64]
 grade: stable
 confinement: strict
-  
+
 hooks:
   install:
     plugs:
