@@ -115,7 +115,7 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-      - spark8t==1.0.0
+      - spark8t==1.3.0
     source: .
     build-packages:
       - python3
