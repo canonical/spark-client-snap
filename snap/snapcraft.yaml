@@ -4,6 +4,13 @@ version: "3.5.7"
 summary: Client side scripts to submit Spark jobs to a cluster.
 description: |
   The spark-client snap includes the scripts spark-submit, spark-shell, pyspark and other tools for managing Apache Spark jobs.
+source-code: https://github.com/canonical/spark-client-snap
+issues: https://github.com/canonical/spark-client-snap/issues/new/choose
+website:
+  - https://ubuntu.com/data/spark
+  - https://canonical.com/data/docs/spark/k8s
+contact: https://matrix.to/#/%23charmhub-analytics%3Aubuntu.com
+license: Apache-2.0
 
 architectures:
   - build-on: [amd64]
