@@ -112,10 +112,9 @@ parts:
 
   spark8t:
     plugin: python
-    # TODO: replace with new release
-    source-type: git
-    source: https://github.com/canonical/spark-k8s-toolkit-py/
-    source-branch: wip-entrypoints
+    python-packages:
+      - spark8t == 1.4.0
+    source: ""
 
   spark:
     plugin: nil
