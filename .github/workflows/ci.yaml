@@ -19,8 +19,8 @@ jobs:
     needs:
       - build
     strategy:
+      fail-fast: false
       matrix:
-        fail-fast: false
         system:
           - os: ubuntu-22.04
             arch: amd64
