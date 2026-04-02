@@ -19,7 +19,6 @@ jobs:
         run: |
           BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
-          echo "risk=${BRANCH##*\/}" >> $GITHUB_OUTPUT
           echo "track=${BRANCH%*\/*}" >> $GITHUB_OUTPUT
         id: branch_metadata
       - name: Check consistency between metadata and release branch
@@ -33,25 +32,23 @@ jobs:
         run: |
           echo "Branch: ${{ steps.branch_metadata.outputs.branch }}"
           echo "Track: ${{ steps.branch_metadata.outputs.track }}"
-          echo "Risk: ${{ steps.branch_metadata.outputs.risk }}"
 
     outputs:
       branch: ${{ steps.branch_metadata.outputs.branch }}
       track: ${{ steps.branch_metadata.outputs.track }}
-      risk: ${{ steps.branch_metadata.outputs.risk }}
 
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v40.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v48.0.2
 
   release:
     name: Release snap
     needs:
       - build
       - release_checks
-    uses: canonical/data-platform-workflows/.github/workflows/release_snap.yaml@v40.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/release_snap_edge.yaml@v48.0.2
     with:
-      channel: ${{ needs.release_checks.outputs.track }}/${{ needs.release_checks.outputs.risk }}
+      track: ${{ needs.release_checks.outputs.track }}
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
     secrets:
       snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
