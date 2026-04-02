@@ -186,7 +186,7 @@ run_spark_shell() {
       --conf spark.executor.instances=2 \
       --namespace ${NAMESPACE})" \
       > spark-shell.out
-  pi=$(cat spark-shell.out  | grep "^Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
+  pi=$(cat spark-shell.out  | grep "Pi is roughly" | rev | cut -d' ' -f1 | rev | cut -c 1-3)
   echo -e "Spark-shell Pi Job Output: \n ${pi}"
   rm spark-shell.out
   validate_pi_value $pi
