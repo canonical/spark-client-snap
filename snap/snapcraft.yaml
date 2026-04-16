@@ -130,7 +130,6 @@ parts:
     build-packages:
       - ca-certificates
       - ca-certificates-java
-      - openjdk-17-jre-headless
       - wget
     stage-packages:
       - openjdk-17-jre-headless
