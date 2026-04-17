@@ -5,6 +5,9 @@ on:
     branches:
       - 3.4/*
 
+permissions:
+  contents: read
+
 jobs:
   release_checks:
     runs-on: ubuntu-22.04
@@ -38,6 +41,9 @@ jobs:
   build:
     name: Build snap
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v48.0.2
+    permissions:
+      actions: read
+      contents: read
 
   release:
     name: Release snap
@@ -51,5 +57,5 @@ jobs:
     secrets:
       snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
     permissions:
-      actions: read  # Needed for GitHub API call to get workflow version
+      actions: read
       contents: write # Needed to create GitHub release
