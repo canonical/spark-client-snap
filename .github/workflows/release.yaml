@@ -58,5 +58,4 @@ jobs:
       snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
     permissions:
       actions: read
-      contents: read
       contents: write # Needed to create GitHub release
