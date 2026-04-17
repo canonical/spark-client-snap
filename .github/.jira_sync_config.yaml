@@ -13,5 +13,5 @@ settings:
     closed: done # GitHub issue closed as completed
     not_planned: rejected # GitHub issue closed as not planned
   add_gh_comment: true
-  sync_description: false
-  sync_comments: false
+  sync_description: true
+  sync_comments: true

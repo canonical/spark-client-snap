@@ -1,16 +1,22 @@
 name: Build snap and run tests
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
-  workflow_call:
-    outputs:
-      snap-file:
-        description: "The snap output of build process."
-        value: ${{ jobs.build.outputs.snap-file }}
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     name: Build snap
     uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v48.0.2
+    permissions:
+      actions: read
+      contents: read
 
   test:
     name: "Tests (arch: ${{ matrix.system.arch }}, k8s: ${{ matrix.k8s_version }})"
