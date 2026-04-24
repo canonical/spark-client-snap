@@ -122,11 +122,13 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-      - spark8t == 1.4.0
+      # renovate: datasource=pypi
+      - spark8t==1.4.0
     source: ""
 
   spark:
     plugin: dump
+    # renovate: datasource=github-releases depName=canonical/central-uploader depType=spark-source
     source: https://github.com/canonical/central-uploader/releases/download/spark-3.5.7-ubuntu2/spark-3.5.7-ubuntu2-20260212173650-bin-k8s.tgz
     source-checksum: sha512/93281f3f1f909ab23f23b167ba0f8a640e4fc53e623f7654b339f372a624142f52ac850df69d4a6982821ee448734c40286866e73b87ce5653ed3806ab0dddd6
     organize:
