@@ -17,5 +17,58 @@
   "baseBranchPatterns": [
     '/^*\\/edge$/',
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["(^|/)snap/snapcraft\\.yaml$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=pypi\\n\\s+-\\s+(?<depName>[^=\\s]+)==(?<currentValue>[^\\s\\n]+)"
+      ],
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Spark tarball version in snapcraft.yaml",
+      "fileMatch": ["(^|/)snap/snapcraft\\.yaml$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=github-releases\\s+depName=(?<depName>[^\\s]+)\\s+depType=(?<depType>[^\\s\\n]+)\\n\\s+source:\\s*https://github\\.com/[^\\s]+/releases/download/(?<currentValue>spark-\\d+\\.\\d+\\.\\d+-ubuntu\\d+)/[^\\s]+\\.tgz"
+      ],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^spark-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-ubuntu(?<build>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["(^|/)snap/local/etc/spark8t/spark-defaults\\.conf$"],
+      "matchStrings": [
+        "#\\s*oci-tag=(?<currentValue>[^\\s]+)\\r?\\n\\s*[^=\\s]+=(?<depName>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["spark8t"],
+      "allowedVersions": "< 2.0.0"
+    },
+    {
+      "description": "Keep major.minor.patch and only allow ubuntuX increments",
+      "matchDepTypes": ["spark-source"],
+      "allowedVersions": "/^spark-3\\.5\\.7-ubuntu\\d+$/",
+      "prBodyNotes": [
+        "## :warning: Manual action required",
+        "This PR is partially automated but requires further user action:",
+        "1. The timestamp part of the archive URL needs to be updated",
+        "2. The SHA512 needs to be updated",
+      ]
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "ghcr.io/canonical/charmed-spark",
+      ],
+      "pinDigests": true,
+      "allowedVersions": "/^3\\.5-/",
+    }
+  ]
 }
 

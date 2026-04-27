@@ -122,53 +122,34 @@ parts:
   spark8t:
     plugin: python
     python-packages:
-      - spark8t == 1.4.0
+      # renovate: datasource=pypi
+      - spark8t==1.4.0
     source: ""
 
   spark:
-    plugin: nil
+    plugin: dump
+    # renovate: datasource=github-releases depName=canonical/central-uploader depType=spark-source
+    source: https://github.com/canonical/central-uploader/releases/download/spark-3.5.7-ubuntu2/spark-3.5.7-ubuntu2-20260212173650-bin-k8s.tgz
+    source-checksum: sha512/93281f3f1f909ab23f23b167ba0f8a640e4fc53e623f7654b339f372a624142f52ac850df69d4a6982821ee448734c40286866e73b87ce5653ed3806ab0dddd6
+    organize:
+      jars: opt/spark/jars
+      bin: opt/spark/bin
+      python: opt/spark/python
     build-packages:
       - ca-certificates
       - ca-certificates-java
-      - wget
     stage-packages:
       - openjdk-17-jre-headless
-    override-build: |
-      SPARK_VERSION=$(cat $CRAFT_PROJECT_DIR/SPARK_VERSION | tr -d '\n')
-      TAG=$( echo ${SPARK_VERSION%-*} )
-      TARBALL_URL="https://github.com/canonical/central-uploader/releases/download/spark-${TAG}/spark-${SPARK_VERSION}-bin-k8s.tgz"
-      CHECKSUM_URL="${TARBALL_URL}.sha512"
-
-      STATUSCODE=$(curl -o /dev/null -s -w "%{http_code}\n" $TARBALL_URL)
-
-      if  [[ ${STATUSCODE} -gt 400 ]]
-        then
-          echo "ERROR: Latest available Spark version spark-${SPARK_VERSION} does not have a downloadable binary! Exiting...."
-          exit 1
-      fi
-      echo "Downloading latest available Spark version spark-${SPARK_VERSION}."
-      wget $TARBALL_URL
-      wget $CHECKSUM_URL
-      sha512sum --check "spark-${SPARK_VERSION}-bin-k8s.tgz.sha512"
-      if  [[ $? -ne 0 ]]
-        then
-          echo "DOWNLOAD ERROR: Latest available Spark version spark-${SPARK_VERSION} could not be downloaded properly! Exiting...."
-          exit 1
-      fi
-      tar -zxf "spark-${SPARK_VERSION}-bin-k8s.tgz"
-      cd "spark-${SPARK_VERSION}-bin-k8s/"
-      SPARK_DIR=$CRAFT_PART_INSTALL/opt/spark
-      mkdir -p $SPARK_DIR/bin
-      rm bin/beeline
-      cp -r bin/* $SPARK_DIR/bin
-      mkdir -p $SPARK_DIR/jars
-      cp -r jars/* $SPARK_DIR/jars
-      mkdir -p $SPARK_DIR/python
-      cp -r python/* $SPARK_DIR/python/
-
+    stage:
+      - etc/
+      - opt/spark/bin
+      - -opt/spark/bin/beeline
+      - opt/spark/jars
+      - opt/spark/python
+      - usr/
     override-prime: |
-      snapcraftctl prime
-      rm -vf usr/lib/jvm/java-17-openjdk-*/lib/security/blacklisted.certs
+      craftctl default
+      rm -vf usr/lib/jvm/java-17-openjdk-${CRAFT_ARCH_BUILD_FOR}/lib/security/blacklisted.certs
       # move base certs data
       mv etc/ssl/certs/java/cacerts etc/cacerts
 
