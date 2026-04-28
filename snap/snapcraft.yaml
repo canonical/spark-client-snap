@@ -129,8 +129,8 @@ parts:
   spark:
     plugin: dump
     # renovate: datasource=github-releases depName=canonical/central-uploader depType=spark-source
-    source: https://github.com/canonical/central-uploader/releases/download/spark-4.0.1-ubuntu7/spark-4.0.1-ubuntu7-20260126132057-bin-k8s.tgz
-    source-checksum: sha512/f3742d737e21746b4c66d7b914d30e90253e59151dbc9d6fdf81dcd5e40242009677ab42840e024661c8bc63ad33a8747cd495f0ee96a1429754d29afbdb1ba5
+    source: https://github.com/canonical/central-uploader/releases/download/spark-4.0.1-ubuntu8/spark-4.0.1-ubuntu8-20260326184419-bin-k8s.tgz
+    source-checksum: sha512/deac178552a10d8d51a814c7cba0880539924e7c07b45deb42e43aaa5b08674d506499d51269b75afa94ad4bef5f188a55f7631ba6518404fbb2a3b3282fa81b
     organize:
       jars: opt/spark/jars
       bin: opt/spark/bin
