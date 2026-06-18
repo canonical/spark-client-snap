@@ -7,7 +7,7 @@ concurrency:
 on:
   pull_request:
   schedule:
-    - cron: "53 0 * * 0" # Daily at 00:53 UTC
+    - cron: "53 0 * * 0" # On Sunday at 00:53 UTC
     
 permissions:
   contents: read
