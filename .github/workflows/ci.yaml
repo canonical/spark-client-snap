@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v48.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v48.1.2
     permissions:
       actions: read
       contents: read
