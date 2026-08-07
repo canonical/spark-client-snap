@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v50.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v50.2.1
 
   test:
     name: "Tests (arch: ${{ matrix.system.arch }}, k8s: ${{ matrix.k8s_version }})"
