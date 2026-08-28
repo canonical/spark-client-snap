@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v50.2.1
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@v51.0.0
 
   test:
     name: "Tests (arch: ${{ matrix.system.arch }}, k8s: ${{ matrix.k8s_version }})"
@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Java
         # Needed to have 'keytool' for integration tests
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: "temurin"
           java-version: "17"
