@@ -1,74 +1,73 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "github>canonical/data-platform//renovate_presets/charm.json5",
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "github>canonical/data-platform//renovate_presets/base.json5",
+    "helpers:pinGitHubActionDigests",
   ],
-  "reviewers": [
-    "welpaolo",
-    "theoctober19th",
-    "batalex",
-  ],
-  "schedule": ["* 3 * * 5"],
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["* 3 * * 5"]
+  // Between 1AM and 6:59AM, Friday mid-month
+  schedule: ["* 1-6 14-21 * 5"],
+  lockFileMaintenance: {
+    enabled: false,
   },
-  "ignoreDeps": ["ubuntu"],
-  "baseBranchPatterns": [
-    '/^*\\/edge$/',
+  commitMessagePrefix: "[RENOVATE] ",
+  enabledManagers: ["github-actions", "custom.regex"],
+  baseBranchPatterns: ["/^*\\/edge$/"],
+  useBaseBranchConfig: "merge",
+  customManagers: [
+    {
+      customType: "regex",
+      fileMatch: ["(^|/)snap/snapcraft\\.yaml$"],
+      matchStrings: [
+        "#\\s*renovate:\\s*datasource=pypi\\n\\s+-\\s+(?<depName>[^=\\s]+)==(?<currentValue>[^\\s\\n]+)",
+      ],
+      datasourceTemplate: "pypi",
+    },
+    {
+      customType: "regex",
+      description: "Update Spark tarball version in snapcraft.yaml",
+      fileMatch: ["(^|/)snap/snapcraft\\.yaml$"],
+      matchStrings: [
+        "#\\s*renovate:\\s*datasource=github-releases\\s+depName=(?<depName>[^\\s]+)\\s+depType=(?<depType>[^\\s\\n]+)\\n\\s+source:\\s*https://github\\.com/[^\\s]+/releases/download/(?<currentValue>spark-\\d+\\.\\d+\\.\\d+-ubuntu\\d+)/[^\\s]+\\.tgz",
+      ],
+      datasourceTemplate: "github-releases",
+      versioningTemplate: "regex:^spark-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-ubuntu(?<build>\\d+)$",
+    },
+    {
+      customType: "regex",
+      fileMatch: ["(^|/)snap/local/etc/spark8t/spark-defaults\\.conf$"],
+      matchStrings: [
+        "#\\s*oci-tag=(?<currentValue>[^\\s]+)\\r?\\n\\s*[^=\\s]+=(?<depName>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)",
+      ],
+      datasourceTemplate: "docker",
+    },
   ],
-  "customManagers": [
+  packageRules: [
     {
-      "customType": "regex",
-      "fileMatch": ["(^|/)snap/snapcraft\\.yaml$"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=pypi\\n\\s+-\\s+(?<depName>[^=\\s]+)==(?<currentValue>[^\\s\\n]+)"
-      ],
-      "datasourceTemplate": "pypi"
+      matchPackageNames: ["spark8t"],
+      allowedVersions: "< 2.0.0",
     },
     {
-      "customType": "regex",
-      "description": "Update Spark tarball version in snapcraft.yaml",
-      "fileMatch": ["(^|/)snap/snapcraft\\.yaml$"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=github-releases\\s+depName=(?<depName>[^\\s]+)\\s+depType=(?<depType>[^\\s\\n]+)\\n\\s+source:\\s*https://github\\.com/[^\\s]+/releases/download/(?<currentValue>spark-\\d+\\.\\d+\\.\\d+-ubuntu\\d+)/[^\\s]+\\.tgz"
-      ],
-      "datasourceTemplate": "github-releases",
-      "versioningTemplate": "regex:^spark-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-ubuntu(?<build>\\d+)$"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": ["(^|/)snap/local/etc/spark8t/spark-defaults\\.conf$"],
-      "matchStrings": [
-        "#\\s*oci-tag=(?<currentValue>[^\\s]+)\\r?\\n\\s*[^=\\s]+=(?<depName>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
-      ],
-      "datasourceTemplate": "docker"
-    },
-  ],
-  "packageRules": [
-    {
-      "matchPackageNames": ["spark8t"],
-      "allowedVersions": "< 2.0.0"
-    },
-    {
-      "description": "Keep major.minor.patch and only allow ubuntuX increments",
-      "matchDepTypes": ["spark-source"],
-      "allowedVersions": "/^spark-3\\.4\\.4-ubuntu\\d+$/",
-      "prBodyNotes": [
+      description: "Keep major.minor.patch and only allow ubuntuX increments",
+      matchDepTypes: ["spark-source"],
+      allowedVersions: "/^spark-3\\.4\\.4-ubuntu\\d+$/",
+      prBodyNotes: [
         "## :warning: Manual action required",
         "This PR is partially automated but requires further user action:",
         "1. The timestamp part of the archive URL needs to be updated",
         "2. The SHA512 needs to be updated",
-      ]
+      ],
     },
     {
-      "matchDatasources": ["docker"],
-      "matchPackageNames": [
-        "ghcr.io/canonical/charmed-spark",
-      ],
-      "pinDigests": true,
-      "allowedVersions": "/^3\\.4-/",
-    }
-  ]
+      matchDatasources: ["docker"],
+      matchPackageNames: ["ghcr.io/canonical/charmed-spark"],
+      pinDigests: true,
+      allowedVersions: "/^3\\.4-/",
+    },
+    {
+      description: "Combine all snapcraft.yaml dependencies into a single PR",
+      matchFileNames: ["**/snapcraft.yaml"],
+      groupName: "Snap dependencies",
+      groupSlug: "snap-deps",
+    },
+  ],
 }
-
