@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@6f9c6da60190e1860d33e82da04498a56ea64725 # v51.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@9cc78a0564fc32632bfc82dd3f7e5f5aaeabcd23 # v53.0.0
 
   test:
     name: "Tests (arch: ${{ matrix.system.arch }}, k8s: ${{ matrix.k8s_version }})"
@@ -67,7 +67,7 @@ jobs:
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "25"
 
       - name: Setup MicroK8s
         run: |
