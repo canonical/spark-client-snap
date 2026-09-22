@@ -13,6 +13,7 @@ permissions:
 jobs:
   release_checks:
     runs-on: ubuntu-22.04
+    cache-mode: none
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -42,14 +43,15 @@ jobs:
 
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@6f9c6da60190e1860d33e82da04498a56ea64725 # v51.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@9cc78a0564fc32632bfc82dd3f7e5f5aaeabcd23 # v53.0.0
+    cache-mode: none
 
   release:
     name: Release snap
     needs:
       - build
       - release_checks
-    uses: canonical/data-platform-workflows/.github/workflows/release_snap_edge.yaml@6f9c6da60190e1860d33e82da04498a56ea64725 # v51.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_snap_edge.yaml@9cc78a0564fc32632bfc82dd3f7e5f5aaeabcd23 # v53.0.0
     with:
       track: ${{ needs.release_checks.outputs.track }}
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
@@ -57,3 +59,4 @@ jobs:
       snap-store-token: ${{ secrets.SNAP_STORE_TOKEN }}
     permissions:
       contents: write # Needed to create GitHub release
+    cache-mode: none
