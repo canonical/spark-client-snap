@@ -43,6 +43,17 @@
   ],
   packageRules: [
     {
+      description: "Disable CI ubuntu version bumps",
+      matchDatasources: ["github-runners"],
+      enabled: false,
+    },
+    {
+      description: "Disable JDK version bumps in setup-java step",
+      matchManagers: ["github-actions"],
+      matchDatasources: ["java-version"],
+      enabled: false,
+    },
+    {
       matchPackageNames: ["spark8t"],
       allowedVersions: "< 2.0.0",
     },
