@@ -60,7 +60,7 @@
     {
       description: "Keep major.minor.patch and only allow ubuntuX increments",
       matchDepTypes: ["spark-source"],
-      allowedVersions: "/^spark-3\\.5\\.7-ubuntu\\d+$/",
+      allowedVersions: "/^spark-3\\.5\\.9-ubuntu\\d+$/",
       prBodyNotes: [
         "## :warning: Manual action required",
         "This PR is partially automated but requires further user action:",
