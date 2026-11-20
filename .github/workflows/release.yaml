@@ -43,7 +43,7 @@ jobs:
 
   build:
     name: Build snap
-    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@3e06c25ea6d5922a25a96d0c7b6a3c7522e65c9a # v54.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_snap.yaml@5539aeb76df18b43f6b10f77bb45e51d6867f554 # v56.0.0
     cache-mode: none
 
   release:
@@ -51,7 +51,7 @@ jobs:
     needs:
       - build
       - release_checks
-    uses: canonical/data-platform-workflows/.github/workflows/release_snap_edge.yaml@3e06c25ea6d5922a25a96d0c7b6a3c7522e65c9a # v54.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/release_snap_edge.yaml@5539aeb76df18b43f6b10f77bb45e51d6867f554 # v56.0.0
     with:
       track: ${{ needs.release_checks.outputs.track }}
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
