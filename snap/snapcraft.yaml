@@ -140,6 +140,7 @@ parts:
       - ca-certificates-java
     stage-packages:
       - openjdk-17-jre-headless
+      - libnss-wrapper
     stage:
       - etc/
       - opt/spark/bin
